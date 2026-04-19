@@ -111,8 +111,8 @@ print(f"📁 Ruta base de datos: {DB_NAME}")
 
 def get_db_connection():
     try:
-        # Versión corregida con caracteres especiales codificados (& -> %26 e ¡ -> %C2%A1)
-        conn_str = "postgresql://postgres.udklgsmabwwfxpstmpxj:Monte55or%C2%A12021%26@aws-0-sa-east-1.pooler.supabase.com:6543/postgres"
+        # Cambiamos sa-east-1 por us-east-1 (Servidor de EE.UU.)
+        conn_str = "postgresql://postgres.udklgsmabwwfxpstmpxj:Monte55or%C2%A12021%26@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
         conn = psycopg2.connect(conn_str)
         conn.cursor_factory = RealDictCursor 
         return conn
