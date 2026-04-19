@@ -71,9 +71,9 @@ except Exception as e:
 
 # Configuración Backblaze B2
 ENDPOINT_B2 = "https://s3.us-east-005.backblazeb2.com"
-KEY_ID_B2 = "00508884373dab40000000001"
-APP_KEY_B2 = "K005jvkLLmLdUKhhVis1qLcnU4flx0g"
-BUCKET_NAME = "Proyecto-Grado-Karlos-2025"
+KEY_ID_B2 = "005ae1e673cca820000000001"
+APP_KEY_B2 = "K005fAg5b+1v7qfwwfndGTvQsoS86Ms"
+BUCKET_NAME = "bucket-despertar"
 
 try:
     my_config = Config(signature_version='s3v4', region_name='us-east-005')
@@ -111,18 +111,13 @@ print(f"📁 Ruta base de datos: {DB_NAME}")
 
 def get_db_connection():
     try:
-        # ✅ URL DEL POOLER (La definitiva)
-        # Usamos la dirección 'aws-1-sa-east-1...' que es compatible con Railway.
-        # Puerto 6543 (Transaction Mode)
-        
-        conn_str = "postgresql://postgres.wwrbrabdwhoiougbaskz:1ZulgnaY0cnsz2p4@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require"
-        
-        # Conectamos directamente (sin trucos de IP manual, ya no hacen falta)
+        # URL oficial proporcionada por el colegio
+        conn_str = "postgresql://postgres:Monte55or¡2021&@db.udklgsmabwwfxpstmpxj.supabase.co:5432/postgres"
         conn = psycopg2.connect(conn_str)
         conn.cursor_factory = RealDictCursor 
         return conn
     except Exception as e:
-        print(f"❌ Error CRÍTICO conectando a Supabase: {e}")
+        print(f"❌ Error conectando a Supabase Institucional: {e}")
         return None
 
 # --- FUNCIONES DE MANTENIMIENTO ---
@@ -288,16 +283,14 @@ def registrar_auditoria(accion: str, detalle: str, usuario: str = "Sistema", ip:
         if conn: conn.close()
 
 def enviar_correo_real(destinatario: str, asunto: str, mensaje: str, html: bool = False) -> bool:
-    import requests # Asegúrate de poner 'requests' en tu requirements.txt
-    
-    # 1. Tu API KEY de Resend
-    API_KEY = "re_UgHvnVwc_GoohB6so8khU8mCBmLJB1bzJ" 
+    import requests
+    # Clave API oficial de Resend
+    API_KEY = "re_8yGaLtUa_L4VewBKb1miDQcLAUe6jzQq6" 
     
     try:
         url = "https://api.resend.com/emails"
         payload = {
-            # 2. AQUÍ PONES TU DOMINIO
-            "from": "Soporte Despertar <soporte@uepdespertar-evidencias.work>",
+            "from": "onboarding@resend.dev", # Una vez que el colegio verifique el dominio, cámbialo aquí
             "to": [destinatario],
             "subject": asunto,
             "html": mensaje if html else f"<p>{mensaje}</p>"
@@ -306,18 +299,10 @@ def enviar_correo_real(destinatario: str, asunto: str, mensaje: str, html: bool 
             "Authorization": f"Bearer {API_KEY}",
             "Content-Type": "application/json"
         }
-        
         response = requests.post(url, json=payload, headers=headers)
-        
-        if response.status_code in [200, 201]:
-            print(f"✅ Correo enviado desde el dominio a {destinatario}")
-            return True
-        else:
-            print(f"❌ Error Resend: {response.text}")
-            return False
-            
+        return response.status_code in [200, 201]
     except Exception as e:
-        print(f"❌ Error de conexión: {e}")
+        print(f"❌ Error de correo: {e}")
         return False
     
 def calcular_hash(ruta: str) -> str:
