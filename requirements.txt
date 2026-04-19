@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+python-multipart
+boto3
+pydantic
+requests
+numpy
+opencv-python-headless==4.10.0.84
+pytz
+pillow
+pillow-avif-plugin
+psycopg2-binary
+passlib
+bcrypt==4.0.1
+# Forzar reconstruccion del servidor 002
