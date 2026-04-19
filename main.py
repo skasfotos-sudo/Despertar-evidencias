@@ -110,34 +110,43 @@ else:
 print(f"📁 Ruta base de datos: {DB_NAME}")
 
 def get_db_connection():
-    # Como no sabemos la región exacta, haremos que Python busque en las más comunes de América
-    regiones_posibles = [
-        "aws-0-us-east-2.pooler.supabase.com",   # Ohio (Segunda más usada)
-        "aws-0-us-west-1.pooler.supabase.com",   # N. California
-        "aws-0-us-west-2.pooler.supabase.com",   # Oregon
-        "aws-0-ca-central-1.pooler.supabase.com" # Canadá
-    ]
-
-    for region in regiones_posibles:
-        try:
-            print(f"🔍 Buscando servidor del colegio en: {region}...")
-            
-            # Usamos la contraseña codificada que ya sabemos que funciona
-            conn_str = f"postgresql://postgres.udklgsmabwwfxpstmpxj:Monte55or%C2%A12021%26@{region}:6543/postgres"
-            
-            # Intentamos conectar
-            conn = psycopg2.connect(conn_str)
-            conn.cursor_factory = RealDictCursor 
-            
-            print(f"✅ ¡CONEXIÓN EXITOSA! El servidor está en {region}.")
-            return conn
-            
-        except Exception as e:
-            # Si falla, simplemente silencia el error grande y pasa a la siguiente región
-            print(f"⚠️ {region} no es el correcto.")
-            continue
+    import urllib.parse
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
     
-    print("❌ No se encontró la región. Toca esperar a ver el panel de Supabase.")
+    # 1. Dejamos que Python convierta los símbolos (¡, &) a código perfecto
+    password_segura = urllib.parse.quote_plus("Monte55or¡2021&")
+    proyecto = "udklgsmabwwfxpstmpxj"
+    
+    enlaces_a_probar = []
+    
+    # 2. Todas las regiones del mundo (por si se creó en otro continente)
+    todas_las_regiones = [
+        "us-east-1", "us-east-2", "us-west-1", "us-west-2",
+        "sa-east-1", "ca-central-1", "eu-west-1", "eu-west-2", 
+        "eu-west-3", "eu-central-1", "ap-southeast-1", "ap-northeast-1", 
+        "ap-south-1", "ap-southeast-2"
+    ]
+    
+    for region in todas_las_regiones:
+        enlaces_a_probar.append(f"postgresql://postgres.{proyecto}:{password_segura}@aws-0-{region}.pooler.supabase.com:6543/postgres")
+        
+    # 3. Enlace Clásico / Antiguo (a veces Supabase usa este formato en el puerto 6543)
+    enlaces_a_probar.append(f"postgresql://postgres:{password_segura}@db.{proyecto}.supabase.co:6543/postgres")
+    
+    print("🌍 Iniciando escaneo global de Supabase...")
+    
+    for intento_url in enlaces_a_probar:
+        try:
+            # connect_timeout=3 hace que pruebe rápido y salte al siguiente si falla
+            conn = psycopg2.connect(intento_url, connect_timeout=3)
+            conn.cursor_factory = RealDictCursor 
+            print("✅ ¡BINGO! Conexión exitosa al servidor institucional.")
+            return conn
+        except Exception:
+            pass # Ignoramos el error en silencio y probamos el siguiente enlace
+            
+    print("❌ Ningún enlace funcionó en todo el mundo. Posible error en la contraseña original.")
     return None
 
 # --- FUNCIONES DE MANTENIMIENTO ---
