@@ -112,7 +112,7 @@ print(f"📁 Ruta base de datos: {DB_NAME}")
 def get_db_connection():
     try:
         # URL oficial proporcionada por el colegio
-        conn_str = "postgresql://postgres:Monte55or¡2021&@db.udklgsmabwwfxpstmpxj.supabase.co:5432/postgres"
+        conn_str = "postgresql://postgres.udklgsmabwwfxpstmpxj:Monte55or¡2021&@aws-0-sa-east-1.pooler.supabase.com:6543/postgres"
         conn = psycopg2.connect(conn_str)
         conn.cursor_factory = RealDictCursor 
         return conn
