@@ -110,15 +110,35 @@ else:
 print(f"📁 Ruta base de datos: {DB_NAME}")
 
 def get_db_connection():
-    try:
-        # Cambiamos sa-east-1 por us-east-1 (Servidor de EE.UU.)
-        conn_str = "postgresql://postgres.udklgsmabwwfxpstmpxj:Monte55or%C2%A12021%26@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
-        conn = psycopg2.connect(conn_str)
-        conn.cursor_factory = RealDictCursor 
-        return conn
-    except Exception as e:
-        print(f"❌ Error conectando a Supabase Institucional: {e}")
-        return None
+    # Como no sabemos la región exacta, haremos que Python busque en las más comunes de América
+    regiones_posibles = [
+        "aws-0-us-east-2.pooler.supabase.com",   # Ohio (Segunda más usada)
+        "aws-0-us-west-1.pooler.supabase.com",   # N. California
+        "aws-0-us-west-2.pooler.supabase.com",   # Oregon
+        "aws-0-ca-central-1.pooler.supabase.com" # Canadá
+    ]
+
+    for region in regiones_posibles:
+        try:
+            print(f"🔍 Buscando servidor del colegio en: {region}...")
+            
+            # Usamos la contraseña codificada que ya sabemos que funciona
+            conn_str = f"postgresql://postgres.udklgsmabwwfxpstmpxj:Monte55or%C2%A12021%26@{region}:6543/postgres"
+            
+            # Intentamos conectar
+            conn = psycopg2.connect(conn_str)
+            conn.cursor_factory = RealDictCursor 
+            
+            print(f"✅ ¡CONEXIÓN EXITOSA! El servidor está en {region}.")
+            return conn
+            
+        except Exception as e:
+            # Si falla, simplemente silencia el error grande y pasa a la siguiente región
+            print(f"⚠️ {region} no es el correcto.")
+            continue
+    
+    print("❌ No se encontró la región. Toca esperar a ver el panel de Supabase.")
+    return None
 
 # --- FUNCIONES DE MANTENIMIENTO ---
 def optimizar_sistema_db():
