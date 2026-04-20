@@ -3200,25 +3200,15 @@ async def limpiar_notificaciones_resueltas(cedula: str = Form(...)):
 
 if __name__ == "__main__":
     import uvicorn
+    import os
     
-    # Configuración del puerto
-    port = int(os.environ.get("PORT", 8000))
+    # 1. Atrapamos el puerto dinámico de Railway, si no hay, usamos 8080
+    puerto_railway = int(os.environ.get("PORT", 8080))
     
     print("=" * 60)
     print("🚀 SISTEMA EDUCATIVO DESPERTAR - BACKEND V7.0")
     print("=" * 60)
-    print(f"📁 Base de datos: {DB_NAME}")
-    print(f"🌍 Zona horaria: America/Guayaquil (UTC-5)")
-    print(f"🤖 AWS Rekognition: {'✅ Disponible' if rekog else '❌ No disponible'}")
-    print(f"💾 S3 Storage: {'✅ Disponible' if s3_client else '❌ No disponible'}")
-    print(f"📧 Servidor SMTP: {'✅ Configurado' if SMTP_EMAIL and 'tu_correo' not in SMTP_EMAIL else '⚠️ Simulado'}")
-    print(f"🔐 Usuario admin: 9999999999 / admin123")
+    print(f"🌍 Servidor forzado en Host: 0.0.0.0 | Puerto: {puerto_railway}")
     
-    # 👇👇👇 ESTA LÍNEA ES LA CLAVE QUE TE FALTABA 👇👇👇
-    limpieza_duplicados_startup()
-    # 👆👆👆👆👆👆👆👆👆👆👆👆👆👆👆👆👆👆👆👆👆👆👆
-    
-    print(f"🌐 Servidor iniciado en: http://0.0.0.0:{port}")
-    print("=" * 60)
-    
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    # 2. Obligamos a Uvicorn a respetar nuestra configuración
+    uvicorn.run("main:app", host="0.0.0.0", port=puerto_railway)
