@@ -111,12 +111,13 @@ print(f"📁 Ruta base de datos: {DB_NAME}")
 
 def get_db_connection():
     try:
+        import os
         conn = psycopg2.connect(
-            host="aws-1-us-east-1.pooler.supabase.com",
-            port=6543,
-            user="postgres.udklgsmabwwfxpstmpxj",
-            password="Monte55or¡2021&",
-            dbname="postgres"
+            host=os.environ.get("SUPABASE_HOST", "aws-1-us-east-1.pooler.supabase.com"),
+            port=int(os.environ.get("SUPABASE_PORT", "6543")),
+            user=os.environ.get("SUPABASE_USER", "postgres.udklgsmabwwfxpstmpxj"),
+            password=os.environ.get("SUPABASE_PASSWORD", "Monte55or¡2021&"),
+            dbname=os.environ.get("SUPABASE_DB", "postgres")
         )
         conn.cursor_factory = RealDictCursor
         print("✅ Conexión exitosa a Supabase.")
@@ -124,7 +125,7 @@ def get_db_connection():
     except Exception as e:
         print(f"❌ Error conectando a Supabase: {e}")
         return None
-
+    
 # --- FUNCIONES DE MANTENIMIENTO ---
 def optimizar_sistema_db():
     """Ejecuta mantenimiento VACUUM en Supabase"""
@@ -640,12 +641,10 @@ def home():
 
 @app.get("/health")
 async def health_check():
-    """Verifica salud del sistema"""
+    conn = get_db_connection()
+    if conn is None:
+        return JSONResponse(content={"status": "unhealthy", "error": "No se pudo conectar a la base de datos"})
     try:
-        conn = get_db_connection()
-        conn.execute("SELECT 1")
-        
-        # Verificar tablas principales
         c = conn.cursor()
         c.execute("SELECT COUNT(*) as count FROM Usuarios")
         usuarios = c.fetchone()['count']
