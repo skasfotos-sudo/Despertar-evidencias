@@ -110,21 +110,19 @@ else:
 print(f"📁 Ruta base de datos: {DB_NAME}")
 
 def get_db_connection():
-    import psycopg2
-    from psycopg2.extras import RealDictCursor
-    
     try:
-        # Enlace definitivo institucional (Transaction Pooler - Puerto 6543)
-        # La contraseña ya incluye la protección para los símbolos especiales
-        conn_str = "postgresql://postgres.udklgsmabwwfxpstmpxj:Monte55or%C2%A12021%26@aws-1-us-east-1.pooler.supabase.com:6543/postgres"
-        
-        conn = psycopg2.connect(conn_str)
-        conn.cursor_factory = RealDictCursor 
-        print("✅ Conexión exitosa a la base de datos institucional en Supabase.")
+        conn = psycopg2.connect(
+            host="aws-1-us-east-1.pooler.supabase.com",
+            port=6543,
+            user="postgres.udklgsmabwwfxpstmpxj",
+            password="Monte55or¡2021&",
+            dbname="postgres"
+        )
+        conn.cursor_factory = RealDictCursor
+        print("✅ Conexión exitosa a Supabase.")
         return conn
-        
     except Exception as e:
-        print(f"❌ Error conectando a Supabase Institucional: {e}")
+        print(f"❌ Error conectando a Supabase: {e}")
         return None
 
 # --- FUNCIONES DE MANTENIMIENTO ---
@@ -236,7 +234,7 @@ def init_db_completa():
         c.execute("SELECT CI FROM Usuarios WHERE Tipo=0")
         if not c.fetchone():
             c.execute("INSERT INTO Usuarios (Nombre, Apellido, CI, Password, Tipo, Activo) VALUES (%s,%s,%s,%s,%s,%s)", 
-                     ('Admin', 'Sistema', '9999999999', 'admin123', 0, 1))
+          ('Admin', 'Sistema', '9999999999', get_password_hash('admin123'), 0, 1))
             print("✅ Usuario admin creado en Supabase")
 
         # Crear Bandeja Recuperados
@@ -3212,4 +3210,3 @@ if __name__ == "__main__":
     
     # 2. Obligamos a Uvicorn a respetar nuestra configuración
     uvicorn.run("main:app", host="0.0.0.0", port=puerto_railway)
-    #hola
