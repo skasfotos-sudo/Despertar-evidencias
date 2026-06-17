@@ -589,11 +589,12 @@ app = FastAPI(title="Sistema Educativo Despertar", version="7.0")
 
 # Lista de dominios permitidos para conectar con el backend
 origins = [
-    "https://www.uepdespertar-evidencias.work",  # Tu nuevo dominio principal
-    "https://uepdespertar-evidencias.work",      # Versión sin www
-    "https://proyecto-grado-karlos.vercel.app",  # Tu dominio antiguo de Vercel
-    "http://localhost:5500",                     # Pruebas locales
-    "http://127.0.0.1:5500"                      # Pruebas locales
+    "https://www.uepdespertar-evidencias.work",
+    "https://uepdespertar-evidencias.work",
+    "https://proyecto-grado-karlos.vercel.app",
+    "https://despertar-evidencias-production.up.railway.app",   # <-- NUEVA
+    "http://localhost:5500",
+    "http://127.0.0.1:5500"
 ]
 
 app.add_middleware(
