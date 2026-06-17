@@ -592,17 +592,16 @@ origins = [
     "https://www.uepdespertar-evidencias.work",
     "https://uepdespertar-evidencias.work",
     "https://proyecto-grado-karlos.vercel.app",
-    "https://despertar-evidencias-production.up.railway.app",   # <-- NUEVA
     "http://localhost:5500",
     "http://127.0.0.1:5500"
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins, # <--- Usamos la lista de arriba
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],   # Permite GET, POST, DELETE, etc.
-    allow_headers=["*"],   # Permite todos los encabezados
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 @app.on_event("startup")
