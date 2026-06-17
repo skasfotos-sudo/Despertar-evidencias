@@ -2440,16 +2440,6 @@ async def reset_database():
 # 14. ENDPOINTS CORS Y UTILIDADES
 # =========================================================================
 
-@app.options("/{rest_of_path:path}")
-async def preflight_handler(request: Request, rest_of_path: str):
-    """Manejador de preflight CORS"""
-    response = JSONResponse(content={"message": "Preflight OK"})
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Credentials"] = "true"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-    return response
-
 @app.get("/cors-debug")
 async def cors_debug():
     """Endpoint para debug de CORS"""
