@@ -3263,7 +3263,7 @@ async def agregar_foto_referencia(
 ):
     """
     Agrega o actualiza la foto de referencia de un usuario.
-    - Sube la foto a Backblaze B2 (S3).
+    - Sube la foto a Backblaze B2 (S3) con ACL pública.
     - Actualiza la columna 'Foto' en la tabla Usuarios.
     - Indexa el rostro en AWS Rekognition (si es estudiante).
     """
@@ -3272,7 +3272,7 @@ async def agregar_foto_referencia(
     try:
         import re
         
-        # 1. Validar que el usuario existe
+        # 1. Validar usuario
         conn = get_db_connection()
         if not conn:
             raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
@@ -3282,7 +3282,7 @@ async def agregar_foto_referencia(
         if not usuario:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-        # 2. Sanitizar nombre y guardar archivo temporal
+        # 2. Guardar archivo temporal con nombre sanitizado
         nombre_limpio = re.sub(r'[^\w\.\-]', '_', foto.filename)
         temp_dir = tempfile.mkdtemp()
         path = os.path.join(temp_dir, nombre_limpio)
@@ -3290,7 +3290,7 @@ async def agregar_foto_referencia(
             shutil.copyfileobj(foto.file, f)
         print(f"📸 Foto guardada temporalmente: {path}")
 
-        # 3. Subir a Backblaze B2 (S3)
+        # 3. Subir a Backblaze B2 (S3) - ¡OBLIGATORIO!
         if not s3_client:
             raise HTTPException(status_code=500, detail="Almacenamiento en nube no disponible.")
         
@@ -3300,7 +3300,7 @@ async def agregar_foto_referencia(
             path,
             BUCKET_NAME,
             nombre_nube,
-            ExtraArgs={'ACL': 'public-read'}
+            ExtraArgs={'ACL': 'public-read'}  # 🔑 ¡Esto es lo que hace que sea pública!
         )
         url_foto = f"https://{BUCKET_NAME}.s3.us-east-005.backblazeb2.com/{nombre_nube}"
         print(f"✅ Foto subida a S3: {url_foto}")
@@ -3310,7 +3310,7 @@ async def agregar_foto_referencia(
         conn.commit()
         print(f"✅ Foto actualizada en BD para {cedula}")
 
-        # 5. Indexar rostro en AWS Rekognition (solo si es estudiante)
+        # 5. Indexar rostro en AWS Rekognition (si es estudiante)
         if rekog and usuario.get('Tipo') == 1:
             try:
                 with open(path, 'rb') as image_file:
