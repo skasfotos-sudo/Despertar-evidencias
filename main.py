@@ -42,6 +42,18 @@ ECUADOR_TZ = pytz.timezone('America/Guayaquil')  # UTC-5
 def ahora_ecuador():
     return datetime.datetime.now(ECUADOR_TZ)
 
+
+def crear_coleccion_rekognition():
+    if not rekog:
+        return
+    try:
+        rekog.describe_collection(CollectionId=COLLECTION_ID)
+        print(f"✅ Colección {COLLECTION_ID} ya existe")
+    except rekog.exceptions.ResourceNotFoundException:
+        rekog.create_collection(CollectionId=COLLECTION_ID)
+        print(f"✅ Colección {COLLECTION_ID} creada")
+    except Exception as e:
+        print(f"⚠️ Error con Rekognition: {e}")
 # --- CONFIGURACIÓN DE CORREO ---
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 465  # <--- Asegúrate de que sea 465
@@ -68,11 +80,11 @@ except Exception as e:
     rekog = None
     print(f"⚠️ Error inicializando AWS Rekognition: {e}")
 
-# Configuración Backblaze B2
+# Configuración Backblaze B2 - usando variables de entorno (más seguro)
 ENDPOINT_B2 = "https://s3.us-east-005.backblazeb2.com"
-KEY_ID_B2 = "005ae1e673cca820000000001"
-APP_KEY_B2 = "K005fAg5b+1v7qfwwfndGTvQsoS86Ms"
-BUCKET_NAME = "bucket-despertar"
+KEY_ID_B2 = os.environ.get("B2_KEY_ID", "005ae1e673cca820000000001")
+APP_KEY_B2 = os.environ.get("B2_APP_KEY", "K005fAg5b+1v7qfwwfndGTvQsoS86Ms")
+BUCKET_NAME = "despertar-evidencias-2026"  # <--- TU BUCKET REAL
 
 try:
     my_config = Config(signature_version='s3v4', region_name='us-east-005')
@@ -613,12 +625,13 @@ async def startup_event():
         init_db_completa()
         print("✅ Base de datos verificada.")
         
-        # AGREGAR ESTO AQUÍ para que se ejecute en la nube
-        # Lo envolvemos en un try/except para que no tumbe el servidor si falla
         try:
             limpieza_duplicados_startup() 
         except Exception as e_limpieza:
             print(f"⚠️ Advertencia: La limpieza inicial falló: {e_limpieza}")
+
+        # 👇 ESTO ES LO NUEVO
+        crear_coleccion_rekognition()
 
     except Exception as e:
         print(f"❌ Error crítico en el inicio: {e}")
@@ -795,75 +808,113 @@ async def registrar_usuario(
     tipo_usuario: int = Form(...),
     foto: UploadFile = File(...)
 ):
-    """Registra un nuevo usuario con zona horaria Ecuador"""
+    """
+    Registra un nuevo usuario con zona horaria Ecuador.
+    - Sube la foto a Backblaze B2 (S3) con ACL pública.
+    - Guarda la URL en la base de datos.
+    - Indexa el rostro en AWS Rekognition si es estudiante.
+    """
+    temp_dir = None
+    conn = None
     try:
+        import re
+        
+        # 1. Limpiar y validar datos
         cedula = cedula.strip()
         contrasena = contrasena.strip()
+        nombre = nombre.strip()
+        apellido = apellido.strip()
         
-        # Validaciones básicas
-        if not cedula or not contrasena:
-            return JSONResponse(content={
-                "error": "La cédula y contraseña son requeridas"
-            })
+        if not cedula or not contrasena or not nombre or not apellido:
+            return JSONResponse(
+                content={"error": "Todos los campos son requeridos"},
+                status_code=400
+            )
         
+        if len(cedula) != 10 or not cedula.isdigit():
+            return JSONResponse(
+                content={"error": "La cédula debe tener 10 dígitos numéricos"},
+                status_code=400
+            )
+        
+        if len(contrasena) < 6:
+            return JSONResponse(
+                content={"error": "La contraseña debe tener al menos 6 caracteres"},
+                status_code=400
+            )
+        
+        # 2. Conectar a la base de datos
         conn = get_db_connection()
+        if not conn:
+            return JSONResponse(
+                content={"error": "Error de conexión a la base de datos"},
+                status_code=500
+            )
+        
         c = conn.cursor()
         
-        # Verificar si usuario ya existe
-        c.execute("SELECT CI FROM Usuarios WHERE CI=%s", (cedula,))
+        # 3. Verificar si el usuario ya existe
+        c.execute("SELECT CI FROM Usuarios WHERE CI = %s", (cedula,))
         if c.fetchone():
             conn.close()
-            return JSONResponse(content={
-                "error": "Usuario ya existe en el sistema"
-            })
+            return JSONResponse(
+                content={"error": "Usuario ya existe en el sistema"},
+                status_code=409
+            )
         
-
+        # 4. Sanitizar nombre del archivo
+        nombre_limpio = re.sub(r'[^\w\.\-]', '_', foto.filename)
+        if not nombre_limpio:
+            nombre_limpio = "foto_perfil.jpg"
         
-        # Manejar archivo de foto
+        # 5. Guardar archivo temporalmente
         temp_dir = tempfile.mkdtemp()
-        foto_path = os.path.join(temp_dir, foto.filename)
-        
+        foto_path = os.path.join(temp_dir, nombre_limpio)
         with open(foto_path, "wb") as f:
             shutil.copyfileobj(foto.file, f)
         
-        # Subir a almacenamiento
-        nombre_nube = f"perfiles/{cedula}_{int(ahora_ecuador().timestamp())}_{foto.filename}"
+        # 6. Subir a Backblaze B2 (S3) - ¡OBLIGATORIO!
+        if not s3_client:
+            conn.close()
+            return JSONResponse(
+                content={"error": "Almacenamiento en nube no disponible"},
+                status_code=500
+            )
+        
+        timestamp = int(ahora_ecuador().timestamp())
+        nombre_nube = f"perfiles/{cedula}_{timestamp}_{nombre_limpio}"
         url_foto = ""
         
-        if s3_client:
-            try:
-                s3_client.upload_file(
-                    foto_path, 
-                    BUCKET_NAME, 
-                    nombre_nube,
-                    ExtraArgs={'ACL': 'public-read'}
-                )
-                url_foto = f"https://{BUCKET_NAME}.s3.us-east-005.backblazeb2.com/{nombre_nube}"
-                print(f"✅ Foto subida a S3: {url_foto}")
-            except Exception as e:
-                print(f"⚠️ Error subiendo a S3: {e}")
-                url_foto = f"/local/perfiles/{foto.filename}"
-        else:
-            url_foto = f"/local/perfiles/{foto.filename}"
+        try:
+            s3_client.upload_file(
+                foto_path,
+                BUCKET_NAME,
+                nombre_nube,
+                ExtraArgs={'ACL': 'public-read'}
+            )
+            url_foto = f"https://{BUCKET_NAME}.s3.us-east-005.backblazeb2.com/{nombre_nube}"
+            print(f"✅ Foto subida a S3: {url_foto}")
+        except Exception as e_s3:
+            conn.close()
+            print(f"❌ Error subiendo a S3: {e_s3}")
+            return JSONResponse(
+                content={"error": f"Error al subir la foto a la nube: {str(e_s3)}"},
+                status_code=502
+            )
         
-        # Insertar usuario con fecha de Ecuador
-        fecha_registro = ahora_ecuador()
+        # 7. Encriptar contraseña
+        hashed_password = get_password_hash(contrasena)
         
-        # 👇 CAMBIO CLAVE: Convertimos la fecha a texto simple para evitar errores
-        fecha_str = fecha_registro.strftime("%Y-%m-%d %H:%M:%S") 
-
-        # Encriptar contraseña
-        hashed_password = get_password_hash(contrasena.strip())
-
-        fecha_registro = ahora_ecuador()
+        # 8. Insertar usuario en la base de datos
+        fecha_str = ahora_ecuador().strftime("%Y-%m-%d %H:%M:%S")
         
         c.execute("""
             INSERT INTO Usuarios 
             (Nombre, Apellido, CI, Password, Tipo, Foto, Activo, Fecha_Registro)
             VALUES (%s, %s, %s, %s, %s, %s, 1, %s)
         """, (
-            nombre.strip(),
-            apellido.strip(),
+            nombre,
+            apellido,
             cedula,
             hashed_password,
             tipo_usuario,
@@ -871,7 +922,7 @@ async def registrar_usuario(
             fecha_str
         ))
         
-        # Si es estudiante, agregar a colección de rostros AWS
+        # 9. Indexar rostro en AWS Rekognition (solo si es estudiante)
         if tipo_usuario == 1 and rekog:
             try:
                 with open(foto_path, 'rb') as image_file:
@@ -885,25 +936,47 @@ async def registrar_usuario(
                     QualityFilter='AUTO'
                 )
                 print(f"✅ Rostro indexado en AWS para estudiante {cedula}")
-            except Exception as e:
-                print(f"⚠️ Error indexando rostro en AWS: {e}")
+            except Exception as e_rek:
+                print(f"⚠️ Error indexando rostro en AWS: {e_rek}")
+                # No detenemos el proceso, solo advertimos
         
         conn.commit()
         conn.close()
         
-        # Limpiar archivos temporales
-        shutil.rmtree(temp_dir)
+        # 10. Limpiar archivos temporales
+        if temp_dir and os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
         
+        # 11. Registrar auditoría
         tipo_txt = "Administrador" if int(tipo_usuario) == 0 else "Estudiante"
         registrar_auditoria(
-            "REGISTRO_USUARIO", 
+            "REGISTRO_USUARIO",
             f"El Admin creó al usuario: {nombre} {apellido} (CI: {cedula}) como {tipo_txt}",
             "Administrador"
         )
-
+        
+        # 12. Respuesta de éxito
+        return JSONResponse(content={
+            "status": "ok",
+            "mensaje": f"Usuario {nombre} {apellido} registrado correctamente.",
+            "url_foto": url_foto
+        })
+    
     except Exception as e:
         print(f"❌ Error en registrar_usuario: {e}")
-        return JSONResponse(content={"error": str(e)})
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            content={"error": f"Error interno del servidor: {str(e)}"},
+            status_code=500
+        )
+    
+    finally:
+        # Asegurar limpieza de recursos
+        if temp_dir and os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+        if conn:
+            conn.close()
     
 @app.post("/cambiar_estado_usuario")
 async def cambiar_estado_usuario(datos: EstadoUsuarioRequest):
