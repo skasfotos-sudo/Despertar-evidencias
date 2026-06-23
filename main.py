@@ -3270,26 +3270,30 @@ async def agregar_foto_referencia(
     temp_dir = None
     conn = None
     try:
+        import re
+        
         # 1. Validar que el usuario existe
         conn = get_db_connection()
+        if not conn:
+            raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
         c = conn.cursor(cursor_factory=RealDictCursor)
         c.execute("SELECT CI, Tipo FROM Usuarios WHERE CI = %s", (cedula,))
         usuario = c.fetchone()
         if not usuario:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-        # 2. Guardar archivo temporal con nombre sanitizado
-        import re
+        # 2. Sanitizar nombre y guardar archivo temporal
         nombre_limpio = re.sub(r'[^\w\.\-]', '_', foto.filename)
         temp_dir = tempfile.mkdtemp()
         path = os.path.join(temp_dir, nombre_limpio)
         with open(path, "wb") as f:
             shutil.copyfileobj(foto.file, f)
+        print(f"📸 Foto guardada temporalmente: {path}")
 
         # 3. Subir a Backblaze B2 (S3)
         if not s3_client:
             raise HTTPException(status_code=500, detail="Almacenamiento en nube no disponible.")
-
+        
         timestamp = int(ahora_ecuador().timestamp())
         nombre_nube = f"perfiles/{cedula}_{timestamp}_{nombre_limpio}"
         s3_client.upload_file(
@@ -3299,10 +3303,12 @@ async def agregar_foto_referencia(
             ExtraArgs={'ACL': 'public-read'}
         )
         url_foto = f"https://{BUCKET_NAME}.s3.us-east-005.backblazeb2.com/{nombre_nube}"
+        print(f"✅ Foto subida a S3: {url_foto}")
 
         # 4. Actualizar la foto en la base de datos
         c.execute("UPDATE Usuarios SET Foto = %s WHERE CI = %s", (url_foto, cedula))
         conn.commit()
+        print(f"✅ Foto actualizada en BD para {cedula}")
 
         # 5. Indexar rostro en AWS Rekognition (solo si es estudiante)
         if rekog and usuario.get('Tipo') == 1:
@@ -3319,7 +3325,7 @@ async def agregar_foto_referencia(
                 print(f"✅ Rostro indexado en AWS para {cedula}")
             except Exception as e_rek:
                 print(f"⚠️ Error indexando rostro en AWS: {e_rek}")
-                # No fallamos la operación, solo advertimos
+                # No detenemos la operación, solo advertimos
 
         # 6. Limpiar y responder
         if temp_dir and os.path.exists(temp_dir):
@@ -3345,6 +3351,8 @@ async def agregar_foto_referencia(
         if temp_dir and os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
         print(f"❌ Error en agregar_foto_referencia: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         if conn:
