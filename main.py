@@ -40,7 +40,6 @@ def verify_password(plain_password, hashed_password):
 ECUADOR_TZ = pytz.timezone('America/Guayaquil')  # UTC-5
 
 def ahora_ecuador():
-    """Devuelve la fecha/hora actual en zona horaria de Ecuador"""
     return datetime.datetime.now(ECUADOR_TZ)
 
 # --- CONFIGURACIÓN DE CORREO ---
@@ -856,7 +855,7 @@ async def registrar_usuario(
         # Encriptar contraseña
         hashed_password = get_password_hash(contrasena.strip())
 
-        fecha_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        fecha_registro = ahora_ecuador()
         
         c.execute("""
             INSERT INTO Usuarios 
@@ -2440,16 +2439,6 @@ async def reset_database():
 # 14. ENDPOINTS CORS Y UTILIDADES
 # =========================================================================
 
-@app.options("/{rest_of_path:path}")
-async def preflight_handler(request: Request, rest_of_path: str):
-    """Manejador de preflight CORS"""
-    response = JSONResponse(content={"message": "Preflight OK"})
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Credentials"] = "true"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-    return response
-
 @app.get("/cors-debug")
 async def cors_debug():
     """Endpoint para debug de CORS"""
@@ -2593,7 +2582,7 @@ async def descargar_evidencias_zip(ids: str = Form(...)):
         zip_buffer.seek(0)
         
         # Nombre del ZIP con fecha
-        fecha_str = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+        fecha_str = ahora_ecuador().strftime("%Y%m%d_%H%M")
         nombre_descarga = f"seleccion_evidencias_{fecha_str}.zip"
         
         return StreamingResponse(
