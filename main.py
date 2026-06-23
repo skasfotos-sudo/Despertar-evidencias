@@ -1344,7 +1344,7 @@ async def subir_evidencia_ia(archivo: UploadFile = File(...)):
             conn.close()
         if temp_dir and os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
-            
+
 @app.post("/subir_manual")
 async def subir_manual(
     cedulas: str = Form(...), 
@@ -3255,6 +3255,102 @@ async def limpiar_notificaciones_resueltas(cedula: str = Form(...)):
         return {"status": "ok", "mensaje": f"Se eliminaron {filas_borradas} notificaciones antiguas."}
     except Exception as e:
         return JSONResponse(status_code=500, content={"status": "error", "mensaje": str(e)})
+    
+@app.post("/agregar_foto_referencia")
+async def agregar_foto_referencia(
+    cedula: str = Form(...),
+    foto: UploadFile = File(...)
+):
+    """
+    Agrega o actualiza la foto de referencia de un usuario.
+    - Sube la foto a Backblaze B2 (S3).
+    - Actualiza la columna 'Foto' en la tabla Usuarios.
+    - Indexa el rostro en AWS Rekognition (si es estudiante).
+    """
+    temp_dir = None
+    conn = None
+    try:
+        # 1. Validar que el usuario existe
+        conn = get_db_connection()
+        c = conn.cursor(cursor_factory=RealDictCursor)
+        c.execute("SELECT CI, Tipo FROM Usuarios WHERE CI = %s", (cedula,))
+        usuario = c.fetchone()
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+        # 2. Guardar archivo temporal con nombre sanitizado
+        import re
+        nombre_limpio = re.sub(r'[^\w\.\-]', '_', foto.filename)
+        temp_dir = tempfile.mkdtemp()
+        path = os.path.join(temp_dir, nombre_limpio)
+        with open(path, "wb") as f:
+            shutil.copyfileobj(foto.file, f)
+
+        # 3. Subir a Backblaze B2 (S3)
+        if not s3_client:
+            raise HTTPException(status_code=500, detail="Almacenamiento en nube no disponible.")
+
+        timestamp = int(ahora_ecuador().timestamp())
+        nombre_nube = f"perfiles/{cedula}_{timestamp}_{nombre_limpio}"
+        s3_client.upload_file(
+            path,
+            BUCKET_NAME,
+            nombre_nube,
+            ExtraArgs={'ACL': 'public-read'}
+        )
+        url_foto = f"https://{BUCKET_NAME}.s3.us-east-005.backblazeb2.com/{nombre_nube}"
+
+        # 4. Actualizar la foto en la base de datos
+        c.execute("UPDATE Usuarios SET Foto = %s WHERE CI = %s", (url_foto, cedula))
+        conn.commit()
+
+        # 5. Indexar rostro en AWS Rekognition (solo si es estudiante)
+        if rekog and usuario.get('Tipo') == 1:
+            try:
+                with open(path, 'rb') as image_file:
+                    image_bytes = image_file.read()
+                rekog.index_faces(
+                    CollectionId=COLLECTION_ID,
+                    Image={'Bytes': image_bytes},
+                    ExternalImageId=cedula,
+                    MaxFaces=1,
+                    QualityFilter='AUTO'
+                )
+                print(f"✅ Rostro indexado en AWS para {cedula}")
+            except Exception as e_rek:
+                print(f"⚠️ Error indexando rostro en AWS: {e_rek}")
+                # No fallamos la operación, solo advertimos
+
+        # 6. Limpiar y responder
+        if temp_dir and os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+
+        registrar_auditoria(
+            "AGREGAR_FOTO_REF",
+            f"Admin actualizó foto de referencia de {cedula}",
+            "Administrador"
+        )
+
+        return JSONResponse({
+            "status": "ok",
+            "mensaje": "Foto de referencia actualizada correctamente.",
+            "url": url_foto
+        })
+
+    except HTTPException as http_exc:
+        if temp_dir and os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+        raise http_exc
+    except Exception as e:
+        if temp_dir and os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+        print(f"❌ Error en agregar_foto_referencia: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if conn:
+            conn.close()
+        if temp_dir and os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
 
 if __name__ == "__main__":
     import uvicorn

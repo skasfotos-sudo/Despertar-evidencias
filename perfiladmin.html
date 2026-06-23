@@ -3951,7 +3951,10 @@ async function agregarReferencia(e) {
     const cedula = document.getElementById('selectUsuarioRef').value;
     const foto = document.getElementById('fotoRef').files[0];
 
-    if(!cedula || !foto) return Swal.fire('Error', 'Completa todos los campos', 'warning');
+    if (!cedula || !foto) {
+        Swal.fire('Error', 'Completa todos los campos', 'warning');
+        return;
+    }
 
     const formData = new FormData();
     formData.append('cedula', cedula);
@@ -3967,10 +3970,12 @@ async function agregarReferencia(e) {
         
         const data = await res.json();
         
-        if(res.ok) {
-            Swal.fire('Éxito', 'Foto de referencia actualizada', 'success');
+        if (res.ok && data.status === 'ok') {
+            Swal.fire('Éxito', data.mensaje, 'success');
             cerrarModal('modalAgregarRef');
             document.getElementById('formAgregarRef').reset();
+            // Recargar la tabla de usuarios para ver la foto actualizada
+            await cargarDatosIniciales(); // o renderizarUsuarios()
         } else {
             throw new Error(data.error || 'Error al subir');
         }
