@@ -307,7 +307,7 @@ def enviar_correo_real(destinatario: str, asunto: str, mensaje: str, html: bool 
     try:
         url = "https://api.resend.com/emails"
         payload = {
-            "from": "onboarding@resend.dev", # Una vez que el colegio verifique el dominio, cámbialo aquí
+            "from": "soporte@uepdespertar-evidencias.work",  # o admin@...
             "to": [destinatario],
             "subject": asunto,
             "html": mensaje if html else f"<p>{mensaje}</p>"
@@ -2025,7 +2025,7 @@ async def solicitar_recuperacion(
         detalle = f"{tipo.replace('_', ' ')}. "
         if mensaje: detalle += f"Mensaje: {mensaje}"
         
-        # 2. Guardar en Base de Datos
+        # 2. Guardar en Base de Datos (sin enviar correos)
         c.execute("""
             INSERT INTO Solicitudes (Tipo, CI_Solicitante, Email, Detalle, Estado, Fecha)
             VALUES (%s, %s, %s, %s, 'PENDIENTE', %s)
@@ -2033,19 +2033,6 @@ async def solicitar_recuperacion(
         
         conn.commit()
 
-        # 3. LÓGICA DE CORREOS (CORREGIDA)
-        # A) Al ADMIN siempre le avisamos que llegó algo
-        asunto_admin = f"🚨 Nuevo mensaje de {tipo}"
-        cuerpo_admin = f"Usuario: {nombre_completo} ({cedula}).\nTipo: {tipo}\nMensaje: {mensaje}"
-        background_tasks.add_task(enviar_correo_real, "karlos.ayala.lopez.1234@gmail.com", asunto_admin, cuerpo_admin)
-        
-        # B) Al ESTUDIANTE solo le enviamos correo si es RECUPERACIÓN (confirmación)
-        # Si es SOPORTE, no le enviamos nada para no saturarlo (es interno)
-        if tipo == 'RECUPERACION_CONTRASENA':
-             asunto_user = "Solicitud Recibida - U.E. Despertar"
-             cuerpo_user = f"Hola {nombre_completo}, hemos recibido tu solicitud de recuperación. Te contactaremos pronto."
-             background_tasks.add_task(enviar_correo_real, email_final, asunto_user, cuerpo_user)
-        
         return JSONResponse({"status": "ok", "mensaje": "Solicitud enviada correctamente."})
     except Exception as e:
         return JSONResponse({"status": "error", "mensaje": str(e)})
