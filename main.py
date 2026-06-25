@@ -1704,47 +1704,50 @@ async def optimizar_sistema(tipo: str = "full"):
         c = conn.cursor(cursor_factory=RealDictCursor)
         mensaje_resultado = []
 
-        # ========== 1. DUPLICADOS ==========
         if tipo in ["duplicados", "full"]:
             print("🧹 [1/4] Buscando duplicados...")
             c.execute("""
-                SELECT Hash, CI_Estudiante, COUNT(*) as cantidad
+                SELECT hash, ci_estudiante, COUNT(*) as cantidad
                 FROM Evidencias
-                WHERE Hash NOT IN ('PENDIENTE', '', 'RECUPERADO')
-                GROUP BY Hash, CI_Estudiante
+                WHERE hash NOT IN ('PENDIENTE', '', 'RECUPERADO')
+                GROUP BY hash, ci_estudiante
                 HAVING COUNT(*) > 1
             """)
             grupos = c.fetchall()
             eliminados = 0
             for g in grupos:
-                hash_val = g['Hash']
-                cedula = g['CI_Estudiante']
+                hash_val = g.get('hash') or g.get('Hash')
+                cedula = g.get('ci_estudiante') or g.get('CI_Estudiante')
+                if not hash_val or not cedula:
+                    continue
                 c.execute("""
                     SELECT id FROM Evidencias
-                    WHERE Hash = %s AND CI_Estudiante = %s
+                    WHERE hash = %s AND ci_estudiante = %s
                     ORDER BY id ASC
                 """, (hash_val, cedula))
                 copias = c.fetchall()
                 for copia in copias[1:]:
-                    c.execute("DELETE FROM Evidencias WHERE id = %s", (copia['id'],))
-                    eliminados += 1
+                    copia_id = copia.get('id') or copia.get('ID')
+                    if copia_id:
+                        c.execute("DELETE FROM Evidencias WHERE id = %s", (copia_id,))
+                        eliminados += 1
             if eliminados:
                 mensaje_resultado.append(f"Se eliminaron {eliminados} duplicados internos.")
             conn.commit()
 
-        # ========== 2. HUÉRFANOS Y LOCALES ==========
         if tipo in ["huerfanos", "full"]:
             print("👻 [2/4] Analizando huérfanos...")
-            c.execute("SELECT id, Url_Archivo FROM Evidencias")
+            c.execute("SELECT id, url_archivo FROM Evidencias")
             todas = c.fetchall()
             elim_huerfanos = 0
             elim_locales = 0
             for ev in todas:
-                url = ev.get('Url_Archivo')
-                if not url:
+                ev_id = ev.get('id') or ev.get('ID')
+                url = ev.get('url_archivo') or ev.get('Url_Archivo') or ''
+                if not ev_id or not url:
                     continue
                 if "/local/" in url:
-                    c.execute("DELETE FROM Evidencias WHERE id = %s", (ev['id'],))
+                    c.execute("DELETE FROM Evidencias WHERE id = %s", (ev_id,))
                     elim_locales += 1
                     continue
                 existe = True
@@ -1757,7 +1760,7 @@ async def optimizar_sistema(tipo: str = "full"):
                         if "404" in str(e) or "Not Found" in str(e):
                             existe = False
                 if not existe:
-                    c.execute("DELETE FROM Evidencias WHERE id = %s", (ev['id'],))
+                    c.execute("DELETE FROM Evidencias WHERE id = %s", (ev_id,))
                     elim_huerfanos += 1
             if elim_locales:
                 mensaje_resultado.append(f"Se eliminaron {elim_locales} archivos locales corruptos.")
@@ -1765,30 +1768,37 @@ async def optimizar_sistema(tipo: str = "full"):
                 mensaje_resultado.append(f"Se eliminaron {elim_huerfanos} archivos huérfanos.")
             conn.commit()
 
-        # ========== 3. PENDIENTES ==========
+                # ========== 3. PENDIENTES ==========
         if tipo in ["full", "pendientes"]:
             print("🧹 [3/4] Eliminando pendientes...")
-            c.execute("SELECT id, Url_Archivo, Hash FROM Evidencias WHERE CI_Estudiante = 'PENDIENTE'")
+            # Usamos nombres en minúsculas para coincidir con RealDictCursor
+            c.execute("SELECT id, url_archivo, hash FROM Evidencias WHERE ci_estudiante = 'PENDIENTE'")
             pendientes = c.fetchall()
             eliminados = 0
             for row in pendientes:
-                ev_id = row['id']
-                url = row['Url_Archivo']
-                file_hash = row['Hash']
-                c.execute("SELECT COUNT(*) as total FROM Evidencias WHERE Hash = %s AND CI_Estudiante != 'PENDIENTE'", (file_hash,))
-                total_restantes = c.fetchone()['total']
-                if total_restantes == 0 and url and "backblazeb2.com" in url and s3_client:
-                    try:
-                        if f"/file/{BUCKET_NAME}/" in url:
-                            key = url.split(f"/file/{BUCKET_NAME}/")[1]
-                            s3_client.delete_object(Bucket=BUCKET_NAME, Key=key)
-                            print(f"🗑️ Archivo pendiente eliminado de S3: {key}")
-                    except Exception as e:
-                        print(f"⚠️ Error eliminando archivo S3: {e}")
+                ev_id = row.get('id') or row.get('ID')
+                url = row.get('url_archivo') or row.get('Url_Archivo') or ''
+                file_hash = row.get('hash') or row.get('Hash') or ''
+                if not ev_id:
+                    continue
+                # Verificar si hay otros estudiantes con el mismo hash
+                if file_hash:
+                    c.execute("SELECT COUNT(*) as total FROM Evidencias WHERE hash = %s AND ci_estudiante != 'PENDIENTE'", (file_hash,))
+                    count_res = c.fetchone()
+                    total_restantes = count_res.get('total') if count_res else 0
+                    if total_restantes == 0 and url and "backblazeb2.com" in url and s3_client:
+                        try:
+                            if f"/file/{BUCKET_NAME}/" in url:
+                                key = url.split(f"/file/{BUCKET_NAME}/")[1]
+                                s3_client.delete_object(Bucket=BUCKET_NAME, Key=key)
+                                print(f"🗑️ Archivo pendiente eliminado de S3: {key}")
+                        except Exception as e:
+                            print(f"⚠️ Error eliminando archivo S3: {e}")
                 c.execute("DELETE FROM Evidencias WHERE id = %s", (ev_id,))
                 eliminados += 1
             if eliminados:
-                c.execute("DELETE FROM Solicitudes WHERE Id_Evidencia IN (SELECT id FROM Evidencias WHERE CI_Estudiante = 'PENDIENTE')")
+                # Eliminar solicitudes que referencien a estas evidencias (ahora huérfanas)
+                c.execute("DELETE FROM Solicitudes WHERE Id_Evidencia IN (SELECT id FROM Evidencias WHERE ci_estudiante = 'PENDIENTE')")
                 mensaje_resultado.append(f"Se eliminaron {eliminados} evidencias pendientes y sus archivos S3 (si no estaban en uso).")
             else:
                 mensaje_resultado.append("No se encontraron evidencias pendientes.")
