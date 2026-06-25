@@ -1691,10 +1691,11 @@ import os
 @app.post("/optimizar_sistema")
 async def optimizar_sistema(tipo: str = "full"):
     """
-    V7.0 (CORREGIDA) - Mantenimiento Inteligente: 
-    - Borra duplicados internos.
+    V8.0 - Mantenimiento Inteligente:
+    - Borra duplicados internos (por estudiante).
     - ELIMINA ARCHIVOS 'LOCAL' (Rutas rotas/basura).
     - Limpia huérfanos de la nube.
+    - ELIMINA EVIDENCIAS PENDIENTES (CI_Estudiante='PENDIENTE') y sus archivos S3.
     """
     try:
         conn = get_db_connection()
@@ -1729,7 +1730,6 @@ async def optimizar_sistema(tipo: str = "full"):
                 """, (hash_val, cedula))
                 copias = c.fetchall()
                 
-                # Dejamos el primero, borramos el resto
                 for copia in copias[1:]:
                     c.execute("DELETE FROM Evidencias WHERE id = %s", (copia.get('id'),))
                     elim_dups += 1
@@ -1754,34 +1754,22 @@ async def optimizar_sistema(tipo: str = "full"):
                 if not url: 
                     continue 
 
-                # --- NUEVA LÓGICA: BORRAR RUTAS LOCALES ROTAS ---
                 if "/local/" in url:
-                    # En producción (Railway), una ruta /local/ es inaccesible y es basura de un intento fallido.
-                    # La borramos directamente.
                     print(f"🗑️ Borrando ruta local rota: {url}")
                     c.execute("DELETE FROM Evidencias WHERE id = %s", (ev_id,))
                     elim_locales += 1
-                    continue # Saltamos al siguiente
+                    continue
 
-                # --- LÓGICA NUBE (S3) ---
                 existe = True
                 if "backblazeb2.com" in url and s3_client:
                     try:
-                        # Intentamos limpiar la URL para obtener la KEY
-                        # Ejemplo: https://.../file/bucket/carpeta/foto.jpg -> carpeta/foto.jpg
                         if f"/file/{BUCKET_NAME}/" in url:
                             key = url.split(f"/file/{BUCKET_NAME}/")[1]
                             s3_client.head_object(Bucket=BUCKET_NAME, Key=key)
-                        else:
-                            # Si la URL no tiene el formato esperado, asumimos que está bien para no borrar por error
-                            pass
                     except Exception as e:
                         error_str = str(e)
-                        # SOLO BORRAMOS SI ES 404 CONFIRMADO
                         if "404" in error_str or "Not Found" in error_str:
                             existe = False
-                        else:
-                            existe = True # Error de conexión, no borrar
                 
                 if not existe:
                     c.execute("DELETE FROM Evidencias WHERE id = %s", (ev_id,))
@@ -1793,16 +1781,52 @@ async def optimizar_sistema(tipo: str = "full"):
                 mensaje_resultado.append(f"Se eliminaron {elim_huerfanos} archivos fantasma (nube).")
 
         # ==========================================
-        # 3. AUTO-REASIGNACIÓN
+        # 3. LIMPIAR EVIDENCIAS PENDIENTES (NUEVO)
         # ==========================================
-        if tipo == "full":
-            # (Tu lógica de reasignación se mantiene igual, simplificada aquí para ahorrar espacio visual)
-            pass 
+        if tipo == "full" or tipo == "pendientes":
+            print("🧹 [3/4] Eliminando evidencias pendientes (no asignadas)...")
+            # Obtener todos los pendientes
+            c.execute("SELECT id, Url_Archivo, Hash FROM Evidencias WHERE CI_Estudiante = 'PENDIENTE'")
+            pendientes = c.fetchall()
+            
+            eliminados = 0
+            for row in pendientes:
+                ev_id = row['id']
+                url = row['Url_Archivo']
+                file_hash = row['Hash']
+                
+                # Verificar si este hash está siendo usado por algún estudiante real
+                c.execute("SELECT COUNT(*) as total FROM Evidencias WHERE Hash = %s AND CI_Estudiante != 'PENDIENTE'", (file_hash,))
+                count_res = c.fetchone()
+                total_restantes = count_res['total'] if count_res else 0
+                
+                # Si no hay otros usuarios con ese hash, borrar el archivo de S3
+                if total_restantes == 0 and url and "backblazeb2.com" in url and s3_client:
+                    try:
+                        if f"/file/{BUCKET_NAME}/" in url:
+                            key = url.split(f"/file/{BUCKET_NAME}/")[1]
+                            s3_client.delete_object(Bucket=BUCKET_NAME, Key=key)
+                            print(f"🗑️ Archivo pendiente eliminado de S3: {key}")
+                    except Exception as e:
+                        print(f"⚠️ Error eliminando archivo S3: {e}")
+                
+                # Eliminar el registro de la base de datos
+                c.execute("DELETE FROM Evidencias WHERE id = %s", (ev_id,))
+                eliminados += 1
+            
+            # También eliminar solicitudes que referencien a estas evidencias (si existen)
+            c.execute("DELETE FROM Solicitudes WHERE Id_Evidencia IN (SELECT id FROM Evidencias WHERE CI_Estudiante = 'PENDIENTE')")
+            
+            if eliminados > 0:
+                mensaje_resultado.append(f"Se eliminaron {eliminados} evidencias pendientes y sus archivos S3 (si no estaban en uso).")
+            else:
+                mensaje_resultado.append("No se encontraron evidencias pendientes.")
 
         # ==========================================
-        # 4. LIMPIAR CACHÉ DB
+        # 4. LIMPIAR CACHÉ DB (VACUUM)
         # ==========================================
         if tipo == "cache" or tipo == "full":
+            print("🧹 [4/4] Compactando base de datos...")
             conn.commit()
             conn.autocommit = True
             with conn.cursor() as c_vac:
@@ -1811,6 +1835,7 @@ async def optimizar_sistema(tipo: str = "full"):
             if tipo == "cache":
                 mensaje_resultado.append("Base de datos compactada.")
 
+        conn.commit()
         conn.close()
         
         texto_final = " ".join(mensaje_resultado) if mensaje_resultado else "Sistema optimizado. Todo limpio."
