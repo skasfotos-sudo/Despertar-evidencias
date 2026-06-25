@@ -1691,7 +1691,7 @@ import os
 @app.post("/optimizar_sistema")
 async def optimizar_sistema(tipo: str = "full"):
     """
-    V8.2 - Mantenimiento con manejo de errores y logs detallados.
+    V8.3 - Mantenimiento con manejo de errores y VACUUM en conexión independiente.
     """
     conn = None
     try:
@@ -1775,7 +1775,6 @@ async def optimizar_sistema(tipo: str = "full"):
                 ev_id = row['id']
                 url = row['Url_Archivo']
                 file_hash = row['Hash']
-                # Verificar si hay otros estudiantes con el mismo hash
                 c.execute("SELECT COUNT(*) as total FROM Evidencias WHERE Hash = %s AND CI_Estudiante != 'PENDIENTE'", (file_hash,))
                 total_restantes = c.fetchone()['total']
                 if total_restantes == 0 and url and "backblazeb2.com" in url and s3_client:
@@ -1789,27 +1788,28 @@ async def optimizar_sistema(tipo: str = "full"):
                 c.execute("DELETE FROM Evidencias WHERE id = %s", (ev_id,))
                 eliminados += 1
             if eliminados:
-                # Eliminar solicitudes huérfanas
                 c.execute("DELETE FROM Solicitudes WHERE Id_Evidencia IN (SELECT id FROM Evidencias WHERE CI_Estudiante = 'PENDIENTE')")
                 mensaje_resultado.append(f"Se eliminaron {eliminados} evidencias pendientes y sus archivos S3 (si no estaban en uso).")
             else:
                 mensaje_resultado.append("No se encontraron evidencias pendientes.")
             conn.commit()
 
-        # ========== 4. VACUUM ==========
+        # ========== 4. VACUUM (Conexión independiente) ==========
         if tipo in ["cache", "full"]:
             print("🧹 [4/4] Compactando base de datos...")
-            conn.close()  # Cerramos la conexión actual para evitar conflictos con autocommit
-            conn = get_db_connection()
-            conn.autocommit = True
-            with conn.cursor() as c_vac:
-                c_vac.execute("VACUUM")
-                c_vac.execute("ANALYZE")
-            conn.close()
-            mensaje_resultado.append("Base de datos compactada.")
-            # Reabrimos conexión para seguir usando el cursor (opcional)
-            conn = get_db_connection()
-            c = conn.cursor(cursor_factory=RealDictCursor)
+            try:
+                vac_conn = get_db_connection()
+                if vac_conn:
+                    vac_conn.autocommit = True
+                    with vac_conn.cursor() as c_vac:
+                        c_vac.execute("VACUUM")
+                        c_vac.execute("ANALYZE")
+                    vac_conn.close()
+                    mensaje_resultado.append("Base de datos compactada correctamente.")
+                else:
+                    mensaje_resultado.append("Advertencia: No se pudo conectar para VACUUM.")
+            except Exception as e_vac:
+                mensaje_resultado.append(f"Advertencia: VACUUM falló ({str(e_vac)}).")
 
         texto_final = " ".join(mensaje_resultado) if mensaje_resultado else "Sistema optimizado. Todo limpio."
         return JSONResponse({"status": "ok", "mensaje": texto_final})
@@ -1823,7 +1823,6 @@ async def optimizar_sistema(tipo: str = "full"):
                 conn.rollback()
             except:
                 pass
-        # Devolvemos el error completo para depuración
         return JSONResponse(
             status_code=500,
             content={
