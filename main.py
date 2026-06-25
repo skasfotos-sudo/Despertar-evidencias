@@ -1857,50 +1857,61 @@ def estadisticas_almacenamiento():
     conn = None
     try:
         conn = get_db_connection()
+        if conn is None:
+            return JSONResponse(
+                status_code=500,
+                content={"error": "No se pudo conectar a la base de datos"}
+            )
         c = conn.cursor(cursor_factory=RealDictCursor)
-        
-        # 1. Contar Usuarios (Ignorando al admin tipo 0)
-        c.execute("SELECT COUNT(*) FROM Usuarios WHERE Tipo != 0")
-        usuarios_activos = c.fetchone()['count']
-        
-        # 2. Contar Evidencias Totales
-        c.execute("SELECT COUNT(*) FROM Evidencias")
-        total_evidencias = c.fetchone()['count']
-        
-        # 3. 🔥 SOLICITUDES PENDIENTES (CORREGIDO)
-        # Usamos UPPER() para que 'Pendiente', 'pendiente' y 'PENDIENTE' cuenten igual.
-        c.execute("SELECT COUNT(*) FROM Solicitudes WHERE UPPER(Estado) = 'PENDIENTE'")
-        solicitudes_pendientes = c.fetchone()['count']
 
-        # 4. 🔥 ALMACENAMIENTO (CORREGIDO - USANDO BASE DE DATOS)
-        # Sumamos la columna Tamanio_KB. Si es null, devuelve 0.
+        # 1. Usuarios activos (excluyendo admin)
+        c.execute("SELECT COUNT(*) as total FROM Usuarios WHERE Tipo != 0")
+        result = c.fetchone()
+        usuarios_activos = result['total'] if result else 0
+
+        # 2. Evidencias totales
+        c.execute("SELECT COUNT(*) as total FROM Evidencias")
+        result = c.fetchone()
+        total_evidencias = result['total'] if result else 0
+
+        # 3. Solicitudes pendientes (case-insensitive)
+        c.execute("SELECT COUNT(*) as total FROM Solicitudes WHERE UPPER(Estado) = 'PENDIENTE'")
+        result = c.fetchone()
+        solicitudes_pendientes = result['total'] if result else 0
+
+        # 4. Almacenamiento (manejo de NULL)
         c.execute("SELECT COALESCE(SUM(Tamanio_KB), 0) as total_kb FROM Evidencias")
-        total_kb = c.fetchone()['total_kb']
-        
-        # Convertimos KB a GB (1 GB = 1024*1024 KB)
-        gb_usados = float(total_kb) / (1024 * 1024)
-        
-        # 5. Costos Estimados
+        result = c.fetchone()
+        total_kb = float(result['total_kb']) if result and result['total_kb'] is not None else 0.0
+        gb_usados = total_kb / (1024 * 1024)
+
+        # Costos estimados
         costo_storage = gb_usados * 0.023
         costo_ia = total_evidencias * 0.001
-        
+
         return JSONResponse({
             "usuarios_activos": usuarios_activos,
             "total_evidencias": total_evidencias,
-            "solicitudes_pendientes": solicitudes_pendientes, # Dato exacto
-            "almacenamiento_gb": gb_usados,                   # Dato exacto
+            "solicitudes_pendientes": solicitudes_pendientes,
+            "almacenamiento_gb": round(gb_usados, 4),
             "costo_estimado_usd": {
-                "storage": costo_storage,
-                "rekognition": costo_ia,
-                "total": costo_storage + costo_ia
+                "storage": round(costo_storage, 4),
+                "rekognition": round(costo_ia, 4),
+                "total": round(costo_storage + costo_ia, 4)
             }
         })
-        
+
     except Exception as e:
-        print(f"Error estadisticas: {e}")
-        return JSONResponse({"error": str(e)}, status_code=500)
+        import traceback
+        error_detalle = traceback.format_exc()
+        print(f"❌ Error en estadisticas_almacenamiento: {error_detalle}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e), "detalle": error_detalle}
+        )
     finally:
-        if conn: conn.close()
+        if conn:
+            conn.close()
 
 @app.get("/datos_graficos_dashboard")
 async def datos_graficos_dashboard():
@@ -2233,73 +2244,69 @@ async def gestionar_solicitud(
 ):
     conn = None
     try:
+        print(f"📥 Gestionando solicitud {id_solicitud} - Acción: {accion}")
         conn = get_db_connection()
+        if not conn:
+            return JSONResponse({"status": "error", "mensaje": "Error de conexión a BD"}, status_code=500)
         c = conn.cursor(cursor_factory=RealDictCursor)
 
         # 1. Obtener datos de la solicitud
         c.execute("SELECT * FROM Solicitudes WHERE ID = %s", (id_solicitud,))
         sol = c.fetchone()
-
         if not sol:
             return JSONResponse({"status": "error", "mensaje": "Solicitud no encontrada"})
 
-        # Recuperar datos clave
         tipo = sol.get('tipo') or sol.get('Tipo')
         id_evidencia = sol.get('id_evidencia') or sol.get('Id_Evidencia')
         email_usuario = sol.get('email') or sol.get('Email')
 
         # ---------------------------------------------------------
-        # 2. LÓGICA DE GESTIÓN (BORRADO INTELIGENTE)
+        # 2. LÓGICA DE GESTIÓN
         # ---------------------------------------------------------
 
-        # --- CASO A: REPORTE "NO SOY YO" ---
         if tipo == 'REPORTE_EVIDENCIA':
-            if accion == 'APROBADA':
-                if id_evidencia:
-                    c.execute("SELECT Url_Archivo, Hash FROM Evidencias WHERE id = %s", (id_evidencia,))
-                    ev_data = c.fetchone()
-                    if ev_data:
-                        # Desvincular
-                        c.execute("DELETE FROM Evidencias WHERE id = %s", (id_evidencia,))
-                        print(f"✅ Evidencia {id_evidencia} eliminada del perfil del usuario.")
-                        
-                        file_hash = ev_data.get('Hash') or ev_data.get('hash')
-                        url = ev_data.get('Url_Archivo') or ev_data.get('url_archivo')
-                        
-                        c.execute("SELECT COUNT(*) as total FROM Evidencias WHERE Hash = %s", (file_hash,))
-                        count_res = c.fetchone()
-                        total_restantes = count_res['total'] if count_res else 0
-                        
-                        if total_restantes == 0 and url and s3_client and BUCKET_NAME and "backblazeb2.com" in url:
-                            try:
-                                if f"/file/{BUCKET_NAME}/" in url:
-                                    file_key = url.split(f"/file/{BUCKET_NAME}/")[1]
-                                    s3_client.delete_object(Bucket=BUCKET_NAME, Key=file_key)
-                                    print(f"🗑️ Archivo físico eliminado de la nube: {file_key}")
-                            except Exception as e:
-                                print(f"⚠️ Error borrando de S3: {e}")
-            # Si es RECHAZADA, no hacemos nada
-
-        # --- CASO B: SUBIR EVIDENCIA ---
-        elif tipo == 'SUBIR_EVIDENCIA':
-            if accion == 'APROBADA':
-                if id_evidencia:
-                    c.execute("UPDATE Evidencias SET Estado = 1 WHERE id = %s", (id_evidencia,))
-            else:  # RECHAZADA
-                if id_evidencia:
-                    c.execute("SELECT Url_Archivo FROM Evidencias WHERE id = %s", (id_evidencia,))
-                    ev_data = c.fetchone()
-                    if ev_data:
-                        url = ev_data.get('Url_Archivo')
-                        if url and s3_client and BUCKET_NAME and f"/file/{BUCKET_NAME}/" in url:
-                            try:
-                                key = url.split(f"/file/{BUCKET_NAME}/")[1]
-                                s3_client.delete_object(Bucket=BUCKET_NAME, Key=key)
-                            except:
-                                pass
+            if accion == 'APROBADA' and id_evidencia:
+                c.execute("SELECT Url_Archivo, Hash FROM Evidencias WHERE id = %s", (id_evidencia,))
+                ev_data = c.fetchone()
+                if ev_data:
+                    # Eliminar el registro de la evidencia
                     c.execute("DELETE FROM Evidencias WHERE id = %s", (id_evidencia,))
+                    print(f"✅ Evidencia {id_evidencia} eliminada del perfil del usuario.")
+                    
+                    file_hash = ev_data.get('Hash') or ev_data.get('hash')
+                    url = ev_data.get('Url_Archivo') or ev_data.get('url_archivo')
+                    
+                    # Contar si otros estudiantes usan el mismo hash
+                    c.execute("SELECT COUNT(*) as total FROM Evidencias WHERE Hash = %s", (file_hash,))
+                    count_res = c.fetchone()
+                    total_restantes = count_res['total'] if count_res else 0
+                    
+                    # Si ya nadie usa el archivo, borrarlo de S3
+                    if total_restantes == 0 and url and s3_client and BUCKET_NAME and "backblazeb2.com" in url:
+                        try:
+                            if f"/file/{BUCKET_NAME}/" in url:
+                                file_key = url.split(f"/file/{BUCKET_NAME}/")[1]
+                                s3_client.delete_object(Bucket=BUCKET_NAME, Key=file_key)
+                                print(f"🗑️ Archivo físico eliminado de la nube: {file_key}")
+                        except Exception as e:
+                            print(f"⚠️ Error borrando de S3: {e}")
 
-        # --- CASO C: RECUPERACIÓN DE CONTRASEÑA ---
+        elif tipo == 'SUBIR_EVIDENCIA':
+            if accion == 'APROBADA' and id_evidencia:
+                c.execute("UPDATE Evidencias SET Estado = 1 WHERE id = %s", (id_evidencia,))
+            elif accion == 'RECHAZADA' and id_evidencia:
+                c.execute("SELECT Url_Archivo FROM Evidencias WHERE id = %s", (id_evidencia,))
+                ev_data = c.fetchone()
+                if ev_data:
+                    url = ev_data.get('Url_Archivo')
+                    if url and s3_client and BUCKET_NAME and f"/file/{BUCKET_NAME}/" in url:
+                        try:
+                            key = url.split(f"/file/{BUCKET_NAME}/")[1]
+                            s3_client.delete_object(Bucket=BUCKET_NAME, Key=key)
+                        except:
+                            pass
+                c.execute("DELETE FROM Evidencias WHERE id = %s", (id_evidencia,))
+
         elif tipo == 'RECUPERACION_CONTRASENA':
             if accion == 'APROBADA':
                 asunto = "🔐 Recuperación de Acceso - U.E. Despertar"
@@ -2312,10 +2319,11 @@ async def gestionar_solicitud(
                 <p>Intenta ingresar nuevamente.</p>
                 """
                 if email_usuario and '@' in email_usuario:
+                    print(f"📧 Enviando correo a {email_usuario} con la clave: {mensaje}")
                     background_tasks.add_task(enviar_correo_real, email_usuario, asunto, cuerpo)
 
         # ---------------------------------------------------------
-        # 3. ACTUALIZAR HISTORIAL DE LA SOLICITUD (SIEMPRE)
+        # 3. ACTUALIZAR ESTADO DE LA SOLICITUD (SIEMPRE)
         # ---------------------------------------------------------
         c.execute("""
             UPDATE Solicitudes 
@@ -2331,13 +2339,19 @@ async def gestionar_solicitud(
         )
 
         conn.commit()
+        print(f"✅ Solicitud {id_solicitud} procesada correctamente.")
         return JSONResponse({"status": "ok", "mensaje": "Acción ejecutada correctamente."})
 
     except Exception as e:
+        import traceback
+        error_detalle = traceback.format_exc()
+        print(f"❌ Error en gestionar_solicitud: {error_detalle}")
         if conn:
             conn.rollback()
-        print(f"Error gestionando solicitud: {e}")
-        return JSONResponse({"status": "error", "mensaje": str(e)})
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "mensaje": str(e), "detalle": error_detalle}
+        )
     finally:
         if conn:
             conn.close()

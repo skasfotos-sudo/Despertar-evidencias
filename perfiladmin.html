@@ -2559,7 +2559,7 @@ async function enviarGestion(id, accion) {
         formData.append('mensaje', mensaje);
         // Recupera el nombre real guardado al iniciar sesión, o usa 'Administrador' si no hay nada
         const nombreAdmin = localStorage.getItem('usuario_nombre') || 'Administrador';
-        formData.append('id_admin', nombreAdmin);
+formData.append('id_admin', nombreAdmin);  // <--- CORREGIDO
 
         const respuesta = await fetch(`${API_URL}/gestionar_solicitud`, {
             method: 'POST',
