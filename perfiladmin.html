@@ -773,7 +773,7 @@ body.dark-mode .swal2-textarea {
 }
 
 /* ==========================================================================
-   TABLA DE USUARIOS EN MÓVIL - VERSIÓN CORREGIDA
+   TABLA DE USUARIOS - VERSIÓN MÓVIL OPTIMIZADA (DESDE CERO)
    ========================================================================== */
 @media (max-width: 992px) {
     /* Contenedor con scroll horizontal */
@@ -782,122 +782,119 @@ body.dark-mode .swal2-textarea {
         -webkit-overflow-scrolling: touch;
     }
 
-    /* Forzar a la tabla a comportarse como tabla */
-    .table-responsive .modern-table,
-    .table-responsive .modern-table tbody,
-    .table-responsive .modern-table tr,
-    .table-responsive .modern-table td {
-        display: table !important;
-        width: auto !important;
-    }
-
+    /* La tabla mantiene su estructura */
     .table-responsive .modern-table {
-    width: 100% !important;
-    min-width: 0;
-    white-space: nowrap;
-    border-collapse: collapse;
-    table-layout: fixed !important; /* <-- CLAVE: fija los anchos */
-}
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed; /* Fija los anchos de columna */
+    }
 
+    /* Cabecera fija con fondo morado */
     .table-responsive .modern-table thead {
-        display: table-header-group !important;
+        display: table-header-group;
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background: #6A0DAD; /* Color fijo para evitar problemas */
     }
 
-    .table-responsive .modern-table tr {
-        display: table-row !important;
-        margin-bottom: 0;
-        border-radius: 0;
-        box-shadow: none;
-        border: none;
-        border-bottom: 1px solid var(--border-color);
-        background: transparent;
+    .table-responsive .modern-table thead tr {
+        background: #6A0DAD;
     }
 
-    .table-responsive .modern-table td {
-        display: table-cell !important;
-        padding: 8px 10px !important;
-        text-align: left !important;
-        border-bottom: none !important;
-        background: transparent !important;
-        flex-direction: row !important;
+    .table-responsive .modern-table thead th {
+        background: #6A0DAD;
+        color: #fff;
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        padding: 14px 18px;
+        text-align: left;
+        font-weight: 700;
         font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #4a0072;
+        white-space: nowrap;
+    }
+
+    /* Celdas de datos */
+    .table-responsive .modern-table tbody td {
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border-color);
+        background-color: var(--bg-card);
+        font-size: 0.85rem;
         vertical-align: middle;
         overflow: hidden;
-        text-overflow: ellipsis; /* Trunca texto muy largo */
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    /* OCULTAR etiquetas de las tarjetas */
+    /* Eliminar cualquier pseudo-elemento que pueda aparecer (como etiquetas) */
     .table-responsive .modern-table td::before {
         content: none !important;
+        display: none !important;
     }
 
-    .table-responsive .modern-table td:last-child {
-        background: transparent !important;
-        flex-direction: row !important;
-        padding: 8px 10px !important;
-    }
-
-    /* Botones de acción compactos */
-    .table-responsive .action-btn {
-        display: inline-flex !important;
-        width: 28px !important;
-        height: 28px !important;
-        margin-right: 4px;
-        padding: 0 !important;
-        border-radius: 6px;
-        font-size: 0.75rem;
-    }
-
-    .table-responsive .action-btn::after {
-        content: none !important;
-    }
-
-    .table-responsive .modern-table td img {
-        width: 28px;
-        height: 28px;
-        margin-right: 6px;
-    }
-
-    .table-responsive .badge-user,
-    .table-responsive .request-badge {
-        font-size: 0.7rem;
-        padding: 2px 8px;
-    }
-
-    .table-responsive .modern-table td div {
-        font-size: 0.8rem;
-    }
-
-    /* --- DEFINICIÓN DE ANCHOS POR COLUMNA --- */
+    /* --- Distribución de columnas (ajusta los min-width según necesites) --- */
     .table-responsive .modern-table th:nth-child(1),
     .table-responsive .modern-table td:nth-child(1) {
-        width: 32%;
-        min-width: 140px;
-    } /* Usuario */
-
+        width: 28%;
+        min-width: 150px; /* Usuario */
+    }
     .table-responsive .modern-table th:nth-child(2),
     .table-responsive .modern-table td:nth-child(2) {
         width: 18%;
-        min-width: 90px;
-    } /* Cédula */
-
+        min-width: 100px; /* Cédula */
+    }
     .table-responsive .modern-table th:nth-child(3),
     .table-responsive .modern-table td:nth-child(3) {
         width: 15%;
-        min-width: 80px;
-    } /* Rol */
-
+        min-width: 90px; /* Rol */
+    }
     .table-responsive .modern-table th:nth-child(4),
     .table-responsive .modern-table td:nth-child(4) {
         width: 15%;
-        min-width: 75px;
-    } /* Estado */
-
+        min-width: 85px; /* Estado */
+    }
     .table-responsive .modern-table th:nth-child(5),
     .table-responsive .modern-table td:nth-child(5) {
-        width: 20%;
-        min-width: 120px;
-    } /* Acciones */
+        width: 24%;
+        min-width: 140px; /* Acciones */
+    }
+
+    /* --- Botones de acción (más compactos y con iconos) --- */
+    .table-responsive .action-btn {
+        width: 34px !important;
+        height: 34px !important;
+        padding: 0 !important;
+        font-size: 0.8rem;
+        margin-right: 6px;
+        border-radius: 6px;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+    }
+    .table-responsive .action-btn::after {
+        content: none !important; /* Oculta cualquier texto extra */
+    }
+
+    /* --- Imagen de perfil --- */
+    .table-responsive .modern-table td img {
+        width: 32px;
+        height: 32px;
+        margin-right: 10px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--border-color);
+        vertical-align: middle;
+    }
+
+    /* --- Badges de estado más pequeños --- */
+    .table-responsive .request-badge {
+        font-size: 0.7rem;
+        padding: 3px 10px;
+    }
 }
     </style>
 </head>
