@@ -402,7 +402,7 @@
             overflow: hidden; aspect-ratio: 1; position: relative;
             cursor: pointer; box-shadow: var(--shadow-soft);
             border: 2px solid transparent;
-            transition: transform 0.3s, box-shadow 0.3s;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
         .evidence-card:hover { transform: translateY(-8px); box-shadow: var(--shadow-hover); z-index: 2; }
         
@@ -421,7 +421,12 @@
             border-radius: 50%; color: var(--primary); display: none; 
             align-items: center; justify-content: center; z-index: 10; font-size: 1rem;
         }
-        .evidence-card.selected { border-color: var(--primary); transform: scale(0.95); background: var(--primary-soft); }
+        .evidence-card.selected {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+     transform: scale(1); /* Mantiene el tamaño original */
+    box-shadow: 0 0 0 3px var(--primary);
+}
         .evidence-card.selected .selection-check { display: flex; background: var(--primary); color: white; border-color: var(--primary); }
         .selection-mode-active .selection-check { display: flex; }
 
@@ -484,13 +489,65 @@
 
         /* Barra flotante para selección múltiple - MEJORADA */
         .floating-bar {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(150px);
-            background: #222; color: white; padding: 15px 30px; border-radius: 50px;
-            display: flex; align-items: center; gap: 25px;
-            box-shadow: 0 15px 50px rgba(0,0,0,0.6); z-index: 4000;
-            width: 90%; max-width: 650px; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .floating-bar.active { transform: translateX(-50%) translateY(0); }
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translate(-50%, 150%);
+    background: #222;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;      /* Permite que los botones bajen si no caben */
+    gap: 12px;            /* Espaciado más ajustado */
+    box-shadow: 0 15px 50px rgba(0,0,0,0.6);
+    z-index: 9999 !important;
+    width: 90%;
+    max-width: 650px;
+    transition: transform 0.4s var(--transition-bounce);
+    overflow: hidden;     /* Evita que contenido interno se salga */
+}
+
+.floating-bar.active {
+    transform: translate(-50%, 0);
+}
+
+/* Evita que los botones se encojan demasiado */
+.floating-bar .btn-float {
+    flex-shrink: 0;
+}
+
+/* Versión Móvil (sigue igual, pero más limpia) */
+@media (max-width: 768px) {
+    .floating-bar {
+        flex-direction: column;   /* Apila verticalmente */
+        width: 100%;
+        border-radius: 20px 20px 0 0;
+        padding: 20px;
+        gap: 12px;
+        bottom: 0;
+        left: 0;
+        transform: translateY(100%);
+        max-width: 100%;
+    }
+    .floating-bar.active {
+        transform: translateY(0);
+    }
+    .floating-bar div {
+        text-align: center;
+        width: 100%;
+        margin-bottom: 5px;
+    }
+    .btn-float {
+        width: 100%;
+        justify-content: center;
+    }
+    .btn-float-cancel {
+        margin-left: 0;  /* Quita margen extra en móvil */
+    }
+}
 
         .btn-float {
             background: var(--primary); color: white; border: none;
@@ -809,6 +866,10 @@ body.dark-mode .swal2-textarea {
         color: #444;
         margin-right: 20px;
     }
+}
+.lb-actions-panel .btn-lb-action {
+    background: white !important;
+    color: var(--primary) !important;
 }
     </style>
 </head>
@@ -1333,10 +1394,6 @@ body.dark-mode .swal2-textarea {
             <strong style="font-size:1.2rem;"><span id="countSelection" style="color:var(--secondary);">0</span> archivos</strong>
         </div>
         <button class="btn-float" onclick="descargarSeleccionadas()"><i class="fas fa-download"></i> Descargar</button>
-        
-        <button class="btn-float" onclick="abrirModalReasignar()" style="background:var(--info);">
-            <i class="fas fa-exchange-alt"></i> Reasignar
-        </button>
         <button class="btn-float danger" onclick="eliminarSeleccionadas()"><i class="fas fa-trash"></i> Eliminar</button>
         <button class="btn-float-cancel" onclick="cancelarSeleccion()" title="Cancelar">&times;</button>
     </div>
@@ -1384,9 +1441,9 @@ body.dark-mode .swal2-textarea {
         <div class="lb-content-wrapper" id="lightboxContent"></div>
         <div class="lb-actions-panel">
             <a id="lbDownloadLink" href="#" target="_blank" download class="btn-lb-action" 
-                style="background:var(--text-inverse); color:var(--bg-body);">
-                <i class="fas fa-download"></i> Descargar
-            </a>
+    style="background: white; color: var(--primary);">
+    <i class="fas fa-download"></i> Descargar
+</a>
             <button class="btn-lb-action btn-lb-delete" onclick="eliminarEvidenciaActual()">
                 <i class="fas fa-trash"></i> Eliminar Evidencia
             </button>
