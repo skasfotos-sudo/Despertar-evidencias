@@ -15,7 +15,6 @@ import io
 import difflib
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import Optional, List
@@ -100,6 +99,31 @@ except Exception as e:
 
 # Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+
+def enviar_correo_real(destinatario: str, asunto: str, mensaje: str, html: bool = False) -> bool:
+    import requests
+    API_KEY = "re_8yGaLtUa_L4VewBKb1miDQcLAUe6jzQq6" 
+    try:
+        url = "https://api.resend.com/emails"
+        payload = {
+            "from": "onboarding@resend.dev",  # <--- CAMBIO TEMPORAL
+            "to": [destinatario],
+            "subject": asunto,
+            "html": mensaje if html else f"<p>{mensaje}</p>"
+        }
+        headers = {
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json"
+        }
+        response = requests.post(url, json=payload, headers=headers)
+        if response.status_code not in [200, 201]:
+            logging.error(f"❌ Resend error: {response.status_code} - {response.text}")
+        else:
+            logging.info(f"✅ Correo enviado a {destinatario}")
+        return response.status_code in [200, 201]
+    except Exception as e:
+        logging.error(f"❌ Excepción en correo: {e}")
+        return False
 
 # --- LÓGICA DE VOLUMEN PERSISTENTE ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -298,29 +322,6 @@ def registrar_auditoria(accion: str, detalle: str, usuario: str = "Sistema", ip:
         print(f"❌ Error en auditoria: {e}")
     finally:
         if conn: conn.close()
-
-def enviar_correo_real(destinatario: str, asunto: str, mensaje: str, html: bool = False) -> bool:
-    import requests
-    # Clave API oficial de Resend
-    API_KEY = "re_8yGaLtUa_L4VewBKb1miDQcLAUe6jzQq6" 
-    
-    try:
-        url = "https://api.resend.com/emails"
-        payload = {
-            "from": "soporte@uepdespertar-evidencias.work",  # o admin@...
-            "to": [destinatario],
-            "subject": asunto,
-            "html": mensaje if html else f"<p>{mensaje}</p>"
-        }
-        headers = {
-            "Authorization": f"Bearer {API_KEY}",
-            "Content-Type": "application/json"
-        }
-        response = requests.post(url, json=payload, headers=headers)
-        return response.status_code in [200, 201]
-    except Exception as e:
-        print(f"❌ Error de correo: {e}")
-        return False
     
 def calcular_hash(ruta: str) -> str:
     """Calcula hash SHA256 de un archivo"""
@@ -336,22 +337,6 @@ def obtener_tamanio_archivo_kb(ruta: str) -> float:
         return os.path.getsize(ruta) / 1024
     except:
         return 0
-
-def optimizar_sistema_db():
-    """Ejecuta mantenimiento VACUUM en Supabase"""
-    try:
-        conn = get_db_connection()
-        # En Postgres, VACUUM no puede ejecutarse dentro de una transacción normal
-        conn.autocommit = True 
-        with conn.cursor() as c:
-            c.execute("VACUUM")
-            c.execute("ANALYZE")
-        conn.close()
-        print("✅ Sistema optimizado (VACUUM ejecutado en Supabase)")
-        return True
-    except Exception as e:
-        print(f"⚠️ Alerta menor: No se pudo optimizar DB: {e}")
-        return False
 
 # --- REEMPLAZA TU FUNCIÓN 'identificar_rostro_aws' POR ESTA ---
 def preparar_imagen_aws(ruta_imagen):
@@ -2214,7 +2199,7 @@ async def obtener_solicitudes_por_cedula(cedula: str):
 async def gestionar_solicitud(
     background_tasks: BackgroundTasks,
     id_solicitud: int = Form(...),
-    accion: str = Form(...), # 'APROBADA' o 'RECHAZADA'
+    accion: str = Form(...),  # 'APROBADA' o 'RECHAZADA'
     mensaje: str = Form(...),
     id_admin: str = Form("Administrador")
 ):
@@ -2222,15 +2207,15 @@ async def gestionar_solicitud(
     try:
         conn = get_db_connection()
         c = conn.cursor(cursor_factory=RealDictCursor)
-        
+
         # 1. Obtener datos de la solicitud
         c.execute("SELECT * FROM Solicitudes WHERE ID = %s", (id_solicitud,))
         sol = c.fetchone()
-        
+
         if not sol:
             return JSONResponse({"status": "error", "mensaje": "Solicitud no encontrada"})
 
-        # Recuperar datos clave (Soporta mayúsculas/minúsculas de la BD)
+        # Recuperar datos clave
         tipo = sol.get('tipo') or sol.get('Tipo')
         id_evidencia = sol.get('id_evidencia') or sol.get('Id_Evidencia')
         email_usuario = sol.get('email') or sol.get('Email')
@@ -2243,53 +2228,36 @@ async def gestionar_solicitud(
         if tipo == 'REPORTE_EVIDENCIA':
             if accion == 'APROBADA':
                 if id_evidencia:
-                    # PASO 1: Obtener datos de la evidencia (URL y Hash) antes de tocar nada
                     c.execute("SELECT Url_Archivo, Hash FROM Evidencias WHERE id = %s", (id_evidencia,))
                     ev_data = c.fetchone()
-                    
                     if ev_data:
-                        # A) DESVINCULAR: Borramos el registro específico de ESTE usuario
+                        # Desvincular
                         c.execute("DELETE FROM Evidencias WHERE id = %s", (id_evidencia,))
-                        print(f"✅ Evidencia {id_evidencia} eliminada del perfil del usuario (Desvinculación).")
+                        print(f"✅ Evidencia {id_evidencia} eliminada del perfil del usuario.")
                         
-                        # B) VERIFICACIÓN DE SEGURIDAD (¿Alguien más la usa?)
                         file_hash = ev_data.get('Hash') or ev_data.get('hash')
                         url = ev_data.get('Url_Archivo') or ev_data.get('url_archivo')
                         
-                        # Contamos cuántas veces queda ese Hash en la tabla
                         c.execute("SELECT COUNT(*) as total FROM Evidencias WHERE Hash = %s", (file_hash,))
                         count_res = c.fetchone()
                         total_restantes = count_res['total'] if count_res else 0
                         
-                        # C) LIMPIEZA DE NUBE CONDICIONAL
-                        # Solo borramos el archivo físico si el contador llega a 0 (Nadie más lo tiene)
-                        if total_restantes == 0:
-                            if url and s3_client and BUCKET_NAME and "backblazeb2.com" in url:
-                                try:
-                                    if f"/file/{BUCKET_NAME}/" in url:
-                                        file_key = url.split(f"/file/{BUCKET_NAME}/")[1]
-                                        s3_client.delete_object(Bucket=BUCKET_NAME, Key=file_key)
-                                        print(f"🗑️ Archivo físico eliminado de la nube (Ya no lo usa nadie): {file_key}")
-                                except Exception as e:
-                                    print(f"⚠️ Error intentando borrar de S3 (No crítico): {e}")
-                        else:
-                            print(f"ℹ️ Archivo físico conservado. Aún lo usan {total_restantes} estudiantes más.")
-                    else:
-                        print("⚠️ La evidencia ya no existía en la base de datos (Posiblemente ya borrada).")
-
-            else:
-                # Si rechazamos el reporte, no hacemos nada (la evidencia se queda)
-                pass
+                        if total_restantes == 0 and url and s3_client and BUCKET_NAME and "backblazeb2.com" in url:
+                            try:
+                                if f"/file/{BUCKET_NAME}/" in url:
+                                    file_key = url.split(f"/file/{BUCKET_NAME}/")[1]
+                                    s3_client.delete_object(Bucket=BUCKET_NAME, Key=file_key)
+                                    print(f"🗑️ Archivo físico eliminado de la nube: {file_key}")
+                            except Exception as e:
+                                print(f"⚠️ Error borrando de S3: {e}")
+            # Si es RECHAZADA, no hacemos nada
 
         # --- CASO B: SUBIR EVIDENCIA ---
         elif tipo == 'SUBIR_EVIDENCIA':
             if accion == 'APROBADA':
                 if id_evidencia:
-                    # Hacemos visible la evidencia (Estado 1)
                     c.execute("UPDATE Evidencias SET Estado = 1 WHERE id = %s", (id_evidencia,))
-            else:
-                # Si rechazamos, borramos el archivo pendiente para no ocupar espacio
-                # Aquí SÍ borramos físico porque está en "Pendientes" y no pertenece a nadie más aún
+            else:  # RECHAZADA
                 if id_evidencia:
                     c.execute("SELECT Url_Archivo FROM Evidencias WHERE id = %s", (id_evidencia,))
                     ev_data = c.fetchone()
@@ -2299,8 +2267,8 @@ async def gestionar_solicitud(
                             try:
                                 key = url.split(f"/file/{BUCKET_NAME}/")[1]
                                 s3_client.delete_object(Bucket=BUCKET_NAME, Key=key)
-                            except: pass
-                    
+                            except:
+                                pass
                     c.execute("DELETE FROM Evidencias WHERE id = %s", (id_evidencia,))
 
         # --- CASO C: RECUPERACIÓN DE CONTRASEÑA ---
@@ -2319,31 +2287,32 @@ async def gestionar_solicitud(
                     background_tasks.add_task(enviar_correo_real, email_usuario, asunto, cuerpo)
 
         # ---------------------------------------------------------
-        # 3. ACTUALIZAR HISTORIAL DE LA SOLICITUD
+        # 3. ACTUALIZAR HISTORIAL DE LA SOLICITUD (SIEMPRE)
         # ---------------------------------------------------------
-        # CORRECCIÓN: La columna se llama 'Resuelto_Por', no 'Id_Admin'
         c.execute("""
             UPDATE Solicitudes 
             SET Estado = %s, Respuesta = %s, Resuelto_Por = %s, Fecha_Resolucion = %s
             WHERE ID = %s
         """, (accion, mensaje, id_admin, ahora_ecuador(), id_solicitud))
-        
+
         tipo_sol = sol.get('tipo') or sol.get('Tipo')
         registrar_auditoria(
-            "GESTION_SOLICITUD", 
-            f"Admin {accion} la solicitud de {tipo_sol} con respuesta: '{mensaje}'", 
-            id_admin # Aquí usamos el nombre real del admin que arreglamos antes
+            "GESTION_SOLICITUD",
+            f"Admin {accion} la solicitud de {tipo_sol} con respuesta: '{mensaje}'",
+            id_admin
         )
 
         conn.commit()
         return JSONResponse({"status": "ok", "mensaje": "Acción ejecutada correctamente."})
 
     except Exception as e:
-        if conn: conn.rollback()
+        if conn:
+            conn.rollback()
         print(f"Error gestionando solicitud: {e}")
         return JSONResponse({"status": "error", "mensaje": str(e)})
     finally:
-        if conn: conn.close()
+        if conn:
+            conn.close()
         
 # =========================================================================
 # 12. ENDPOINTS DE LOGS Y AUDITORÍA
