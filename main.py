@@ -1691,75 +1691,62 @@ import os
 @app.post("/optimizar_sistema")
 async def optimizar_sistema(tipo: str = "full"):
     """
-    V8.0 - Mantenimiento Inteligente:
-    - Borra duplicados internos (por estudiante).
-    - ELIMINA ARCHIVOS 'LOCAL' (Rutas rotas/basura).
-    - Limpia huérfanos de la nube.
-    - ELIMINA EVIDENCIAS PENDIENTES (CI_Estudiante='PENDIENTE') y sus archivos S3.
+    V8.2 - Mantenimiento con manejo de errores y logs detallados.
     """
+    conn = None
     try:
         conn = get_db_connection()
+        if not conn:
+            return JSONResponse(
+                status_code=500,
+                content={"status": "error", "mensaje": "No se pudo conectar a la base de datos"}
+            )
         c = conn.cursor(cursor_factory=RealDictCursor)
-        
         mensaje_resultado = []
-        
-        # ==========================================
-        # 1. ANALIZAR DUPLICADOS (POR ESTUDIANTE)
-        # ==========================================
-        if tipo == "duplicados" or tipo == "full":
-            print("🧹 [1/4] Buscando duplicados por estudiante...")
+
+        # ========== 1. DUPLICADOS ==========
+        if tipo in ["duplicados", "full"]:
+            print("🧹 [1/4] Buscando duplicados...")
             c.execute("""
-                SELECT Hash, CI_Estudiante, COUNT(*) as cantidad 
-                FROM Evidencias 
-                WHERE Hash NOT IN ('PENDIENTE', '', 'RECUPERADO') 
-                GROUP BY Hash, CI_Estudiante 
+                SELECT Hash, CI_Estudiante, COUNT(*) as cantidad
+                FROM Evidencias
+                WHERE Hash NOT IN ('PENDIENTE', '', 'RECUPERADO')
+                GROUP BY Hash, CI_Estudiante
                 HAVING COUNT(*) > 1
             """)
             grupos = c.fetchall()
-            elim_dups = 0
-            
+            eliminados = 0
             for g in grupos:
-                hash_val = g.get('Hash') or g.get('hash')
-                cedula = g.get('CI_Estudiante') or g.get('ci_estudiante')
-                
+                hash_val = g['Hash']
+                cedula = g['CI_Estudiante']
                 c.execute("""
-                    SELECT id, Url_Archivo, Tamanio_KB 
-                    FROM Evidencias 
-                    WHERE Hash = %s AND CI_Estudiante = %s 
+                    SELECT id FROM Evidencias
+                    WHERE Hash = %s AND CI_Estudiante = %s
                     ORDER BY id ASC
                 """, (hash_val, cedula))
                 copias = c.fetchall()
-                
                 for copia in copias[1:]:
-                    c.execute("DELETE FROM Evidencias WHERE id = %s", (copia.get('id'),))
-                    elim_dups += 1
-            
-            if elim_dups > 0:
-                mensaje_resultado.append(f"Se eliminaron {elim_dups} duplicados internos.")
+                    c.execute("DELETE FROM Evidencias WHERE id = %s", (copia['id'],))
+                    eliminados += 1
+            if eliminados:
+                mensaje_resultado.append(f"Se eliminaron {eliminados} duplicados internos.")
+            conn.commit()
 
-        # ==========================================
-        # 2. LIMPIAR HUÉRFANOS Y RUTAS 'LOCAL' ROTAS
-        # ==========================================
-        if tipo == "huerfanos" or tipo == "full":
-            print("👻 [2/4] Analizando archivos fantasma y rutas rotas...")
+        # ========== 2. HUÉRFANOS Y LOCALES ==========
+        if tipo in ["huerfanos", "full"]:
+            print("👻 [2/4] Analizando huérfanos...")
             c.execute("SELECT id, Url_Archivo FROM Evidencias")
             todas = c.fetchall()
             elim_huerfanos = 0
             elim_locales = 0
-            
             for ev in todas:
-                url = ev.get('Url_Archivo') or ev.get('url_archivo')
-                ev_id = ev.get('id')
-                
-                if not url: 
-                    continue 
-
+                url = ev.get('Url_Archivo')
+                if not url:
+                    continue
                 if "/local/" in url:
-                    print(f"🗑️ Borrando ruta local rota: {url}")
-                    c.execute("DELETE FROM Evidencias WHERE id = %s", (ev_id,))
+                    c.execute("DELETE FROM Evidencias WHERE id = %s", (ev['id'],))
                     elim_locales += 1
                     continue
-
                 existe = True
                 if "backblazeb2.com" in url and s3_client:
                     try:
@@ -1767,40 +1754,30 @@ async def optimizar_sistema(tipo: str = "full"):
                             key = url.split(f"/file/{BUCKET_NAME}/")[1]
                             s3_client.head_object(Bucket=BUCKET_NAME, Key=key)
                     except Exception as e:
-                        error_str = str(e)
-                        if "404" in error_str or "Not Found" in error_str:
+                        if "404" in str(e) or "Not Found" in str(e):
                             existe = False
-                
                 if not existe:
-                    c.execute("DELETE FROM Evidencias WHERE id = %s", (ev_id,))
+                    c.execute("DELETE FROM Evidencias WHERE id = %s", (ev['id'],))
                     elim_huerfanos += 1
-            
-            if elim_locales > 0:
-                mensaje_resultado.append(f"Se eliminaron {elim_locales} archivos corruptos (local).")
-            if elim_huerfanos > 0:
-                mensaje_resultado.append(f"Se eliminaron {elim_huerfanos} archivos fantasma (nube).")
+            if elim_locales:
+                mensaje_resultado.append(f"Se eliminaron {elim_locales} archivos locales corruptos.")
+            if elim_huerfanos:
+                mensaje_resultado.append(f"Se eliminaron {elim_huerfanos} archivos huérfanos.")
+            conn.commit()
 
-        # ==========================================
-        # 3. LIMPIAR EVIDENCIAS PENDIENTES (NUEVO)
-        # ==========================================
-        if tipo == "full" or tipo == "pendientes":
-            print("🧹 [3/4] Eliminando evidencias pendientes (no asignadas)...")
-            # Obtener todos los pendientes
+        # ========== 3. PENDIENTES ==========
+        if tipo in ["full", "pendientes"]:
+            print("🧹 [3/4] Eliminando pendientes...")
             c.execute("SELECT id, Url_Archivo, Hash FROM Evidencias WHERE CI_Estudiante = 'PENDIENTE'")
             pendientes = c.fetchall()
-            
             eliminados = 0
             for row in pendientes:
                 ev_id = row['id']
                 url = row['Url_Archivo']
                 file_hash = row['Hash']
-                
-                # Verificar si este hash está siendo usado por algún estudiante real
+                # Verificar si hay otros estudiantes con el mismo hash
                 c.execute("SELECT COUNT(*) as total FROM Evidencias WHERE Hash = %s AND CI_Estudiante != 'PENDIENTE'", (file_hash,))
-                count_res = c.fetchone()
-                total_restantes = count_res['total'] if count_res else 0
-                
-                # Si no hay otros usuarios con ese hash, borrar el archivo de S3
+                total_restantes = c.fetchone()['total']
                 if total_restantes == 0 and url and "backblazeb2.com" in url and s3_client:
                     try:
                         if f"/file/{BUCKET_NAME}/" in url:
@@ -1809,41 +1786,58 @@ async def optimizar_sistema(tipo: str = "full"):
                             print(f"🗑️ Archivo pendiente eliminado de S3: {key}")
                     except Exception as e:
                         print(f"⚠️ Error eliminando archivo S3: {e}")
-                
-                # Eliminar el registro de la base de datos
                 c.execute("DELETE FROM Evidencias WHERE id = %s", (ev_id,))
                 eliminados += 1
-            
-            # También eliminar solicitudes que referencien a estas evidencias (si existen)
-            c.execute("DELETE FROM Solicitudes WHERE Id_Evidencia IN (SELECT id FROM Evidencias WHERE CI_Estudiante = 'PENDIENTE')")
-            
-            if eliminados > 0:
+            if eliminados:
+                # Eliminar solicitudes huérfanas
+                c.execute("DELETE FROM Solicitudes WHERE Id_Evidencia IN (SELECT id FROM Evidencias WHERE CI_Estudiante = 'PENDIENTE')")
                 mensaje_resultado.append(f"Se eliminaron {eliminados} evidencias pendientes y sus archivos S3 (si no estaban en uso).")
             else:
                 mensaje_resultado.append("No se encontraron evidencias pendientes.")
-
-        # ==========================================
-        # 4. LIMPIAR CACHÉ DB (VACUUM)
-        # ==========================================
-        if tipo == "cache" or tipo == "full":
-            print("🧹 [4/4] Compactando base de datos...")
             conn.commit()
+
+        # ========== 4. VACUUM ==========
+        if tipo in ["cache", "full"]:
+            print("🧹 [4/4] Compactando base de datos...")
+            conn.close()  # Cerramos la conexión actual para evitar conflictos con autocommit
+            conn = get_db_connection()
             conn.autocommit = True
             with conn.cursor() as c_vac:
                 c_vac.execute("VACUUM")
                 c_vac.execute("ANALYZE")
-            if tipo == "cache":
-                mensaje_resultado.append("Base de datos compactada.")
+            conn.close()
+            mensaje_resultado.append("Base de datos compactada.")
+            # Reabrimos conexión para seguir usando el cursor (opcional)
+            conn = get_db_connection()
+            c = conn.cursor(cursor_factory=RealDictCursor)
 
-        conn.commit()
-        conn.close()
-        
         texto_final = " ".join(mensaje_resultado) if mensaje_resultado else "Sistema optimizado. Todo limpio."
         return JSONResponse({"status": "ok", "mensaje": texto_final})
 
     except Exception as e:
-        print(f"❌ Error en mantenimiento: {e}")
-        return JSONResponse({"error": str(e)}, status_code=500)
+        import traceback
+        error_detalle = traceback.format_exc()
+        print(f"❌ Error en mantenimiento: {error_detalle}")
+        if conn:
+            try:
+                conn.rollback()
+            except:
+                pass
+        # Devolvemos el error completo para depuración
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "mensaje": str(e),
+                "detalle": error_detalle
+            }
+        )
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except:
+                pass
     
 # =========================================================================
 # 10. ENDPOINTS DE ESTADÍSTICAS Y REPORTES
