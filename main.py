@@ -102,8 +102,11 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
 def enviar_correo_real(destinatario: str, asunto: str, mensaje: str, html: bool = False) -> bool:
     import requests
-    API_KEY = "re_8yGaLtUa_L4VewBKb1miDQcLAUe6jzQq6" 
+    API_KEY = os.environ.get("RESEND_API_KEY")
     try:
+        if not API_KEY:
+            logging.error("❌ La variable de entorno RESEND_API_KEY no está configurada.")
+            return False
         url = "https://api.resend.com/emails"
         payload = {
             "from": "onboarding@resend.dev",  # <--- CAMBIO TEMPORAL
@@ -702,6 +705,13 @@ async def iniciar_sesion(cedula: str = Form(...), contrasena: str = Form(...)):
         pass_db = u.get('password') or u.get('Password') if u else None
         
         if u and verify_password(contrasena.strip(), pass_db):
+            
+            # BLOQUEO DE SEGURIDAD: Comprobar si el usuario está inactivo
+            estado_activo = u.get('Activo') if u.get('Activo') is not None else u.get('activo')
+            if estado_activo == 0:
+                registrar_auditoria("INTENTO_BLOQUEADO", f"Usuario desactivado intentó ingresar", u.get('ci') or u.get('CI'))
+                return JSONResponse({"autenticado": False, "mensaje": "⛔ Tu cuenta ha sido desactivada. Contacta al administrador."})
+
             # Log de auditoría
             nombre_completo = f"{u.get('Nombre') or u.get('nombre')} {u.get('Apellido') or u.get('apellido')}"
             rol_num = u.get('Tipo') if u.get('Tipo') is not None else u.get('tipo')
