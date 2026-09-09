@@ -4038,12 +4038,16 @@ async function agregarReferencia(e) {
         return;
     }
 
+    // 1. Cierra el modal actual para liberar la interfaz
+    cerrarModal('modalAgregarRef');
+
     const formData = new FormData();
     formData.append('cedula', cedula);
     formData.append('foto', foto);
 
     try {
-        Swal.fire({ title: 'Subiendo...', didOpen: () => Swal.showLoading() });
+        // 2. Ahora la alerta de carga se verá perfectamente en primer plano
+        Swal.fire({ title: 'Subiendo...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
         
         const res = await fetch(`${API_URL}/agregar_foto_referencia`, {
             method: 'POST',
@@ -4054,10 +4058,8 @@ async function agregarReferencia(e) {
         
         if (res.ok && data.status === 'ok') {
             Swal.fire('Éxito', data.mensaje, 'success');
-            cerrarModal('modalAgregarRef');
             document.getElementById('formAgregarRef').reset();
-            // Recargar la tabla de usuarios para ver la foto actualizada
-            await cargarDatosIniciales(); // o renderizarUsuarios()
+            await cargarDatosIniciales();
         } else {
             throw new Error(data.error || 'Error al subir');
         }
