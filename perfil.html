@@ -865,6 +865,11 @@
             .footer-logo img { height: 50px; }
         }
 
+        /* REPARACIÓN DE CAPAS: Evitar que la alerta quede atrapada detrás del visor */
+.swal2-container {
+    z-index: 9999 !important;
+}
+
         /* FORZAR MODO OSCURO EN SWEETALERT2 */
 body.dark-mode .swal2-popup {
     background: var(--bg-card) !important;
@@ -972,6 +977,7 @@ body.dark-mode .swal2-textarea {
             <li><button class="menu-btn" onclick="location.reload()"><i class="fas fa-id-card"></i> Mi Perfil</button></li>
             <li><button class="menu-btn" onclick="window.location.href='index.html'"><i class="fas fa-home"></i> Inicio</button></li>
             <li><button class="menu-btn" onclick="abrirHubContacto()"><i class="fas fa-headset"></i> Soporte / Contacto</button></li>
+            <li><button class="menu-btn" onclick="abrirHistorial()"><i class="fas fa-history"></i> Mi Historial</button></li>
             <li style="margin-top:auto; border-top:1px solid var(--border-color); padding-top:20px;">
                 <button class="menu-btn" onclick="cerrarSesion()" style="color:var(--error); font-weight:700;">
                     <i class="fas fa-power-off"></i> Cerrar Sesión

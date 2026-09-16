@@ -747,6 +747,11 @@
             .mobile-actions-dropdown { display: none !important; } /* Ocultamos el menú viejo */
         }
         
+        /* REPARACIÓN DE CAPAS: Evitar que la alerta quede atrapada detrás del visor */
+.swal2-container {
+    z-index: 9999 !important;
+}
+
         /* FORZAR MODO OSCURO EN SWEETALERT2 */
 body.dark-mode .swal2-popup {
     background: var(--bg-card) !important;
