@@ -773,9 +773,8 @@ async def buscar_estudiante(cedula: str = Form(...)):
                 "galeria": [] 
             }
             
-            # 2. Buscar Evidencias (CORRECCIÓN AQUÍ: Usamos 'ORDER BY id DESC')
-            # El ID nunca falla. ID más alto = Foto más reciente.
-            c.execute("SELECT * FROM Evidencias WHERE CI_Estudiante = %s ORDER BY id DESC", (cedula.strip(),))
+            # 2. Buscar Evidencias (Ocultando la carpeta interna de referencias de la IA)
+            c.execute("SELECT * FROM Evidencias WHERE CI_Estudiante = %s AND Tipo_Archivo != 'referencia' ORDER BY id DESC", (cedula.strip(),))
             evidencias = c.fetchall()
             if evidencias:
                 datos['galeria'] = [dict(row) for row in evidencias]
@@ -3386,10 +3385,21 @@ async def agregar_foto_referencia(
         url_foto = f"https://{BUCKET_NAME}.s3.us-east-005.backblazeb2.com/{nombre_nube}"
         print(f"✅ Foto subida a S3: {url_foto}")
 
-        # 4. Actualizar la foto en la base de datos
+        # 4. Actualizar foto principal y guardar en el historial (Carpeta IA)
         c.execute("UPDATE Usuarios SET Foto = %s WHERE CI = %s", (url_foto, cedula))
+        
+        # Calculamos peso y hash para registrarla como evidencia
+        file_hash = calcular_hash(path)
+        tamanio_kb = os.path.getsize(path) / 1024
+        
+        # Insertamos con el tipo especial 'referencia'
+        c.execute("""
+            INSERT INTO Evidencias (CI_Estudiante, Url_Archivo, Hash, Estado, Tipo_Archivo, Tamanio_KB, Asignado_Automaticamente)
+            VALUES (%s, %s, %s, 1, 'referencia', %s, 0)
+        """, (cedula, url_foto, file_hash, tamanio_kb))
+        
         conn.commit()
-        print(f"✅ Foto actualizada en BD para {cedula}")
+        print(f"✅ Foto actualizada y guardada en historial de referencias para {cedula}")
 
         # 5. Indexar rostro en AWS Rekognition (si es estudiante)
         if rekog and usuario.get('Tipo') == 1:

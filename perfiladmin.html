@@ -2943,12 +2943,18 @@ async function limpiarSolicitudesAntiguas() {
             // Detectar tipo de archivo
             const esVideo = urlArchivo.match(/\.(mp4|avi|mov|webm|mkv)$/i);
             const esImagen = urlArchivo.match(/\.(jpg|jpeg|png|gif|webp|avif)$/i);
+            const esReferencia = (evidencia.Tipo_Archivo || evidencia.tipo_archivo) === 'referencia';
             
             let contenido = '';
             
-            if (esImagen) {
+            if (esImagen || esReferencia) {
                 // Si la imagen falla (404), pone el logo del colegio
                 contenido = `<img src="${urlArchivo}" class="card-media" loading="lazy" onerror="this.src='Img/Logo_pestaña.webp'">`;
+                
+                // Etiqueta visual exclusiva para el administrador
+                if (esReferencia) {
+                    contenido += `<div style="position:absolute; top:10px; left:10px; background:var(--warning); color:#000; padding:4px 10px; border-radius:10px; font-size:0.75rem; font-weight:bold; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index:5;"><i class="fas fa-brain"></i> Referencia IA</div>`;
+                }
             } else if (esVideo) {
                 // Video con overlay de play
                 contenido = `
