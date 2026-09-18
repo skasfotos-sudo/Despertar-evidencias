@@ -1844,7 +1844,16 @@ async function cargarNotificacionesEstudiante(cedula) {
                     // Agregamos: title (accesibilidad), preload (velocidad)
                     content = `<video src="${item.url}#t=0.1" class="card-media" title="Video evidencia escolar ID ${item.id}" preload="metadata"></video><div class="video-overlay"><i class="fas fa-play-circle"></i></div>`;
                 } else {
-                    content = `<div style="width:100%;height:100%;background:#f4f4f4;display:flex;align-items:center;justify-content:center;color:#666;"><i class="fas fa-file-alt" style="font-size:2.5rem;"></i></div>`;
+                    // Extraer el nombre real del archivo de la URL
+                    let nombreDoc = decodeURIComponent(item.url.split('/').pop()).replace(/^\d+_/, '');
+                    let nombreCorto = nombreDoc.length > 25 ? nombreDoc.substring(0, 22) + '...' : nombreDoc;
+                    
+                    content = `
+                        <div style="width:100%;height:100%;background:var(--input-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-main);padding:10px;text-align:center;">
+                            <i class="fas fa-file-alt" style="font-size:2.5rem; margin-bottom:8px; color:var(--primary);"></i>
+                            <span style="font-size:0.75rem; font-weight:600; word-break:break-all;" title="${nombreDoc}">${nombreCorto}</span>
+                        </div>
+                    `;
                 }
 
                 card.innerHTML = `<div class="selection-check"><i class="fas fa-check"></i></div>${content}`;
@@ -1993,33 +2002,41 @@ async function cargarNotificacionesEstudiante(cedula) {
             wrap.style.opacity = '0';
             
             setTimeout(() => {
-                let mediaElement;
+                const esDoc = item.url.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx)$/i);
 
                 if(item.tipo === 'imagen') {
                     const img = document.createElement('img'); 
                     img.src = item.url; 
                     img.className = 'lb-media-item';
-                    
-                    // --- MAGIA DE ZOOM ---
                     img.onclick = function(e) {
-                        e.stopPropagation(); // Evita que se cierre el modal
-                        this.classList.toggle('zoomed'); // Activa/Desactiva zoom
+                        e.stopPropagation(); 
+                        this.classList.toggle('zoomed'); 
                     };
-                    
                     wrap.appendChild(img);
-                    mediaElement = img;
-
                 } else if(item.tipo === 'video') {
                     const vid = document.createElement('video'); 
                     vid.src = item.url; 
                     vid.controls = true; 
                     vid.className = 'lb-media-item';
-                    // Evitar zoom en videos (no tiene sentido visualmente)
                     wrap.appendChild(vid);
-                    mediaElement = vid;
-
+                } else if (esDoc) {
+                    // Visor inteligente de Google para evitar la descarga automática de PDFs y Word
+                    const visorGoogle = `https://docs.google.com/gview?url=${encodeURIComponent(item.url)}&embedded=true`;
+                    wrap.innerHTML = `
+                        <div style="position:relative; width:90vw; height:80vh; background:white; border-radius:8px; overflow:hidden;">
+                            <iframe src="${visorGoogle}" style="width:100%; height:100%; border:none;" frameborder="0"></iframe>
+                        </div>
+                    `;
                 } else {
-                    wrap.innerHTML = '<div style="color:white;text-align:center;">Documento (Vista previa no disponible)</div>';
+                    // Fallback para otros formatos (como .zip)
+                    let nombreDoc = decodeURIComponent(item.url.split('/').pop()).replace(/^\d+_/, '');
+                    wrap.innerHTML = `
+                        <div style="color:white; text-align:center; padding: 20px;">
+                            <i class="fas fa-file-archive" style="font-size:5rem; margin-bottom:15px; color:var(--primary-light);"></i>
+                            <h3 style="margin-bottom:10px; word-break: break-all; max-width: 80vw;">${nombreDoc}</h3>
+                            <p style="color:#ccc; font-size:0.9rem;">Archivo no visualizable. Haz clic en <b>Descargar</b>.</p>
+                        </div>
+                    `;
                 }
                 
                 wrap.style.opacity = '1';

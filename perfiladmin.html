@@ -2990,11 +2990,14 @@ async function limpiarSolicitudesAntiguas() {
                     </div>
                 `;
             } else {
-                // Documento (PDF, Word, etc) - Icono genérico en vez de foto rota
+                // Extraer el nombre real del archivo de la URL
+                let nombreDoc = decodeURIComponent(urlArchivo.split('/').pop()).replace(/^\d+_/, '');
+                let nombreCorto = nombreDoc.length > 25 ? nombreDoc.substring(0, 22) + '...' : nombreDoc;
+
                 contenido = `
-                    <div style="width:100%;height:100%;background:var(--bg-input);display:flex;align-items:center;justify-content:center;color:var(--text-main);flex-direction:column;">
-                        <i class="fas fa-file-alt" style="font-size:3rem; margin-bottom:10px; color:var(--primary);"></i>
-                        <span style="font-size:0.75rem; font-weight:600;">Documento</span>
+                    <div style="width:100%;height:100%;background:var(--input-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-main);padding:10px;text-align:center;">
+                        <i class="fas fa-file-alt" style="font-size:2.8rem; margin-bottom:10px; color:var(--primary);"></i>
+                        <span style="font-size:0.75rem; font-weight:600; line-height:1.2; word-break:break-all;" title="${nombreDoc}">${nombreCorto}</span>
                     </div>
                 `;
             }
@@ -3046,14 +3049,13 @@ async function limpiarSolicitudesAntiguas() {
     }
 
 // ==========================================
-// 7. FUNCIONES DE LIGHTBOX Y VISOR (CORREGIDO FINAL)
+// 7. FUNCIONES DE LIGHTBOX Y VISOR (CORREGIDO Y LIMPIO)
 // ==========================================
 
 let touchStartX = 0;
 let touchEndX = 0;
 
 function configurarEventosTeclado() {
-    // Teclado
     document.addEventListener('keydown', (e) => {
         const lightbox = document.getElementById('lightbox');
         if (!lightbox.classList.contains('active')) return;
@@ -3066,27 +3068,15 @@ function configurarEventosTeclado() {
         }
     });
 
-    // --- SWIPE TÁCTIL ---
     const lbContent = document.getElementById('lightbox');
-    
-    lbContent.addEventListener('touchstart', e => {
-        touchStartX = e.changedTouches[0].screenX;
-    }, {passive: true});
-
-    lbContent.addEventListener('touchend', e => {
-        touchEndX = e.changedTouches[0].screenX;
-        handleSwipe();
-    }, {passive: true});
+    lbContent.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
+    lbContent.addEventListener('touchend', e => { touchEndX = e.changedTouches[0].screenX; handleSwipe(); }, {passive: true});
 }
 
 function handleSwipe() {
     const SWIPE_THRESHOLD = 50;
-    if (touchEndX < touchStartX - SWIPE_THRESHOLD) {
-        imagenSiguiente(); // Deslizar izquierda -> Siguiente
-    }
-    if (touchEndX > touchStartX + SWIPE_THRESHOLD) {
-        imagenAnterior(); // Deslizar derecha -> Anterior
-    }
+    if (touchEndX < touchStartX - SWIPE_THRESHOLD) imagenSiguiente();
+    if (touchEndX > touchStartX + SWIPE_THRESHOLD) imagenAnterior();
 }
 
 function abrirVisor(indice) {
@@ -3095,8 +3085,6 @@ function abrirVisor(indice) {
     actualizarVisor();
     document.getElementById('lightbox').classList.add('active');
     document.body.style.overflow = 'hidden'; 
-    
-    // Mostrar botón eliminar en modo galería
     const btnEliminar = document.querySelector('.btn-lb-delete');
     if(btnEliminar) btnEliminar.style.display = 'inline-flex';
 }
@@ -3106,20 +3094,38 @@ function abrirPrevisualizacion(url) {
     const contenido = document.getElementById('lightboxContent');
     const enlaceDescarga = document.getElementById('lbDownloadLink');
     
-    contenido.innerHTML = `<img src="${url}" class="lb-media-item" style="max-height:80vh; max-width:90vw;" onerror="this.src='Img/Logo_pestaña.webp'">`;
     enlaceDescarga.href = url;
-    
-    // Ocultar eliminar en previsualización
+    const esVideo = url.match(/\.(mp4|avi|mov|webm|mkv)$/i);
+    const esImagen = url.match(/\.(jpg|jpeg|png|gif|webp|avif)$/i);
+    const esDoc = url.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx)$/i);
+
+    if (esVideo) {
+        contenido.innerHTML = `<video src="${url}" class="lb-media-item" controls autoplay style="max-height:80vh; max-width:90vw;"></video>`;
+    } else if (esImagen) {
+        contenido.innerHTML = `<img src="${url}" class="lb-media-item" style="max-height:80vh; max-width:90vw;" onerror="this.src='Img/Logo_pestaña.webp'">`;
+    } else if (esDoc) {
+        // Visor de Google para evitar auto-descarga
+        const visorGoogle = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+        contenido.innerHTML = `<iframe src="${visorGoogle}" class="lb-media-item" style="width:90vw; height:80vh; background:white; border-radius:8px;" frameborder="0"></iframe>`;
+    } else {
+        let nombreDoc = decodeURIComponent(url.split('/').pop()).replace(/^\d+_/, '');
+        contenido.innerHTML = `
+            <div style="color:white; text-align:center; padding: 20px;">
+                <i class="fas fa-file-alt" style="font-size:5rem; margin-bottom:15px; color:var(--primary-light);"></i>
+                <h3 style="margin-bottom:10px; word-break: break-all; max-width: 80vw;">${nombreDoc}</h3>
+                <p style="color:#ccc; font-size:0.9rem;">Archivo no visualizable. Haz clic en <b>Descargar</b>.</p>
+            </div>`;
+    }
+
     const btnEliminar = document.querySelector('.btn-lb-delete');
     if(btnEliminar) btnEliminar.style.display = 'none';
-
     lightbox.classList.add('active');
 }
 
 function cerrarLightbox() {
     document.getElementById('lightbox').classList.remove('active');
     document.body.style.overflow = '';
-    document.getElementById('lightboxContent').innerHTML = ''; // Detener videos
+    document.getElementById('lightboxContent').innerHTML = ''; 
 }
 
 function cerrarLightboxSiFondo(event) {
@@ -3138,10 +3144,9 @@ function actualizarVisor() {
     
     const esVideo = url.match(/\.(mp4|avi|mov|webm|mkv)$/i);
     const esImagen = url.match(/\.(jpg|jpeg|png|gif|webp|avif)$/i);
+    const esDoc = url.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx)$/i);
     
-    contenido.innerHTML = ''; // Limpiar primero
-    
-    // Pequeño retardo para animación
+    contenido.innerHTML = ''; 
     contenido.style.opacity = '0';
     
     setTimeout(() => {
@@ -3149,19 +3154,22 @@ function actualizarVisor() {
             contenido.innerHTML = `<video src="${url}" class="lb-media-item" controls autoplay style="max-height:80vh; max-width:90vw;"></video>`;
         } else if (esImagen) {
             const img = document.createElement('img');
-            img.src = url;
-            img.className = 'lb-media-item';
+            img.src = url; img.className = 'lb-media-item';
             img.onerror = function() { this.src='Img/Logo_pestaña.webp'; };
-            
-            // --- ZOOM ---
-            img.onclick = function(e) {
-                e.stopPropagation();
-                this.classList.toggle('zoomed');
-            };
-            
+            img.onclick = function(e) { e.stopPropagation(); this.classList.toggle('zoomed'); };
             contenido.appendChild(img);
+        } else if (esDoc) {
+            // Visor de Google embebido
+            const visorGoogle = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+            contenido.innerHTML = `<div style="position:relative; width:90vw; height:80vh; background:white; border-radius:8px; overflow:hidden;"><iframe src="${visorGoogle}" style="width:100%; height:100%; border:none;" frameborder="0"></iframe></div>`;
         } else {
-            contenido.innerHTML = `<div style="color:white; text-align:center;"><i class="fas fa-file-alt" style="font-size:5rem;"></i><h3>Documento</h3><p>Descarga para ver.</p></div>`;
+            let nombreDoc = decodeURIComponent(url.split('/').pop()).replace(/^\d+_/, '');
+            contenido.innerHTML = `
+                <div style="color:white; text-align:center; padding: 20px;">
+                    <i class="fas fa-file-alt" style="font-size:5rem; margin-bottom:15px; color:var(--primary-light);"></i>
+                    <h3 style="margin-bottom:10px; word-break: break-all; max-width: 80vw;">${nombreDoc}</h3>
+                    <p style="color:#ccc; font-size:0.9rem;">Archivo no visualizable. Haz clic en <b>Descargar</b>.</p>
+                </div>`;
         }
         contenido.style.opacity = '1';
     }, 100);
@@ -3182,11 +3190,9 @@ function imagenAnterior(e) {
 }
 
 async function eliminarEvidenciaActual() {
-    // Verificamos que haya una evidencia seleccionada
     const evidencia = evidenciasVisor[indiceVisorActual];
     if(!evidencia) return;
 
-    // 1. Preguntamos primero
     const result = await Swal.fire({
         title: '¿Eliminar evidencia?',
         text: "Esta acción borrará el archivo permanentemente de la nube y del sistema.",
@@ -3198,50 +3204,52 @@ async function eliminarEvidenciaActual() {
     });
 
     if (result.isConfirmed) {
-        // CORRECCIÓN: Cerramos visor INMEDIATAMENTE para evitar bloqueos visuales
         cerrarLightbox(); 
-        
-        const miCedula = localStorage.getItem('usuario_cedula'); // Obtener tu cédula de admin
+        const miCedula = localStorage.getItem('usuario_cedula'); 
 
         try {
-            // Mostrar "Cargando..."
-            Swal.fire({
-                title: 'Eliminando...',
-                text: 'Procesando la orden...',
-                allowOutsideClick: false,
-                didOpen: () => { Swal.showLoading(); }
-            });
-
+            Swal.fire({ title: 'Eliminando...', text: 'Procesando la orden...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
             const id = evidencia.id || evidencia.ID;
-            
-            // PREPARAR DATOS (Esto es lo que faltaba antes)
             const formData = new FormData();
             formData.append('admin_cedula', miCedula); 
 
-            // ENVIAR PETICIÓN (Una sola vez)
-            const res = await fetch(`${API_URL}/eliminar_evidencia/${id}`, { 
-                method: 'DELETE',
-                body: formData 
-            });
+            const res = await fetch(`${API_URL}/eliminar_evidencia/${id}`, { method: 'DELETE', body: formData });
 
             if(res.ok) {
-                // Si salió bien, actualizamos la lista visual
                 evidenciasEstudianteActual.splice(indiceVisorActual, 1);
-                
-                // Actualizamos la cuadrícula de fotos
                 renderizarEvidenciasEstudiante();
-                
                 Swal.fire('Eliminado', 'La evidencia ha sido borrada correctamente.', 'success');
             } else {
-                // Si el servidor responde error (ej: 403 No autorizado)
                 const data = await res.json().catch(() => ({}));
                 throw new Error(data.error || 'El servidor no pudo borrar el archivo.');
             }
-
         } catch (error) {
             console.error(error);
             Swal.fire('Error', 'No se pudo eliminar: ' + error.message, 'error');
         }
+    }
+}
+
+async function fijarFotoPerfil(cedula, urlFoto) {
+    try {
+        Swal.fire({ title: 'Actualizando perfil...', didOpen: () => { Swal.showLoading(); }});
+        const res = await fetch(`${API_URL}/establecer_foto_perfil`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cedula: cedula, url_foto: urlFoto })
+        });
+        const data = await res.json();
+        if (res.ok && data.status === 'ok') {
+            await cargarDatosIniciales();
+            estudianteActual = usuarios.find(u => u.cedula === cedula);
+            await verEvidenciasEstudiante(estudianteActual);
+            abrirModalReferencias(); 
+            Swal.fire({ title: '¡Actualizado!', text: 'La foto principal ha sido cambiada.', icon: 'success', timer: 1500, showConfirmButton: false });
+        } else {
+            throw new Error(data.mensaje || 'Error al actualizar');
+        }
+    } catch (error) {
+        Swal.fire('Error', error.message, 'error');
     }
 }
 
