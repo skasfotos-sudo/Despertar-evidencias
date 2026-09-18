@@ -518,13 +518,12 @@ def calcular_estadisticas_reales() -> dict:
         fila_usuarios = c.fetchone()
         usuarios_activos = fila_usuarios['total'] if fila_usuarios else 0
         
-        # 2. Contar evidencias (SOLO DE ESTUDIANTES - JOIN CON USUARIOS)
-        # Esto excluye automáticamente las fotos subidas al perfil del Admin
+        # 2. Contar evidencias (SOLO DE ESTUDIANTES - Ocultando referencias IA)
         c.execute("""
             SELECT COUNT(e.id) as total 
             FROM Evidencias e
             JOIN Usuarios u ON e.CI_Estudiante = u.CI
-            WHERE u.Tipo = 1
+            WHERE u.Tipo = 1 AND e.Tipo_Archivo != 'referencia'
         """)
         fila_evidencias = c.fetchone()
         total_evidencias = fila_evidencias['total'] if fila_evidencias else 0
@@ -2431,7 +2430,7 @@ def resumen_estudiantes():
                 COUNT(e.id) as total_evidencias,
                 COALESCE(SUM(e.Tamanio_KB), 0) as total_kb
             FROM Usuarios u
-            LEFT JOIN Evidencias e ON u.CI = e.CI_Estudiante
+            LEFT JOIN Evidencias e ON u.CI = e.CI_Estudiante AND e.Tipo_Archivo != 'referencia'
             WHERE u.Tipo = 1
             GROUP BY u.CI, u.Nombre, u.Apellido, u.Foto
             ORDER BY u.Apellido ASC

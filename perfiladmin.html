@@ -2880,16 +2880,17 @@ async function limpiarSolicitudesAntiguas() {
             
             // Mostrar información del estudiante
             const infoContainer = document.getElementById('studentInfoContainer');
+            const evidenciasNormales = evidenciasEstudianteActual.filter(e => (e.Tipo_Archivo || e.tipo_archivo) !== 'referencia');
             infoContainer.innerHTML = `
-                <img src="${estudiante.foto || 'Img/Logo_pestaña.webp'}" 
-                 class="student-avatar" 
-                 onerror="this.src='Img/Logo_pestaña.webp'"
-                 alt="${estudiante.nombre} ${estudiante.apellido}">
-                <div>
+                <img src="${estudiante.foto || 'Img/Logo_pestaña.webp'}" class="student-avatar" onerror="this.src='Img/Logo_pestaña.webp'" alt="${estudiante.nombre}">
+                <div style="flex:1;">
                     <h3 style="color:var(--primary); margin-bottom:5px;">${estudiante.nombre} ${estudiante.apellido}</h3>
                     <p style="color:var(--text-sec); margin-bottom:5px;">Cédula: ${estudiante.cedula}</p>
-                    <p style="color:var(--text-sec);">Total evidencias: ${evidenciasEstudianteActual.length}</p>
+                    <p style="color:var(--text-sec);">Total evidencias: ${evidenciasNormales.length}</p>
                 </div>
+                <button class="btn-primary" onclick="abrirModalReferencias()" style="background:var(--warning); color:#000; font-size:0.9rem; padding:10px 20px;">
+                    <i class="fas fa-brain"></i> Referencias IA
+                </button>
             `;
             infoContainer.style.display = 'flex';
             
@@ -2920,15 +2921,16 @@ async function limpiarSolicitudesAntiguas() {
         // Limpiar grid
         grid.innerHTML = '';
 
-        // Verificar si hay datos
-        if (!evidenciasEstudianteActual || evidenciasEstudianteActual.length === 0) {
+        const evidenciasNormales = evidenciasEstudianteActual.filter(e => (e.Tipo_Archivo || e.tipo_archivo) !== 'referencia');
+
+        if (!evidenciasNormales || evidenciasNormales.length === 0) {
             if (vacio) vacio.style.display = 'flex';
             return;
         }
         
         if (vacio) vacio.style.display = 'none';
         
-        evidenciasEstudianteActual.forEach((evidencia, index) => {
+        evidenciasNormales.forEach((evidencia, index) => {
             const tarjeta = document.createElement('div');
             tarjeta.className = `evidence-card ${modoSeleccion ? 'selection-mode-active' : ''}`;
             tarjeta.addEventListener('touchstart', (e) => handleTouchStart(e, idEvidencia), {passive: true});
@@ -3064,7 +3066,7 @@ function handleSwipe() {
 }
 
 function abrirVisor(indice) {
-    evidenciasVisor = evidenciasEstudianteActual;
+    evidenciasVisor = evidenciasEstudianteActual.filter(e => (e.Tipo_Archivo || e.tipo_archivo) !== 'referencia');
     indiceVisorActual = indice;
     actualizarVisor();
     document.getElementById('lightbox').classList.add('active');
@@ -4076,6 +4078,99 @@ async function agregarReferencia(e) {
         }
     } catch(err) {
         Swal.fire('Error', err.message, 'error');
+    }
+}
+// ==========================================
+// GESTIÓN DE REFERENCIAS IA
+// ==========================================
+function abrirModalReferencias() {
+    // Si el modal no existe, lo inyectamos dinámicamente con estilos inline precisos
+    if (!document.getElementById('modalReferencias')) {
+        const modalHTML = `
+        <div class="modal-overlay" id="modalReferencias" onclick="if(event.target === this) cerrarModal('modalReferencias')">
+            <div class="modal-card" style="width: 95%; max-width: 800px; max-height: 85vh; display: flex; flex-direction: column; position: relative; padding: 35px 30px;">
+                
+                <button onclick="cerrarModal('modalReferencias')" style="position:absolute; top:15px; right:15px; border:none; background:none; font-size:2rem; cursor:pointer; color:var(--text-sec); transition: color 0.2s;" onmouseover="this.style.color='var(--error)'" onmouseout="this.style.color='var(--text-sec)'">&times;</button>
+                
+                <div style="text-align: center; margin-bottom: 25px;">
+                    <h3 style="color:var(--primary); margin-bottom:8px; font-size: 1.5rem;"><i class="fas fa-brain"></i> Referencias de IA</h3>
+                    <p style="font-size:0.95rem; color:var(--text-sec); margin:0;">Estas imágenes conforman el Dataset de reconocimiento facial del estudiante.</p>
+                </div>
+
+                <div id="gridReferencias" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; overflow-y:auto; padding: 5px; min-height: 200px;"></div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    }
+
+    const grid = document.getElementById('gridReferencias');
+    grid.innerHTML = '';
+    
+    // Filtramos solo las referencias
+    const referencias = evidenciasEstudianteActual.filter(e => (e.Tipo_Archivo || e.tipo_archivo) === 'referencia');
+    
+    if (referencias.length === 0) {
+        grid.innerHTML = `
+            <div style="grid-column: 1/-1; text-align:center; color:var(--text-muted); padding:40px;">
+                <i class="fas fa-images" style="font-size:3.5rem; margin-bottom:15px; opacity:0.5;"></i>
+                <p>No hay fotos de referencia históricas.</p>
+            </div>`;
+    } else {
+        referencias.forEach(ref => {
+            const url = ref.Url_Archivo || ref.url_archivo;
+            const id = ref.id || ref.ID;
+            
+            // Diseño de tarjeta con botón eliminar integrado
+            grid.innerHTML += `
+                <div style="position:relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-soft); border: 1px solid var(--border-color); background: var(--bg-card);">
+                    <img src="${url}" style="width:100%; height:100%; object-fit:cover; display:block;" loading="lazy" onerror="this.src='Img/Logo_pestaña.webp'">
+                    
+                    <div style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.65); padding:10px; text-align:center; backdrop-filter: blur(2px);">
+                        <button onclick="eliminarReferenciaIA(${id})" style="background:var(--error); color:white; border:none; border-radius:8px; padding:6px 0; font-size:0.85rem; cursor:pointer; font-weight:600; width:100%; transition: background 0.3s;" onmouseover="this.style.background='#b71c1c'" onmouseout="this.style.background='var(--error)'">
+                            <i class="fas fa-trash"></i> Eliminar
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+    
+    document.getElementById('modalReferencias').classList.add('active');
+}
+
+// (La función eliminarReferenciaIA se mantiene igual, no tienes que borrarla)
+
+async function eliminarReferenciaIA(id) {
+    const confirmacion = await Swal.fire({
+        title: '¿Eliminar referencia?',
+        text: "Se borrará permanentemente. Afectará la capacidad de la IA para reconocer este ángulo/rostro.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d32f2f',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    });
+
+    if (confirmacion.isConfirmed) {
+        const miCedula = localStorage.getItem('usuario_cedula');
+        try {
+            Swal.fire({ title: 'Eliminando...', didOpen: () => { Swal.showLoading(); }});
+            const formData = new FormData();
+            formData.append('admin_cedula', miCedula); 
+
+            const res = await fetch(`${API_URL}/eliminar_evidencia/${id}`, { method: 'DELETE', body: formData });
+
+            if(res.ok) {
+                // Sacar de la memoria visual sin recargar todo
+                evidenciasEstudianteActual = evidenciasEstudianteActual.filter(e => (e.id || e.ID) !== id);
+                abrirModalReferencias(); // Refrescar modal
+                Swal.fire('Eliminado', 'Referencia borrada de la nube.', 'success');
+            } else {
+                throw new Error('El servidor rechazó la acción.');
+            }
+        } catch (error) {
+            Swal.fire('Error', error.message, 'error');
+        }
     }
 }
     </script>
