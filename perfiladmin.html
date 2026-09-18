@@ -4144,14 +4144,30 @@ function abrirModalReferencias() {
             const url = ref.Url_Archivo || ref.url_archivo;
             const id = ref.id || ref.ID;
             
-            // Diseño de tarjeta con botón eliminar integrado
+            // Verificamos si esta foto es la que el estudiante tiene actualmente
+            const esPerfilActual = (url === estudianteActual.foto);
+            const bordeActivo = esPerfilActual ? 'border: 3px solid var(--primary);' : 'border: 1px solid var(--border-color);';
+            
             grid.innerHTML += `
-                <div style="position:relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-soft); border: 1px solid var(--border-color); background: var(--bg-card);">
+                <div style="position:relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-soft); background: var(--bg-card); ${bordeActivo} transition: 0.3s;">
                     <img src="${url}" style="width:100%; height:100%; object-fit:cover; display:block;" loading="lazy" onerror="this.src='Img/Logo_pestaña.webp'">
                     
-                    <div style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.65); padding:10px; text-align:center; backdrop-filter: blur(2px);">
-                        <button onclick="eliminarReferenciaIA(${id})" style="background:var(--error); color:white; border:none; border-radius:8px; padding:6px 0; font-size:0.85rem; cursor:pointer; font-weight:600; width:100%; transition: background 0.3s;" onmouseover="this.style.background='#b71c1c'" onmouseout="this.style.background='var(--error)'">
-                            <i class="fas fa-trash"></i> Eliminar
+                    ${esPerfilActual ? `
+                        <div style="position:absolute; top:8px; left:8px; background:var(--primary); color:white; padding:4px 8px; border-radius:8px; font-size:0.7rem; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.3);">
+                            <i class="fas fa-star"></i> Perfil Actual
+                        </div>
+                    ` : ''}
+
+                    <div style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.7); padding:8px; display:flex; gap:5px; backdrop-filter: blur(2px);">
+                        
+                        ${!esPerfilActual ? `
+                        <button onclick="fijarFotoPerfil('${estudianteActual.cedula}', '${url}')" title="Usar como foto de perfil" style="flex:1; background:var(--secondary); color:white; border:none; border-radius:6px; padding:6px 0; font-size:0.8rem; cursor:pointer; font-weight:600; transition: background 0.3s;" onmouseover="this.style.background='var(--secondary-hover)'" onmouseout="this.style.background='var(--secondary)'">
+                            <i class="fas fa-user-circle"></i> Elegir
+                        </button>
+                        ` : `<div style="flex:1;"></div>`}
+                        
+                        <button onclick="eliminarReferenciaIA(${id})" title="Eliminar referencia" style="width:35px; background:var(--error); color:white; border:none; border-radius:6px; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition: background 0.3s;" onmouseover="this.style.background='#b71c1c'" onmouseout="this.style.background='var(--error)'">
+                            <i class="fas fa-trash"></i>
                         </button>
                     </div>
                 </div>
@@ -4186,19 +4202,46 @@ async function eliminarReferenciaIA(id) {
 
             if(res.ok) {
                 Swal.fire('Eliminado', 'Referencia borrada exitosamente.', 'success');
-                // 1. Recargar datos globales para actualizar las fotos de perfil en memoria
+                // Recargar datos globales para actualizar las fotos
                 await cargarDatosIniciales();
-                // 2. Extraer el estudiante actualizado con la nueva foto de la Base de Datos
+                // Extraer el estudiante actualizado
                 estudianteActual = usuarios.find(u => u.cedula === estudianteActual.cedula);
-                // 3. Volver a cargar su galería y el modal sin parpadeos
+                // Volver a cargar su galería y reabrir el modal
                 await verEvidenciasEstudiante(estudianteActual); 
                 abrirModalReferencias(); 
             } else {
-                throw new Error('El servidor rechazó la acción.');
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || 'El servidor rechazó la acción.');
             }
         } catch (error) {
             Swal.fire('Error', error.message, 'error');
         }
+    }
+}
+
+async function fijarFotoPerfil(cedula, urlFoto) {
+    try {
+        Swal.fire({ title: 'Actualizando perfil...', didOpen: () => { Swal.showLoading(); }});
+        
+        const res = await fetch(`${API_URL}/establecer_foto_perfil`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cedula: cedula, url_foto: urlFoto })
+        });
+
+        const data = await res.json();
+        
+        if (res.ok && data.status === 'ok') {
+            await cargarDatosIniciales();
+            estudianteActual = usuarios.find(u => u.cedula === cedula);
+            await verEvidenciasEstudiante(estudianteActual);
+            abrirModalReferencias(); 
+            Swal.fire({ title: '¡Actualizado!', text: 'La foto principal ha sido cambiada.', icon: 'success', timer: 1500, showConfirmButton: false });
+        } else {
+            throw new Error(data.mensaje || 'Error al actualizar');
+        }
+    } catch (error) {
+        Swal.fire('Error', error.message, 'error');
     }
 }
     </script>

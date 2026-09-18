@@ -793,6 +793,27 @@ async def buscar_estudiante(cedula: str = Form(...)):
         return JSONResponse({"status": "error", "mensaje": f"Error del servidor: {str(e)}"})
     finally:
         if conn: conn.close()
+
+class FotoPerfilRequest(BaseModel):
+    cedula: str
+    url_foto: str
+
+@app.post("/establecer_foto_perfil")
+async def establecer_foto_perfil(datos: FotoPerfilRequest):
+    """Endpoint para que el Admin elija la foto principal del estudiante"""
+    conn = None
+    try:
+        conn = get_db_connection()
+        if not conn: return JSONResponse({"status": "error", "mensaje": "Sin BD"}, status_code=500)
+        c = conn.cursor()
+        c.execute("UPDATE Usuarios SET Foto = %s WHERE CI = %s", (datos.url_foto, datos.cedula))
+        conn.commit()
+        return JSONResponse({"status": "ok", "mensaje": "Foto de perfil actualizada"})
+    except Exception as e:
+        if conn: conn.rollback()
+        return JSONResponse({"status": "error", "mensaje": str(e)}, status_code=500)
+    finally:
+        if conn: conn.close()
     
 # =========================================================================
 # 7. ENDPOINTS DE GESTIÓN DE USUARIOS
@@ -2518,21 +2539,26 @@ async def eliminar_evidencia(id: int, admin_cedula: str = Form(...)): # 1. Pedir
             except Exception as e_b2:
                 print(f"⚠️ Alerta: Se borró de BD pero falló en B2: {e_b2}")
 
-        # 3. Borrar de la BD y hacer "Rollback" de la foto de perfil
+        # 3. Borrar de la Base de Datos y hacer Rollback del perfil SI es necesario
         ci_estudiante = evidencia.get('CI_Estudiante') or evidencia.get('ci_estudiante')
+        
         c.execute("DELETE FROM Evidencias WHERE id = %s", (id,))
         
-        # Buscar cuál es la foto de referencia más reciente que le queda al alumno
-        c.execute("SELECT Url_Archivo FROM Evidencias WHERE CI_Estudiante = %s AND Tipo_Archivo = 'referencia' ORDER BY id DESC LIMIT 1", (ci_estudiante,))
-        ref_anterior = c.fetchone()
-        
-        if ref_anterior:
-            # Si le queda una foto vieja, la restauramos como principal
-            url_anterior = ref_anterior.get('Url_Archivo') or ref_anterior.get('url_archivo')
-            c.execute("UPDATE Usuarios SET Foto = %s WHERE CI = %s", (url_anterior, ci_estudiante))
-        else:
-            # Si ya no le quedan fotos, vaciamos el campo
-            c.execute("UPDATE Usuarios SET Foto = '' WHERE CI = %s", (ci_estudiante,))
+        if url:
+            # Verificar si el usuario estaba usando esta foto como principal
+            c.execute("SELECT Foto FROM Usuarios WHERE CI = %s", (ci_estudiante,))
+            user_data = c.fetchone()
+            
+            if user_data and (user_data.get('Foto') or user_data.get('foto')) == url:
+                # Buscar otra foto de referencia que le sobre
+                c.execute("SELECT Url_Archivo FROM Evidencias WHERE CI_Estudiante = %s AND Tipo_Archivo = 'referencia' ORDER BY id DESC LIMIT 1", (ci_estudiante,))
+                ref_anterior = c.fetchone()
+                
+                if ref_anterior:
+                    nueva_foto = ref_anterior.get('Url_Archivo') or ref_anterior.get('url_archivo')
+                    c.execute("UPDATE Usuarios SET Foto = %s WHERE CI = %s", (nueva_foto, ci_estudiante))
+                else:
+                    c.execute("UPDATE Usuarios SET Foto = '' WHERE CI = %s", (ci_estudiante,))
 
         conn.commit()
         conn.close()
