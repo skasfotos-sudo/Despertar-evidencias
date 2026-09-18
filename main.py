@@ -518,25 +518,30 @@ def calcular_estadisticas_reales() -> dict:
         fila_usuarios = c.fetchone()
         usuarios_activos = fila_usuarios['total'] if fila_usuarios else 0
         
-        # 2. Contar evidencias (SOLO DE ESTUDIANTES - Ocultando referencias IA)
+        # 2. Contar evidencias y desglosar categorías (SOLO DE ESTUDIANTES)
         c.execute("""
-            SELECT COUNT(e.id) as total 
-            FROM Evidencias e
-            JOIN Usuarios u ON e.CI_Estudiante = u.CI
-            WHERE u.Tipo = 1 AND e.Tipo_Archivo != 'referencia'
-        """)
-        fila_evidencias = c.fetchone()
-        total_evidencias = fila_evidencias['total'] if fila_evidencias else 0
-        
-        # 3. Sumar peso (SOLO DE ESTUDIANTES)
-        c.execute("""
-            SELECT SUM(e.Tamanio_KB) as peso_total 
+            SELECT 
+                COUNT(e.id) as total_general,
+                COUNT(CASE WHEN e.Tipo_Archivo = 'imagen' THEN 1 END) as fotos,
+                COUNT(CASE WHEN e.Tipo_Archivo = 'video' THEN 1 END) as videos,
+                COUNT(CASE WHEN e.Tipo_Archivo = 'documento' THEN 1 END) as documentos,
+                COUNT(CASE WHEN e.Tipo_Archivo = 'referencia' THEN 1 END) as referencias,
+                COALESCE(SUM(e.Tamanio_KB), 0) as peso_total
             FROM Evidencias e
             JOIN Usuarios u ON e.CI_Estudiante = u.CI
             WHERE u.Tipo = 1
         """)
-        fila_peso = c.fetchone()
-        resultado_kb = fila_peso['peso_total'] if fila_peso and fila_peso['peso_total'] else 0
+        fila_evidencias = c.fetchone()
+        
+        total_evidencias = fila_evidencias['total_general'] if fila_evidencias else 0
+        desglose = {
+            "fotos": fila_evidencias['fotos'] if fila_evidencias else 0,
+            "videos": fila_evidencias['videos'] if fila_evidencias else 0,
+            "documentos": fila_evidencias['documentos'] if fila_evidencias else 0,
+            "referencias": fila_evidencias['referencias'] if fila_evidencias else 0,
+            "total": total_evidencias
+        }
+        resultado_kb = fila_evidencias['peso_total'] if fila_evidencias else 0
         
         # Lógica de estimación
         total_kb = resultado_kb
