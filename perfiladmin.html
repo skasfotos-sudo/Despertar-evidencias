@@ -4185,10 +4185,14 @@ async function eliminarReferenciaIA(id) {
             const res = await fetch(`${API_URL}/eliminar_evidencia/${id}`, { method: 'DELETE', body: formData });
 
             if(res.ok) {
-                // Sacar de la memoria visual sin recargar todo
-                evidenciasEstudianteActual = evidenciasEstudianteActual.filter(e => (e.id || e.ID) !== id);
-                abrirModalReferencias(); // Refrescar modal
-                Swal.fire('Eliminado', 'Referencia borrada de la nube.', 'success');
+                Swal.fire('Eliminado', 'Referencia borrada exitosamente.', 'success');
+                // 1. Recargar datos globales para actualizar las fotos de perfil en memoria
+                await cargarDatosIniciales();
+                // 2. Extraer el estudiante actualizado con la nueva foto de la Base de Datos
+                estudianteActual = usuarios.find(u => u.cedula === estudianteActual.cedula);
+                // 3. Volver a cargar su galería y el modal sin parpadeos
+                await verEvidenciasEstudiante(estudianteActual); 
+                abrirModalReferencias(); 
             } else {
                 throw new Error('El servidor rechazó la acción.');
             }

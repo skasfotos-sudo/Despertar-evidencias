@@ -574,7 +574,7 @@ def calcular_estadisticas_reales() -> dict:
             },
             "solicitudes_pendientes": solicitudes_pendientes,
             "nota": nota_almacenamiento,
-            "desglose": desglose
+            "desglose": desglose # <--- ESTO ES LO QUE FALTABA
         }
     except Exception as e:
         print(f"Error estadisticas: {e}")
@@ -1872,60 +1872,65 @@ def estadisticas_almacenamiento():
     try:
         conn = get_db_connection()
         if conn is None:
-            return JSONResponse(
-                status_code=500,
-                content={"error": "No se pudo conectar a la base de datos"}
-            )
+            return JSONResponse(status_code=500, content={"error": "No se pudo conectar a la BD"})
         c = conn.cursor(cursor_factory=RealDictCursor)
 
         # 1. Usuarios activos (excluyendo admin)
         c.execute("SELECT COUNT(*) as total FROM Usuarios WHERE Tipo != 0")
-        result = c.fetchone()
-        usuarios_activos = result['total'] if result else 0
+        usuarios_activos = c.fetchone()['total']
 
-        # 2. Evidencias totales
-        c.execute("SELECT COUNT(*) as total FROM Evidencias")
-        result = c.fetchone()
-        total_evidencias = result['total'] if result else 0
-
-        # 3. Solicitudes pendientes (case-insensitive)
-        c.execute("SELECT COUNT(*) as total FROM Solicitudes WHERE UPPER(Estado) = 'PENDIENTE'")
-        result = c.fetchone()
-        solicitudes_pendientes = result['total'] if result else 0
-
-        # 4. Almacenamiento (manejo de NULL)
-        c.execute("SELECT COALESCE(SUM(Tamanio_KB), 0) as total_kb FROM Evidencias")
-        result = c.fetchone()
-        total_kb = float(result['total_kb']) if result and result['total_kb'] is not None else 0.0
+        # 2. Evidencias totales y desglose exacto
+        c.execute("""
+            SELECT 
+                COUNT(CASE WHEN Tipo_Archivo != 'referencia' THEN 1 END) as total_academicas,
+                COUNT(CASE WHEN Tipo_Archivo = 'imagen' THEN 1 END) as fotos,
+                COUNT(CASE WHEN Tipo_Archivo = 'video' THEN 1 END) as videos,
+                COUNT(CASE WHEN Tipo_Archivo = 'documento' THEN 1 END) as documentos,
+                COUNT(CASE WHEN Tipo_Archivo = 'referencia' THEN 1 END) as referencias,
+                COALESCE(SUM(Tamanio_KB), 0) as total_kb
+            FROM Evidencias
+        """)
+        stats_ev = c.fetchone()
+        
+        total_evidencias_academicas = stats_ev['total_academicas'] if stats_ev else 0
+        desglose = {
+            "fotos": stats_ev['fotos'] if stats_ev else 0,
+            "videos": stats_ev['videos'] if stats_ev else 0,
+            "documentos": stats_ev['documentos'] if stats_ev else 0,
+            "referencias": stats_ev['referencias'] if stats_ev else 0,
+            "total": (stats_ev['fotos'] or 0) + (stats_ev['videos'] or 0) + (stats_ev['documentos'] or 0) + (stats_ev['referencias'] or 0)
+        }
+        
+        total_kb = float(stats_ev['total_kb']) if stats_ev and stats_ev['total_kb'] else 0.0
         gb_usados = total_kb / (1024 * 1024)
 
-        # Costos estimados
+        # 3. Solicitudes pendientes
+        c.execute("SELECT COUNT(*) as total FROM Solicitudes WHERE UPPER(Estado) = 'PENDIENTE'")
+        solicitudes_pendientes = c.fetchone()['total']
+
+        # 4. Costos estimados (La IA cobra por todas las fotos, incluyendo referencias)
         costo_storage = gb_usados * 0.023
-        costo_ia = total_evidencias * 0.001
+        costo_ia = desglose['total'] * 0.001
 
         return JSONResponse({
             "usuarios_activos": usuarios_activos,
-            "total_evidencias": total_evidencias,
-            "solicitudes_pendientes": solicitudes_pendientes,
+            "total_evidencias": total_evidencias_academicas,
+            "almacenamiento_mb": round(total_kb / 1024, 2),
             "almacenamiento_gb": round(gb_usados, 4),
             "costo_estimado_usd": {
                 "storage": round(costo_storage, 4),
                 "rekognition": round(costo_ia, 4),
                 "total": round(costo_storage + costo_ia, 4)
-            }
+            },
+            "solicitudes_pendientes": solicitudes_pendientes,
+            "desglose": desglose
         })
 
     except Exception as e:
         import traceback
-        error_detalle = traceback.format_exc()
-        print(f"❌ Error en estadisticas_almacenamiento: {error_detalle}")
-        return JSONResponse(
-            status_code=500,
-            content={"error": str(e), "detalle": error_detalle}
-        )
+        return JSONResponse(status_code=500, content={"error": str(e), "detalle": traceback.format_exc()})
     finally:
-        if conn:
-            conn.close()
+        if conn: conn.close()
 
 @app.get("/datos_graficos_dashboard")
 async def datos_graficos_dashboard():
@@ -2513,8 +2518,22 @@ async def eliminar_evidencia(id: int, admin_cedula: str = Form(...)): # 1. Pedir
             except Exception as e_b2:
                 print(f"⚠️ Alerta: Se borró de BD pero falló en B2: {e_b2}")
 
-        # 3. Borrar de la Base de Datos
+        # 3. Borrar de la BD y hacer "Rollback" de la foto de perfil
+        ci_estudiante = evidencia.get('CI_Estudiante') or evidencia.get('ci_estudiante')
         c.execute("DELETE FROM Evidencias WHERE id = %s", (id,))
+        
+        # Buscar cuál es la foto de referencia más reciente que le queda al alumno
+        c.execute("SELECT Url_Archivo FROM Evidencias WHERE CI_Estudiante = %s AND Tipo_Archivo = 'referencia' ORDER BY id DESC LIMIT 1", (ci_estudiante,))
+        ref_anterior = c.fetchone()
+        
+        if ref_anterior:
+            # Si le queda una foto vieja, la restauramos como principal
+            url_anterior = ref_anterior.get('Url_Archivo') or ref_anterior.get('url_archivo')
+            c.execute("UPDATE Usuarios SET Foto = %s WHERE CI = %s", (url_anterior, ci_estudiante))
+        else:
+            # Si ya no le quedan fotos, vaciamos el campo
+            c.execute("UPDATE Usuarios SET Foto = '' WHERE CI = %s", (ci_estudiante,))
+
         conn.commit()
         conn.close()
         
