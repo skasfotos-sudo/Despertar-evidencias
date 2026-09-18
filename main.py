@@ -2476,7 +2476,11 @@ async def eliminar_evidencia(id: int, admin_cedula: str = Form(...)): # 1. Pedir
         # 2. Verificar que sea Admin
         c.execute("SELECT Tipo FROM Usuarios WHERE CI = %s", (admin_cedula,))
         admin = c.fetchone()
-        if not admin or admin['Tipo'] != 0:
+        
+        # Leer el rol de forma segura, ignorando si PostgreSQL lo devuelve como 'Tipo' o 'tipo'
+        tipo_admin = admin.get('Tipo') if admin and admin.get('Tipo') is not None else (admin.get('tipo') if admin else None)
+        
+        if not admin or tipo_admin != 0:
              conn.close()
              return JSONResponse({"error": "No autorizado"}, status_code=403)
         
