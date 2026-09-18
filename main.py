@@ -573,7 +573,8 @@ def calcular_estadisticas_reales() -> dict:
                 "total": round(costo_rekognition + costo_almacenamiento, 2)
             },
             "solicitudes_pendientes": solicitudes_pendientes,
-            "nota": nota_almacenamiento
+            "nota": nota_almacenamiento,
+            "desglose": desglose
         }
     except Exception as e:
         print(f"Error estadisticas: {e}")
@@ -2428,18 +2429,14 @@ def resumen_estudiantes():
         conn = get_db_connection()
         c = conn.cursor()
         
-        # Consulta segura con desglose de categorías
+        # Consulta segura
         query = """
             SELECT 
                 u.Nombre, u.Apellido, u.CI, u.Foto,
-                COUNT(CASE WHEN e.Tipo_Archivo = 'imagen' THEN 1 END) as fotos,
-                COUNT(CASE WHEN e.Tipo_Archivo = 'video' THEN 1 END) as videos,
-                COUNT(CASE WHEN e.Tipo_Archivo = 'documento' THEN 1 END) as documentos,
-                COUNT(CASE WHEN e.Tipo_Archivo = 'referencia' THEN 1 END) as referencias,
                 COUNT(e.id) as total_evidencias,
                 COALESCE(SUM(e.Tamanio_KB), 0) as total_kb
             FROM Usuarios u
-            LEFT JOIN Evidencias e ON u.CI = e.CI_Estudiante
+            LEFT JOIN Evidencias e ON u.CI = e.CI_Estudiante AND e.Tipo_Archivo != 'referencia'
             WHERE u.Tipo = 1
             GROUP BY u.CI, u.Nombre, u.Apellido, u.Foto
             ORDER BY u.Apellido ASC
