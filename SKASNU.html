@@ -21,19 +21,21 @@
    ========================================================================== */
 :root {
     --hero-bg-image: url('Img/collage_claro.webp');
-    --primary: #6A0DAD;
-    --primary-dark: #4a0072;
-    --primary-light: #9d46ff;
-    --primary-soft: rgba(106, 13, 173, 0.08);
+    /* Colores ONU */
+    --primary: #005bbb; /* Azul clásico ONU */
+    --primary-dark: #003f8a; /* Azul marino profundo */
+    --primary-light: #418fde; /* Azul celeste */
+    --primary-soft: rgba(0, 91, 187, 0.08);
 
-    --secondary: #2E8B57;
-    --secondary-hover: #1e5e3a;
-
+    --secondary: #009edb; /* Celeste vibrante para acentos */
+    --secondary-hover: #007bb5;
+    
+    /* El resto de tus variables de fondo, error, success se mantienen igual para no romper el diseño... */
     --error: #d32f2f;
     --warning: #f9a825;
     --info: #0288d1;
 
-    --bg-image: url('Img/Claro.webp');
+    --bg-image: url('Img/Claro_SKASNU.jpg');
     --bg-body: #f4f6f9;
     --bg-card: #ffffff;
     --bg-header: rgba(255, 255, 255, 0.95);
@@ -48,7 +50,8 @@
     --input-bg: #f8f9fa;
 
     --shadow-soft: 0 4px 20px rgba(0,0,0,0.05);
-    --shadow-hover: 0 10px 25px rgba(106, 13, 173, 0.15);
+    /* Sombra hover adaptada al nuevo azul */
+    --shadow-hover: 0 10px 25px rgba(0, 91, 187, 0.15);
     --shadow-card: 0 2px 8px rgba(0,0,0,0.04);
     --shadow-nav: 0 2px 15px rgba(0,0,0,0.05);
 
@@ -69,7 +72,7 @@
 
 body.dark-mode {
     --hero-bg-image: url('Img/collage_oscuro.webp');
-    --bg-image: url('Img/Oscuro.webp');
+    --bg-image: url('Img/Oscuro_SKASNU.jpg');
     --bg-body: #121212;
     --bg-card: #1e1e1e;
     --bg-header: rgba(30, 30, 30, 0.95);
@@ -254,9 +257,10 @@ h1, h2, h3, h4 { font-family: 'Poppins', sans-serif; font-weight: 600; line-heig
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
+    /* Degradado azul ONU */
     background: linear-gradient(135deg,
-        rgba(106, 13, 173, 0.85) 0%,
-        rgba(74, 0, 114, 0.75) 50%,
+        rgba(0, 91, 187, 0.85) 0%,
+        rgba(0, 63, 138, 0.75) 50%,
         rgba(0, 0, 0, 0.75) 100%);
     z-index: 0;
     backdrop-filter: blur(3px);
@@ -285,13 +289,16 @@ h1, h2, h3, h4 { font-family: 'Poppins', sans-serif; font-weight: 600; line-heig
 }
 
 .hero-logo {
-    width: min(300px, 70%);
+    width: min(350px, 75%);
     margin: 0 auto 22px;
-    filter: drop-shadow(0 10px 30px rgba(0,0,0,0.4));
-    background: rgba(255,255,255,0.95);
-    border-radius: 50%;
-    padding: 18px;
-    animation: popIn 0.8s var(--transition-bounce);
+    filter: drop-shadow(0 0 15px rgba(255,255,255,0.6));
+    animation: popIn 0.8s var(--transition-bounce) forwards, floating 6s ease-in-out infinite 0.8s;
+}
+
+@keyframes floating {
+    0% { transform: translateY(0); filter: drop-shadow(0 0 15px rgba(255,255,255,0.6)); }
+    50% { transform: translateY(-12px); filter: drop-shadow(0 0 25px rgba(255,255,255,0.9)); }
+    100% { transform: translateY(0); filter: drop-shadow(0 0 15px rgba(255,255,255,0.6)); }
 }
 
 .hero h1 {
@@ -852,7 +859,6 @@ footer {
     height: 60px;
     width: auto;
     margin: 0 auto 12px;
-    filter: brightness(0) invert(1);
     opacity: 0.95;
 }
 .footer-logo h3 {
@@ -1002,7 +1008,7 @@ footer {
     <div class="hero-content">
         <span class="hero-pill"><i class="fas fa-star"></i> Invitación Oficial · Inscripciones Abiertas</span>
 
-        <img class="hero-logo" src="Img/Logo_pestaña.webp" alt="Logo SKASNU 2026">
+        <img class="hero-logo" src="Img/SKASNU_logo.png" alt="Logo SKASNU 2026">
 
         <h1>SKASNU <span class="accent">2026</span></h1>
         <div class="hair"></div>
@@ -1236,7 +1242,7 @@ footer {
             <div class="step">
                 <div class="n">2</div>
                 <div class="t">
-                    Realiza el <b>pago institucional</b> y envía el comprobante al correo <b>skasnu@despertar.edu.ec</b>. Recibirás confirmación de cupos y asignación de comités dentro de las 72 horas siguientes.
+                    Realiza el <b>pago institucional</b> y envía el comprobante al correo <b>skasfotos@gmail.com</b>. Recibirás confirmación de cupos y asignación de comités dentro de las 72 horas siguientes.
                 </div>
             </div>
             <div class="step">
@@ -1252,46 +1258,43 @@ footer {
         </div>
 
         <div class="cta-row" style="justify-content:flex-start; margin-top:36px;">
-            <a class="btn-hero" style="background:var(--primary);" href="mailto:skasnu@despertar.edu.ec?subject=Inscripción%20SKASNU%202026">
+            <a class="btn-hero" style="background:var(--primary);" href="mailto:skasfotos@gmail.com?subject=Inscripción%20SKASNU%202026">
                 <i class="fas fa-paper-plane"></i> Inscribir mi delegación
             </a>
-            <a class="btn-hero" style="background:var(--secondary);" href="https://wa.me/593986089754" target="_blank" rel="noopener">
+            <a class="btn-hero" style="background:var(--secondary);" href="https://wa.me/593994769262" target="_blank" rel="noopener">
                 <i class="fab fa-whatsapp"></i> Escribir por WhatsApp
             </a>
         </div>
     </div>
 </section>
 
-<!-- ================= FOOTER ================= -->
 <footer>
-    <div class="footer-content">
-        <div class="footer-logo">
-            <img src="Img/Logo-Despertar (Oscuro).webp?v=1" alt="Logo Despertar" width="150" height="60" loading="lazy">
-            <h3>Unidad Educativa Particular Despertar</h3>
+        <div class="footer-content">
+            <div class="footer-logo">
+                <img src="Img/Logo-Despertar (Oscuro).webp?v=1" alt="Logo de la Unidad Educativa Despertar" width="150" height="50" loading="lazy">
+                <h3>Unidad Educativa Particular Despertar</h3>
+            </div>
+            <div class="footer-links" style="margin-bottom:20px;">
+                <a href="https://uepdespertar.edu.ec/nosotros/" target="_blank">Sobre Nosotros</a>
+            </div>
+            
+            <div class="footer-social">
+                <a href="https://www.facebook.com/uepdespertar" aria-label="Visítanos en Facebook">
+                    <i class="fab fa-facebook-f"></i>
+                </a>
+                <a href="https://www.youtube.com/@DespertarSKAS" aria-label="Mira nuestros videos en YouTube">
+                    <i class="fab fa-youtube"></i>
+                </a>
+                <a href="https://www.instagram.com/skas_despertar" aria-label="Síguenos en Instagram">
+                    <i class="fab fa-instagram"></i>
+                </a>
+            </div>
+            
+            <div class="copyright">
+                <p>© 2026 Plataforma Educativa - Unidad Educativa Particular Despertar.</p>
+            </div>
         </div>
-
-        <div class="footer-links">
-            <a href="https://uepdespertar.edu.ec/nosotros/" target="_blank">Sobre Nosotros</a>
-            <a href="index.html">Plataforma de Evidencias</a>
-        </div>
-
-        <div class="footer-social">
-            <a href="https://www.facebook.com/uepdespertar" aria-label="Facebook">
-                <i class="fab fa-facebook-f"></i>
-            </a>
-            <a href="https://www.youtube.com/@DespertarSKAS" aria-label="YouTube">
-                <i class="fab fa-youtube"></i>
-            </a>
-            <a href="https://www.instagram.com/skas_despertar" aria-label="Instagram">
-                <i class="fab fa-instagram"></i>
-            </a>
-        </div>
-
-        <div class="copyright">
-            <p>© 2026 Plataforma Educativa · Unidad Educativa Particular Despertar · SKASNU</p>
-        </div>
-    </div>
-</footer>
+    </footer>
 
 <!-- ================= MODAL SOPORTE ================= -->
 <div class="overlay-bg" id="overlaySoporte" style="display:none;"></div>
@@ -1303,14 +1306,14 @@ footer {
 
         <div style="display:flex; flex-direction:column; gap:12px; text-align:left;">
             <div style="display:flex; align-items:center; gap:14px; padding:12px 16px; background:var(--input-bg); border-radius:10px; color:var(--text-main); font-weight:500;">
-                <i class="fab fa-whatsapp" style="color:var(--secondary); font-size:1.3rem; width:28px;"></i> 098 608 9754
+                <i class="fab fa-whatsapp" style="color:var(--secondary); font-size:1.3rem; width:28px;"></i> 099 476 9262
             </div>
             <div style="display:flex; align-items:center; gap:14px; padding:12px 16px; background:var(--input-bg); border-radius:10px; color:var(--text-main); font-weight:500;">
                 <i class="fas fa-phone-alt" style="color:var(--secondary); font-size:1.3rem; width:28px;"></i> 022 046 055
             </div>
             <div style="display:flex; align-items:center; gap:14px; padding:12px 16px; background:var(--input-bg); border-radius:10px; color:var(--text-main); font-weight:500;">
                 <i class="fas fa-envelope" style="color:var(--secondary); font-size:1.3rem; width:28px;"></i>
-                <a href="mailto:akuamtam@hotmail.com" style="color:var(--primary);">akuamtam@hotmail.com</a>
+                <a href="mailto:skasfotos@gmail.com" style="color:var(--primary);">skasfotos@gmail.com</a>
             </div>
         </div>
 
