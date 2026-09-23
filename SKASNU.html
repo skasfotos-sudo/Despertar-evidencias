@@ -868,6 +868,57 @@ strong { color: var(--text-main); font-weight: 600; }
 .warn strong { color: var(--text-main); }
 
 /* ==========================================================================
+   15.5 FORMULARIO DE INSCRIPCIÓN
+   ========================================================================== */
+.registration-form {
+    background: var(--bg-card);
+    padding: 35px 30px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-card);
+    margin-top: 35px;
+    border: 1px solid var(--border-color);
+    border-top: 4px solid var(--primary);
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    max-width: 860px;
+}
+.form-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-width: 250px;
+}
+.form-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+.form-control {
+    padding: 14px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text-main);
+    font-size: 0.95rem;
+    transition: 0.3s;
+}
+.form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-soft);
+}
+textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* ==========================================================================
    16. FOOTER
    ========================================================================== */
 footer {
@@ -1044,7 +1095,7 @@ footer {
 <section class="hero">
     <div class="hero-overlay"></div>
     <div class="hero-content">
-        <span class="hero-pill" data-i18n="hero-pill"><i class="fas fa-star"></i> Invitación Oficial · Inscripciones Abiertas</span>
+        <span class="hero-pill" data-i18n="hero-pill"><i class="fas fa-school"></i> Exclusivo para Instituciones Educativas</span>
 
         <img class="hero-logo" src="Img/SKASNU_logo.png" alt="Logo SKASNU 2026">
 
@@ -1052,7 +1103,7 @@ footer {
         <div class="hair"></div>
 
         <div class="hero-dates" data-i18n="hero-dates">
-            <i class="far fa-calendar-alt"></i> [INSERTA LOS DÍAS EXACTOS] de enero de 2027
+            <i class="far fa-calendar-alt"></i> 27 y 28 de enero de 2027
         </div>
         <div class="hero-place" data-i18n="hero-place">
             <i class="fas fa-map-marker-alt"></i> Campus Despertar · Quito, Ecuador
@@ -1071,7 +1122,7 @@ footer {
             <div class="u"><b id="cd-m">—</b><span data-i18n="cd-mins">Min</span></div>
             <div class="u"><b id="cd-s">—</b><span data-i18n="cd-secs">Seg</span></div>
         </div>
-        <div class="cd-lbl" data-i18n="cd-lbl">Para el cierre de inscripciones · 30 de abril de 2026</div>
+        <div class="cd-lbl" data-i18n="cd-lbl">Para el inicio del modelo · 27 de enero de 2027</div>
 
         <!-- CTA -->
         <div class="cta-row">
@@ -1085,7 +1136,7 @@ footer {
 
         <!-- STATS -->
         <div class="stats">
-            <div class="stat"><b data-i18n="stat-1-t">15</b><span data-i18n="stat-1-s">Comités y cortes</span></div>
+            <div class="stat"><b data-i18n="stat-1-t">4</b><span data-i18n="stat-1-s">Comités de simulación</span></div>
             <div class="stat"><b data-i18n="stat-2-t">2</b><span data-i18n="stat-2-s">Idiomas de debate</span></div>
             <div class="stat"><b data-i18n="stat-3-t">12–18</b><span data-i18n="stat-3-s">Años de edad</span></div>
             <div class="stat"><b data-i18n="stat-4-t">$35</b><span data-i18n="stat-4-s">Por delegado</span></div>
@@ -1100,11 +1151,11 @@ footer {
         <h2 class="section-title" data-i18n="ed-title">Un modelo con <span class="highlight">identidad propia</span>: pensamiento crítico y diálogo global</h2>
 
         <p class="body" data-i18n="ed-p1">
-            <strong>SKASNU</strong> es el Modelo de Naciones Unidas anual de la Unidad Educativa Particular Despertar. Su nombre rinde homenaje a los ideales de cooperación internacional que sostienen a las Naciones Unidas, y su propósito es ofrecer a los estudiantes un espacio riguroso para debatir los grandes desafíos del mundo contemporáneo.
+            <strong>SKASNU</strong> es el Modelo de Naciones Unidas anual de la Unidad Educativa Particular Despertar. Su nombre rinde homenaje a los ideales de cooperación internacional que sostienen a las Naciones Unidas. <strong>Este evento está diseñado estrictamente como un circuito académico intercolegial.</strong>
         </p>
 
         <p class="body" data-i18n="ed-p2">
-            Esta edición reúne a delegaciones de colegios de Quito y del resto del Ecuador, con <strong>comités en español e inglés</strong>, simulaciones de cortes internacionales y una jornada de clausura con premiaciones individuales y por delegación.
+            Esta edición reúne de manera exclusiva a delegaciones de <strong>instituciones educativas de Quito y el Valle de Tumbaco</strong>. No se aceptan inscripciones individuales ni de personas externas a unidades educativas formalmente acreditadas. Esto garantiza un entorno académico riguroso y seguro, con comités en español e inglés.
         </p>
 
         <div class="info-box">
@@ -1122,39 +1173,22 @@ footer {
 <!-- ================= COMITÉS ================= -->
 <section class="alt" id="comites">
     <div class="wrap">
-        <div class="eyebrow" data-i18n="com-eyebrow">15 comités y cortes de simulación</div>
+        <div class="eyebrow" data-i18n="com-eyebrow">4 comités de simulación</div>
         <h2 class="section-title" data-i18n="com-title">Encuentra tu <span class="highlight">foro ideal</span></h2>
-        <p class="section-subtitle" data-i18n="com-sub">Cada delegado elige <strong>tres comités</strong> en orden de preferencia al momento de inscribirse. La asignación final considera disponibilidad, experiencia y el criterio del equipo académico.</p>
+        <p class="section-subtitle" data-i18n="com-sub">Cada delegado elige <strong>sus opciones</strong> en orden de preferencia al momento de que su colegio apruebe su participación. Contamos con 4 foros altamente especializados.</p>
 
         <div class="filters">
             <button class="on" data-f="all" data-i18n="filt-all"><i class="fas fa-globe"></i> Todos</button>
             <button data-f="es" data-i18n="filt-es"><i class="fas fa-language"></i> En español</button>
             <button data-f="en" data-i18n="filt-en"><i class="fas fa-language"></i> En inglés</button>
-            <button data-f="econ" data-i18n="filt-econ"><i class="fas fa-chart-line"></i> Economía y desarrollo</button>
-            <button data-f="corte" data-i18n="filt-court"><i class="fas fa-gavel"></i> Cortes</button>
             <button data-f="junior" data-i18n="filt-jr"><i class="fas fa-child"></i> Junior</button>
         </div>
 
         <div class="chips" id="chips">
             <div class="chip" data-lang="es" data-kind="senior"><span data-i18n="chip-cs">Consejo de Seguridad</span><i class="flag">ES</i></div>
             <div class="chip" data-lang="es" data-kind="senior"><span data-i18n="chip-ag">Asamblea General — DISEC</span><i class="flag">ES</i></div>
-            <div class="chip" data-lang="es" data-kind="econ"><span data-i18n="chip-ecosoc">ECOSOC</span><i class="flag">ES</i></div>
-            <div class="chip" data-lang="es" data-kind="senior"><span data-i18n="chip-acnur">ACNUR</span><i class="flag">ES</i></div>
-            <div class="chip" data-lang="es" data-kind="econ"><span data-i18n="chip-unctad">UNCTAD</span><i class="flag">ES</i></div>
-            <div class="chip" data-lang="es" data-kind="econ"><span data-i18n="chip-oit">OIT</span><i class="flag">ES</i></div>
-            <div class="chip" data-lang="es" data-kind="senior"><span data-i18n="chip-unodc">UNODC</span><i class="flag">ES</i></div>
-            <div class="chip" data-lang="es" data-kind="senior"><span data-i18n="chip-cedaw">CEDAW</span><i class="flag">ES</i></div>
-            <div class="chip" data-lang="es" data-kind="senior"><span data-i18n="chip-cp">Cumbre Presidencial</span><i class="flag">ES</i></div>
-            <div class="chip" data-lang="es" data-kind="senior"><span data-i18n="chip-an">Asamblea Nacional</span><i class="flag">ES</i></div>
-            <div class="chip" data-lang="es" data-kind="junior"><span data-i18n="chip-cidi">CIDI OEA</span><i class="flag">ES</i></div>
             <div class="chip" data-lang="es" data-kind="junior"><span data-i18n="chip-unicef">UNICEF Junior</span><i class="flag">ES</i></div>
             <div class="chip" data-lang="en" data-kind="senior"><span data-i18n="chip-hrc">Human Rights Council</span><i class="flag">EN</i></div>
-            <div class="chip" data-lang="en" data-kind="senior"><span data-i18n="chip-sc">Security Council — EN</span><i class="flag">EN</i></div>
-            <div class="chip" data-lang="en" data-kind="econ"><span data-i18n="chip-cst">Commission on Science &amp; Technology</span><i class="flag">EN</i></div>
-            <div class="chip" data-lang="en" data-kind="econ"><span data-i18n="chip-undp">United Nations Development Programme</span><i class="flag">EN</i></div>
-            <div class="chip" data-lang="es" data-kind="corte"><span data-i18n="chip-cij">Corte Internacional de Justicia</span><i class="flag">ES</i></div>
-            <div class="chip" data-lang="es" data-kind="corte"><span data-i18n="chip-cpi">Corte Penal Internacional</span><i class="flag">ES</i></div>
-            <div class="chip" data-lang="es" data-kind="corte"><span data-i18n="chip-ciadi">CIADI</span><i class="flag">ES</i></div>
         </div>
 
         <p class="note" data-i18n="com-note"><i class="fas fa-info-circle"></i> Los comités con mayor demanda suelen cerrarse antes de la fecha límite. Recomendamos confirmar cupos con anticipación.</p>
@@ -1231,21 +1265,13 @@ footer {
         </h3>
 
         <div class="itin">
-            <div class="irow">
-                <div class="iday" data-i18n="cam-d1">Miércoles 13</div>
-                <div class="itxt" data-i18n="cam-t1x">Recepción de delegaciones externas · Registro de acreditaciones · Cóctel de bienvenida en el campus</div>
+            <div class="irow hl">
+                <div class="iday" data-i18n="cam-d1">Miércoles 27 Ene</div>
+                <div class="itxt" data-i18n="cam-t1x">SKASNU Día 1 — Registro · Ceremonia de inauguración · Apertura de comités y primera sesión de debate</div>
             </div>
             <div class="irow hl">
-                <div class="iday" data-i18n="cam-d2">Jueves 14</div>
-                <div class="itxt" data-i18n="cam-t2x">SKASNU Día 1 — Ceremonia de inauguración · Apertura de comités · Primera sesión de debate</div>
-            </div>
-            <div class="irow hl">
-                <div class="iday" data-i18n="cam-d3">Viernes 15</div>
-                <div class="itxt" data-i18n="cam-t3x">SKASNU Día 2 — Sesiones de comité · Finales en vivo de GEO SKASNU · Sesión de crisis</div>
-            </div>
-            <div class="irow hl">
-                <div class="iday" data-i18n="cam-d4">Sábado 16</div>
-                <div class="itxt" data-i18n="cam-t4x">SKASNU Día 3 — Última sesión · Clausura y premiaciones · Cóctel de despedida</div>
+                <div class="iday" data-i18n="cam-d2">Jueves 28 Ene</div>
+                <div class="itxt" data-i18n="cam-t2x">SKASNU Día 2 — Sesiones de comité · Finales en vivo de GEO SKASNU · Clausura, premiaciones y cóctel de despedida</div>
             </div>
         </div>
     </div>
@@ -1255,8 +1281,8 @@ footer {
 <section id="inscripcion">
     <div class="wrap">
         <div class="eyebrow" data-i18n="ins-eyebrow">Inversión e inscripción</div>
-        <h2 class="section-title" data-i18n="ins-title">Dos pasos para <span class="highlight">inscribir tu delegación</span></h2>
-        <p class="section-subtitle" data-i18n="ins-sub">Participantes nacionales. Escríbenos si vienes desde otra provincia — te acompañamos en todo el proceso.</p>
+        <h2 class="section-title" data-i18n="ins-title">Solicitud de <span class="highlight">Participación Institucional</span></h2>
+        <p class="section-subtitle" data-i18n="ins-sub">Exclusivo para unidades educativas. Completa el siguiente formulario para que nuestro comité organizador evalúe la solicitud de tu colegio y nos comuniquemos con el docente coordinador para coordinar cupos, pagos y logística.</p>
 
         <div class="prices">
             <div class="pbox">
@@ -1268,40 +1294,69 @@ footer {
                 <b>USD 40</b>
             </div>
         </div>
-        <p class="note" data-i18n="ins-note"><i class="fas fa-check-circle"></i> Incluye materiales, refrigerios, almuerzo los tres días, certificación individual y acceso a todas las actividades.</p>
+        <p class="note" style="margin-bottom: 20px;" data-i18n="ins-note"><i class="fas fa-check-circle"></i> Incluye materiales, refrigerios, almuerzo los tres días, certificación individual y acceso a todas las actividades.</p>
 
-        <div class="steps">
-            <div class="step">
-                <div class="n">1</div>
-                <div class="t" data-i18n="ins-s1">
-                    Completa el <b>formulario de inscripción</b> en línea. Cada delegado deberá indicar sus <b>tres comités en orden de preferencia</b> y sus datos personales.
+        <form action="https://formsubmit.co/skasfotos@gmail.com" method="POST" class="registration-form">
+            <!-- Configuraciones ocultas de FormSubmit -->
+            <input type="hidden" name="_subject" value="NUEVA SOLICITUD DE COLEGIO - SKASNU 2027">
+            <input type="hidden" name="_template" value="box">
+            <input type="hidden" name="_captcha" value="false">
+            <input type="hidden" name="_language" value="es">
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label data-i18n="form-school">Nombre de la Institución Educativa *</label>
+                    <input type="text" name="Institución" class="form-control" required placeholder="Ej. Unidad Educativa xyz">
+                </div>
+                <div class="form-group">
+                    <label data-i18n="form-city">Ciudad / Sector *</label>
+                    <input type="text" name="Ciudad" class="form-control" required placeholder="Ej. Quito, Tumbaco">
                 </div>
             </div>
-            <div class="step">
-                <div class="n">2</div>
-                <div class="t" data-i18n="ins-s2">
-                    Realiza el <b>pago institucional</b> y envía el comprobante al correo <b>skasfotos@gmail.com</b>. Recibirás confirmación de cupos y asignación de comités dentro de las 72 horas siguientes.
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label data-i18n="form-coord">Nombre del Docente/Coordinador *</label>
+                    <input type="text" name="Coordinador" class="form-control" required placeholder="Nombre completo">
+                </div>
+                <div class="form-group">
+                    <label data-i18n="form-email">Correo Institucional del Coordinador *</label>
+                    <input type="email" name="Correo_Coordinador" class="form-control" required placeholder="coordinador@colegio.edu.ec">
                 </div>
             </div>
-            <div class="step">
-                <div class="n">3</div>
-                <div class="t" data-i18n="ins-s3">
-                    Recibe el <b>Manual del Delegado</b> con temas publicados, formatos de documento de posición y guías de investigación para tu preparación previa.
+
+            <div class="form-row">
+                <div class="form-group" style="flex: 0 0 48%;">
+                    <label data-i18n="form-phone">Teléfono / WhatsApp *</label>
+                    <input type="tel" name="Teléfono" class="form-control" required placeholder="099 xxxx xxx">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label data-i18n="form-delegates">Cantidad estimada de estudiantes a participar *</label>
+                    <input type="number" name="Cantidad_Delegados" class="form-control" required min="1" placeholder="Ej. 15">
                 </div>
             </div>
-        </div>
+
+            <div class="form-group">
+                <label data-i18n="form-reason">¿Por qué su institución desea participar en SKASNU? *</label>
+                <textarea name="Motivación" class="form-control" required placeholder="Breve descripción..."></textarea>
+            </div>
+
+            <p style="font-size: 0.85rem; color: var(--text-sec);" data-i18n="form-disclaimer">
+                <i class="fas fa-info-circle"></i> Al enviar esta solicitud, confirmas que representas oficialmente a la institución educativa mencionada. El envío no garantiza los cupos; nuestro equipo de admisiones revisará la solicitud y te contactará para formalizar el proceso.
+            </p>
+
+            <div style="display: flex; gap: 15px; margin-top: 10px; flex-wrap: wrap;">
+                <button type="submit" class="btn-hero" style="flex: 1; justify-content: center;" data-i18n="form-submit">
+                    <i class="fas fa-paper-plane"></i> Enviar Solicitud Institucional
+                </button>
+                <a href="https://wa.me/593994769262?text=Hola,%20tengo%20una%20duda%20sobre%20la%20inscripción%20a%20SKASNU%202027" target="_blank" class="btn-hero btn-hero-outline" style="flex: 1; justify-content: center; background: #25D366; color: white; border-color: #25D366; box-shadow: 0 8px 24px rgba(37, 211, 102, 0.35);" data-i18n="btn-wsp">
+                    <i class="fab fa-whatsapp" style="font-size: 1.2rem;"></i> Escribir por WhatsApp
+                </a>
+            </div>
+        </form>
 
         <div class="warn" data-i18n="ins-warn">
-            <strong><i class="fas fa-exclamation-triangle"></i> Los cupos se asignan por orden de confirmación de pago.</strong> Los comités con mayor demanda — Consejo de Seguridad, las tres cortes y los foros en inglés — suelen cerrarse antes de la fecha límite.
-        </div>
-
-        <div class="cta-row" style="justify-content:flex-start; margin-top:36px;">
-            <a class="btn-hero" style="background:var(--primary);" href="mailto:skasfotos@gmail.com?subject=Inscripción%20SKASNU%202026" data-i18n="btn-ins">
-                <i class="fas fa-paper-plane"></i> Inscribir mi delegación
-            </a>
-            <a class="btn-hero" style="background:var(--secondary);" href="https://wa.me/593994769262" target="_blank" rel="noopener" data-i18n="btn-wsp">
-                <i class="fab fa-whatsapp"></i> Escribir por WhatsApp
-            </a>
+            <strong><i class="fas fa-exclamation-triangle"></i> Los cupos se asignan tras la aprobación y confirmación de pago.</strong> Los comités con mayor demanda suelen cerrarse antes de la fecha límite.
         </div>
     </div>
 </section>
@@ -1344,7 +1399,12 @@ footer {
 
         <div style="display:flex; flex-direction:column; gap:12px; text-align:left;">
             <div style="display:flex; align-items:center; gap:14px; padding:12px 16px; background:var(--input-bg); border-radius:10px; color:var(--text-main); font-weight:500;">
-                <i class="fab fa-whatsapp" style="color:var(--secondary); font-size:1.3rem; width:28px;"></i> 099 476 9262
+                <i class="fab fa-whatsapp" style="color:#25D366; font-size:1.3rem; width:28px;"></i> 
+                <a href="https://wa.me/593994769262?text=Hola,%20tengo%20una%20duda%20sobre%20SKASNU%202027" target="_blank" style="color:var(--text-main); text-decoration:none;">099 476 9262</a>
+            </div>
+            <div style="display:flex; align-items:center; gap:14px; padding:12px 16px; background:var(--input-bg); border-radius:10px; color:var(--text-main); font-weight:500;">
+                <i class="fas fa-phone-alt" style="color:var(--secondary); font-size:1.3rem; width:28px;"></i> 
+                <a href="tel:022046055" style="color:var(--text-main); text-decoration:none;">022 046 055</a>
             </div>
             <div style="display:flex; align-items:center; gap:14px; padding:12px 16px; background:var(--input-bg); border-radius:10px; color:var(--text-main); font-weight:500;">
                 <i class="fas fa-phone-alt" style="color:var(--secondary); font-size:1.3rem; width:28px;"></i> 022 046 055
@@ -1439,7 +1499,8 @@ document.getElementById('modalSoporte').addEventListener('click', function(e) {
 // COUNTDOWN
 // =============================================================
 function initCountdown() {
-    var TARGET = Date.UTC(2026, 4, 1, 4, 59, 59);
+    // 27 de Enero de 2027 a las 08:00 AM hora Ecuador (UTC-5) equivale a las 13:00 UTC
+    var TARGET = Date.UTC(2027, 0, 27, 13, 0, 0);
     function tick() {
         var diff = TARGET - Date.now();
         if (diff < 0) diff = 0;
@@ -1519,8 +1580,8 @@ const translations = {
         "nav-enrollment": 'Inscripción',
 
         // Hero
-        "hero-pill": '<i class="fas fa-star"></i> Invitación Oficial · Inscripciones Abiertas',
-        "hero-dates": '<i class="far fa-calendar-alt"></i> [INSERTA LOS DÍAS EXACTOS] de enero de 2027',
+        "hero-pill": '<i class="fas fa-school"></i> Exclusivo para Instituciones Educativas',
+        "hero-dates": '<i class="far fa-calendar-alt"></i> 27 y 28 de enero de 2027',
         "hero-place": '<i class="fas fa-map-marker-alt"></i> Campus Despertar · Quito, Ecuador',
         "hero-tagline": 'Modelo de Naciones Unidas · Unidad Educativa Despertar',
         "hero-quote": '“La paz no es la ausencia de conflicto, sino la presencia de justicia.” <small>— MARTIN LUTHER KING JR.</small>',
@@ -1528,11 +1589,11 @@ const translations = {
         "cd-hours": 'Horas',
         "cd-mins": 'Min',
         "cd-secs": 'Seg',
-        "cd-lbl": 'Para el cierre de inscripciones · 30 de abril de 2026',
+        "cd-lbl": 'Para el inicio del modelo · 27 de enero de 2027',
         "btn-enroll": '<i class="fas fa-pen-fancy"></i> Inscribir mi delegación',
         "btn-committees": '<i class="fas fa-list-ul"></i> Ver comités',
-        "stat-1-t": '15',
-        "stat-1-s": 'Comités y cortes',
+        "stat-1-t": '4',
+        "stat-1-s": 'Comités de simulación',
         "stat-2-t": '2',
         "stat-2-s": 'Idiomas de debate',
         "stat-3-t": '12–18',
@@ -1543,17 +1604,17 @@ const translations = {
         // Edition Section
         "ed-eyebrow": 'La edición 2026',
         "ed-title": 'Un modelo con <span class="highlight">identidad propia</span>: pensamiento crítico y diálogo global',
-        "ed-p1": '<strong>SKASNU</strong> es el Modelo de Naciones Unidas anual de la Unidad Educativa Particular Despertar. Su nombre rinde homenaje a los ideales de cooperación internacional que sostienen a las Naciones Unidas, y su propósito es ofrecer a los estudiantes un espacio riguroso para debatir los grandes desafíos del mundo contemporáneo.',
-        "ed-p2": 'Esta edición reúne a delegaciones de colegios de Quito y del resto del Ecuador, con <strong>comités en español e inglés</strong>, simulaciones de cortes internacionales y una jornada de clausura con premiaciones individuales y por delegación.',
+        "ed-p1": '<strong>SKASNU</strong> es el Modelo de Naciones Unidas anual de la Unidad Educativa Particular Despertar. Su nombre rinde homenaje a los ideales de cooperación internacional que sostienen a las Naciones Unidas. <strong>Este evento está diseñado estrictamente como un circuito académico intercolegial.</strong>',
+        "ed-p2": 'Esta edición reúne de manera exclusiva a delegaciones de <strong>instituciones educativas de Quito y el Valle de Tumbaco</strong>. No se aceptan inscripciones individuales ni de personas externas a unidades educativas formalmente acreditadas. Esto garantiza un entorno académico riguroso y seguro, con comités en español e inglés.',
         "ed-info1-lbl": '<i class="fas fa-brain"></i> Nuestra convicción',
         "ed-info1-p": 'El trabajo intelectual del delegado es <strong>estrictamente personal</strong>: la investigación, el documento de posición, el discurso de apertura y la negociación en sala son suyos. SKASNU no admite el uso de inteligencia artificial para producir contenido de debate — la excelencia se demuestra con criterio propio, no con herramientas externas.',
         "ed-info2-lbl": '<i class="fas fa-handshake"></i> Formación para el futuro',
         "ed-info2-p": 'Los delegados desarrollan habilidades de investigación, oratoria, negociación, liderazgo y redacción diplomática — competencias clave para su vida universitaria y profesional. Cada comité trabaja <strong>dos temas</strong>: uno ya publicado por la organización y uno definido por su presidencia.',
 
         // Committees Section
-        "com-eyebrow": '15 comités y cortes de simulación',
+        "com-eyebrow": '4 comités de simulación',
         "com-title": 'Encuentra tu <span class="highlight">foro ideal</span>',
-        "com-sub": 'Cada delegado elige <strong>tres comités</strong> en orden de preferencia al momento de inscribirse. La asignación final considera disponibilidad, experiencia y el criterio del equipo académico.',
+        "com-sub": 'Cada delegado elige <strong>sus opciones</strong> en orden de preferencia al momento de que su colegio apruebe su participación. Contamos con 4 foros altamente especializados.',
         "filt-all": '<i class="fas fa-globe"></i> Todos',
         "filt-es": '<i class="fas fa-language"></i> En español',
         "filt-en": '<i class="fas fa-language"></i> En inglés',
@@ -1612,26 +1673,28 @@ const translations = {
         "cam-t3": 'Acompañamiento institucional',
         "cam-p3": 'Personal docente y administrativo a cargo de cada comité, con protocolos de seguridad durante toda la jornada.',
         "cam-sch-title": '<i class="fas fa-calendar-week" style="color:var(--primary);"></i> Cronograma oficial',
-        "cam-d1": 'Miércoles 13',
-        "cam-t1x": 'Recepción de delegaciones externas · Registro de acreditaciones · Cóctel de bienvenida en el campus',
-        "cam-d2": 'Jueves 14',
-        "cam-t2x": 'SKASNU Día 1 — Ceremonia de inauguración · Apertura de comités · Primera sesión de debate',
-        "cam-d3": 'Viernes 15',
-        "cam-t3x": 'SKASNU Día 2 — Sesiones de comité · Finales en vivo de GEO SKASNU · Sesión de crisis',
-        "cam-d4": 'Sábado 16',
-        "cam-t4x": 'SKASNU Día 3 — Última sesión · Clausura y premiaciones · Cóctel de despedida',
+        "cam-d1": 'Miércoles 27 Ene',
+        "cam-t1x": 'SKASNU Día 1 — Registro · Ceremonia de inauguración · Apertura de comités y primera sesión de debate',
+        "cam-d2": 'Jueves 28 Ene',
+        "cam-t2x": 'SKASNU Día 2 — Sesiones de comité · Finales en vivo de GEO SKASNU · Clausura, premiaciones y cóctel de despedida',
 
         // Inscription Section
         "ins-eyebrow": 'Inversión e inscripción',
-        "ins-title": 'Dos pasos para <span class="highlight">inscribir tu delegación</span>',
-        "ins-sub": 'Participantes nacionales. Escríbenos si vienes desde otra provincia — te acompañamos en todo el proceso.',
+        "ins-title": 'Solicitud de <span class="highlight">Participación Institucional</span>',
+        "ins-sub": 'Exclusivo para unidades educativas. Completa el siguiente formulario para que nuestro comité organizador evalúe la solicitud de tu colegio y nos comuniquemos con el docente coordinador para coordinar cupos, pagos y logística.',
         "ins-pd": 'Por delegado',
         "ins-pi": 'Por institución',
         "ins-note": '<i class="fas fa-check-circle"></i> Incluye materiales, refrigerios, almuerzo los tres días, certificación individual y acceso a todas las actividades.',
-        "ins-s1": 'Completa el <b>formulario de inscripción</b> en línea. Cada delegado deberá indicar sus <b>tres comités en orden de preferencia</b> y sus datos personales.',
-        "ins-s2": 'Realiza el <b>pago institucional</b> y envía el comprobante al correo <b>skasfotos@gmail.com</b>. Recibirás confirmación de cupos y asignación de comités dentro de las 72 horas siguientes.',
-        "ins-s3": 'Recibe el <b>Manual del Delegado</b> con temas publicados, formatos de documento de posición y guías de investigación para tu preparación previa.',
-        "ins-warn": '<strong><i class="fas fa-exclamation-triangle"></i> Los cupos se asignan por orden de confirmación de pago.</strong> Los comités con mayor demanda — Consejo de Seguridad, las tres cortes y los foros en inglés — suelen cerrarse antes de la fecha límite.',
+        "form-school": 'Nombre de la Institución Educativa *',
+        "form-city": 'Ciudad / Sector *',
+        "form-coord": 'Nombre del Docente/Coordinador *',
+        "form-email": 'Correo Institucional del Coordinador *',
+        "form-phone": 'Teléfono / WhatsApp *',
+        "form-delegates": 'Cantidad estimada de estudiantes a participar *',
+        "form-reason": '¿Por qué su institución desea participar en SKASNU? *',
+        "form-disclaimer": '<i class="fas fa-info-circle"></i> Al enviar esta solicitud, confirmas que representas oficialmente a la institución educativa mencionada. El envío no garantiza los cupos; nuestro equipo de admisiones revisará la solicitud y te contactará para formalizar el proceso.',
+        "form-submit": '<i class="fas fa-paper-plane"></i> Enviar Solicitud Institucional',
+        "ins-warn": '<strong><i class="fas fa-exclamation-triangle"></i> Los cupos se asignan tras la aprobación y confirmación de pago.</strong> Los comités con mayor demanda suelen cerrarse antes de la fecha límite.',
         "btn-ins": '<i class="fas fa-paper-plane"></i> Inscribir mi delegación',
         "btn-wsp": '<i class="fab fa-whatsapp"></i> Escribir por WhatsApp',
 
@@ -1658,8 +1721,8 @@ const translations = {
         "nav-enrollment": 'Enrollment',
 
         // Hero
-        "hero-pill": '<i class="fas fa-star"></i> Official Invitation · Registrations Open',
-        "hero-dates": '<i class="far fa-calendar-alt"></i> [INSERT EXACT DAYS] of January 2027',
+        "hero-pill": '<i class="fas fa-school"></i> Exclusive for Educational Institutions',
+        "hero-dates": '<i class="far fa-calendar-alt"></i> January 27 and 28, 2027',
         "hero-place": '<i class="fas fa-map-marker-alt"></i> Campus Despertar · Quito, Ecuador',
         "hero-tagline": 'Model United Nations · Unidad Educativa Despertar',
         "hero-quote": '“Peace is not the absence of conflict, but the presence of justice.” <small>— MARTIN LUTHER KING JR.</small>',
@@ -1667,11 +1730,11 @@ const translations = {
         "cd-hours": 'Hours',
         "cd-mins": 'Min',
         "cd-secs": 'Sec',
-        "cd-lbl": 'Until registration closes · April 30, 2026',
+        "cd-lbl": 'Until the model begins · January 27, 2027',
         "btn-enroll": '<i class="fas fa-pen-fancy"></i> Register my delegation',
         "btn-committees": '<i class="fas fa-list-ul"></i> View committees',
-        "stat-1-t": '15',
-        "stat-1-s": 'Committees & courts',
+        "stat-1-t": '4',
+        "stat-1-s": 'Simulation Committees',
         "stat-2-t": '2',
         "stat-2-s": 'Debate languages',
         "stat-3-t": '12–18',
@@ -1682,17 +1745,17 @@ const translations = {
         // Edition Section
         "ed-eyebrow": 'The 2026 Edition',
         "ed-title": 'A model with its <span class="highlight">own identity</span>: critical thinking and global dialogue',
-        "ed-p1": '<strong>SKASNU</strong> is the annual Model United Nations of Unidad Educativa Particular Despertar. Its name honors the ideals of international cooperation that uphold the United Nations, and its purpose is to provide students with a rigorous space to debate the great challenges of the contemporary world.',
-        "ed-p2": 'This edition brings together delegations from schools in Quito and the rest of Ecuador, featuring <strong>committees in Spanish and English</strong>, simulations of international courts, and a closing session with individual and delegation awards.',
+        "ed-p1": '<strong>SKASNU</strong> is the annual Model United Nations of Unidad Educativa Particular Despertar. Its name honors the ideals of international cooperation that uphold the United Nations. <strong>This event is strictly designed as an inter-school academic circuit.</strong>',
+        "ed-p2": 'This edition exclusively brings together delegations from <strong>educational institutions in Quito and the Tumbaco Valley</strong>. Individual registrations or registrations from individuals outside formally accredited educational units are not accepted. This guarantees a rigorous and safe academic environment, with committees in Spanish and English.',
         "ed-info1-lbl": '<i class="fas fa-brain"></i> Our conviction',
         "ed-info1-p": 'The delegate\'s intellectual work is <strong>strictly personal</strong>: the research, the position paper, the opening speech, and the negotiation in the room are entirely their own. SKASNU does not allow the use of artificial intelligence to produce debate content — excellence is demonstrated with one\'s own criteria, not with external tools.',
         "ed-info2-lbl": '<i class="fas fa-handshake"></i> Training for the future',
         "ed-info2-p": 'Delegates develop skills in research, public speaking, negotiation, leadership, and diplomatic writing — key competencies for their university and professional lives. Each committee works on <strong>two topics</strong>: one previously published by the organization and one defined by its presidency.',
 
         // Committees Section
-        "com-eyebrow": '15 simulation committees and courts',
+        "com-eyebrow": '4 simulation committees',
         "com-title": 'Find your <span class="highlight">ideal forum</span>',
-        "com-sub": 'Each delegate chooses <strong>three committees</strong> in order of preference when registering. Final assignment considers availability, experience, and the criteria of the academic team.',
+        "com-sub": 'Each delegate chooses <strong>their options</strong> in order of preference once their school approves their participation. We have 4 highly specialized forums.',
         "filt-all": '<i class="fas fa-globe"></i> All',
         "filt-es": '<i class="fas fa-language"></i> In Spanish',
         "filt-en": '<i class="fas fa-language"></i> In English',
@@ -1751,26 +1814,28 @@ const translations = {
         "cam-t3": 'Institutional support',
         "cam-p3": 'Teaching and administrative staff in charge of each committee, with security protocols throughout the day.',
         "cam-sch-title": '<i class="fas fa-calendar-week" style="color:var(--primary);"></i> Official Schedule',
-        "cam-d1": 'Wednesday 13',
-        "cam-t1x": 'Reception of external delegations · Accreditation registration · Welcome cocktail on campus',
-        "cam-d2": 'Thursday 14',
-        "cam-t2x": 'SKASNU Day 1 — Opening ceremony · Committee openings · First debate session',
-        "cam-d3": 'Friday 15',
-        "cam-t3x": 'SKASNU Day 2 — Committee sessions · Live finals of GEO SKASNU · Crisis session',
-        "cam-d4": 'Saturday 16',
-        "cam-t4x": 'SKASNU Day 3 — Last session · Closing and awards ceremony · Farewell cocktail',
+        "cam-d1": 'Wednesday Jan 27',
+        "cam-t1x": 'SKASNU Day 1 — Registration · Opening ceremony · Committee openings and first debate session',
+        "cam-d2": 'Thursday Jan 28',
+        "cam-t2x": 'SKASNU Day 2 — Committee sessions · Live finals of GEO SKASNU · Closing, awards and farewell cocktail',
 
         // Inscription Section
         "ins-eyebrow": 'Investment and Registration',
-        "ins-title": 'Two steps to <span class="highlight">register your delegation</span>',
-        "ins-sub": 'National participants. Write to us if you are coming from another province — we will accompany you throughout the process.',
+        "ins-title": 'Institutional <span class="highlight">Participation Request</span>',
+        "ins-sub": 'Exclusive for educational units. Complete the following form for our organizing committee to evaluate your school\'s request. We will contact the coordinating teacher to arrange spots, payments, and logistics.',
         "ins-pd": 'Per delegate',
         "ins-pi": 'Per institution',
         "ins-note": '<i class="fas fa-check-circle"></i> Includes materials, snacks, lunch all three days, individual certification, and access to all activities.',
-        "ins-s1": 'Complete the <b>online registration form</b>. Each delegate must indicate their <b>three committees in order of preference</b> and their personal data.',
-        "ins-s2": 'Make the <b>institutional payment</b> and send the receipt to <b>skasfotos@gmail.com</b>. You will receive confirmation of spots and committee assignments within the following 72 hours.',
-        "ins-s3": 'Receive the <b>Delegate Manual</b> with published topics, position paper formats, and research guides for your prior preparation.',
-        "ins-warn": '<strong><i class="fas fa-exclamation-triangle"></i> Spots are assigned in order of payment confirmation.</strong> Committees with the highest demand — Security Council, the three courts, and the English forums — usually close before the deadline.',
+        "form-school": 'Name of the Educational Institution *',
+        "form-city": 'City / Area *',
+        "form-coord": 'Name of the Coordinating Teacher *',
+        "form-email": 'Coordinator\'s Institutional Email *',
+        "form-phone": 'Phone / WhatsApp *',
+        "form-delegates": 'Estimated number of participating students *',
+        "form-reason": 'Why does your institution want to participate in SKASNU? *',
+        "form-disclaimer": '<i class="fas fa-info-circle"></i> By submitting this request, you confirm that you officially represent the mentioned educational institution. Submission does not guarantee spots; our admissions team will review the request and contact you to formalize the process.',
+        "form-submit": '<i class="fas fa-paper-plane"></i> Submit Institutional Request',
+        "ins-warn": '<strong><i class="fas fa-exclamation-triangle"></i> Spots are assigned after approval and payment confirmation.</strong> Committees with the highest demand usually close before the deadline.',
         "btn-ins": '<i class="fas fa-paper-plane"></i> Register my delegation',
         "btn-wsp": '<i class="fab fa-whatsapp"></i> Contact via WhatsApp',
 
