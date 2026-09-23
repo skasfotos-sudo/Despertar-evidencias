@@ -10,7 +10,6 @@
 <title>SKASNU 2026 — Modelo ONU | Unidad Educativa Despertar</title>
 
 <link rel="icon" type="image/png" href="Img/Logo_pestaña.webp">
-
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="preload" as="image" href="Img/collage_claro.webp">
@@ -868,14 +867,62 @@ strong { color: var(--text-main); font-weight: 600; }
 .warn strong { color: var(--text-main); }
 
 /* ==========================================================================
-   15.5 FORMULARIO DE INSCRIPCIÓN
+   15.5 FORMULARIOS (SISTEMA DE PESTAÑAS)
    ========================================================================== */
+.form-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    max-width: 860px;
+}
+.form-tab {
+    padding: 12px 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-card);
+    color: var(--text-sec);
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.3s;
+    flex: 1;
+    text-align: center;
+    font-size: 0.9rem;
+}
+.form-tab:hover {
+    border-color: var(--primary-light);
+    color: var(--primary);
+}
+.form-tab.active {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+.form-wrapper {
+    display: none;
+    animation: fadeIn 0.4s ease;
+}
+.form-wrapper.active {
+    display: block;
+}
+.success-msg {
+    display: none;
+    background: rgba(46, 204, 113, 0.1);
+    border: 2px solid #2ecc71;
+    border-radius: var(--border-radius);
+    padding: 40px 30px;
+    text-align: center;
+    max-width: 860px;
+    margin-top: 35px;
+}
+.success-msg h3 { color: #27ae60; margin-bottom: 15px; font-size: 1.5rem; }
+.success-msg p { color: var(--text-sec); margin-bottom: 25px; }
+
 .registration-form {
     background: var(--bg-card);
     padding: 35px 30px;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-card);
-    margin-top: 35px;
     border: 1px solid var(--border-color);
     border-top: 4px solid var(--primary);
     display: flex;
@@ -1158,13 +1205,14 @@ footer {
             Esta edición reúne de manera exclusiva a delegaciones de <strong>instituciones educativas de Quito y el Valle de Tumbaco</strong>. No se aceptan inscripciones individuales ni de personas externas a unidades educativas formalmente acreditadas. Esto garantiza un entorno académico riguroso y seguro, con comités en español e inglés.
         </p>
 
+        <!-- CAJAS MODIFICADAS: SIN ICONOS COMO SE PIDIÓ -->
         <div class="info-box">
-            <span class="lbl" data-i18n="ed-info1-lbl"><i class="fas fa-brain"></i> Nuestra convicción</span>
+            <span class="lbl" data-i18n="ed-info1-lbl">Nuestra convicción</span>
             <p data-i18n="ed-info1-p">El trabajo intelectual del delegado es <strong>estrictamente personal</strong>: la investigación, el documento de posición, el discurso de apertura y la negociación en sala son suyos. SKASNU no admite el uso de inteligencia artificial para producir contenido de debate — la excelencia se demuestra con criterio propio, no con herramientas externas.</p>
         </div>
 
         <div class="info-box secondary" style="margin-top:22px;">
-            <span class="lbl" data-i18n="ed-info2-lbl"><i class="fas fa-handshake"></i> Formación para el futuro</span>
+            <span class="lbl" data-i18n="ed-info2-lbl">Formación para el futuro</span>
             <p data-i18n="ed-info2-p">Los delegados desarrollan habilidades de investigación, oratoria, negociación, liderazgo y redacción diplomática — competencias clave para su vida universitaria y profesional. Cada comité trabaja <strong>dos temas</strong>: uno ya publicado por la organización y uno definido por su presidencia.</p>
         </div>
     </div>
@@ -1226,7 +1274,7 @@ footer {
         </div>
 
         <div class="info-box" style="margin-top:30px;">
-            <span class="lbl" data-i18n="dist-info-lbl"><i class="fas fa-bolt"></i> Sin preparación previa posible</span>
+            <span class="lbl" data-i18n="dist-info-lbl">Sin preparación previa posible</span>
             <p data-i18n="dist-info-p">Ambas disciplinas se juzgan en vivo: o el delegado sabe, o no sabe. Son la expresión más pura del modelo — el momento en que se ve exactamente de qué es capaz un estudiante cuando no hay nada entre él y la pregunta.</p>
         </div>
     </div>
@@ -1277,12 +1325,12 @@ footer {
     </div>
 </section>
 
-<!-- ================= INSCRIPCIÓN ================= -->
+<!-- ================= INSCRIPCIÓN Y NUEVOS FORMULARIOS ================= -->
 <section id="inscripcion">
     <div class="wrap">
         <div class="eyebrow" data-i18n="ins-eyebrow">Inversión e inscripción</div>
-        <h2 class="section-title" data-i18n="ins-title">Solicitud de <span class="highlight">Participación Institucional</span></h2>
-        <p class="section-subtitle" data-i18n="ins-sub">Exclusivo para unidades educativas. Completa el siguiente formulario para que nuestro comité organizador evalúe la solicitud de tu colegio y nos comuniquemos con el docente coordinador para coordinar cupos, pagos y logística.</p>
+        <h2 class="section-title" data-i18n="ins-title">Solicitud de <span class="highlight">Participación</span></h2>
+        <p class="section-subtitle" data-i18n="ins-sub">Exclusivo para unidades educativas. Selecciona tu perfil y completa el formulario correspondiente para que nuestro comité organizador evalúe tu solicitud.</p>
 
         <div class="prices">
             <div class="pbox">
@@ -1296,64 +1344,205 @@ footer {
         </div>
         <p class="note" style="margin-bottom: 20px;" data-i18n="ins-note"><i class="fas fa-check-circle"></i> Incluye materiales, refrigerios, almuerzo los tres días, certificación individual y acceso a todas las actividades.</p>
 
-        <form action="https://formsubmit.co/skasfotos@gmail.com" method="POST" class="registration-form">
-            <!-- Configuraciones ocultas de FormSubmit -->
-            <input type="hidden" name="_subject" value="NUEVA SOLICITUD DE COLEGIO - SKASNU 2027">
-            <input type="hidden" name="_template" value="box">
-            <input type="hidden" name="_captcha" value="false">
-            <input type="hidden" name="_language" value="es">
+        <!-- SISTEMA DE PESTAÑAS -->
+        <div class="form-tabs">
+            <button class="form-tab active" data-target="form-inst" onclick="switchForm('form-inst')" data-i18n="tab-inst">Institución Educativa</button>
+            <button class="form-tab" data-target="form-del" onclick="switchForm('form-del')" data-i18n="tab-del">Delegado Individual</button>
+            <button class="form-tab" data-target="form-pres" onclick="switchForm('form-pres')" data-i18n="tab-pres">Postulante a Presidencia</button>
+        </div>
 
-            <div class="form-row">
+        <!-- FORMULARIO 1: INSTITUCIÓN -->
+        <div id="form-inst" class="form-wrapper active">
+            <form onsubmit="handleSkasnuForm(event, 'inst')" class="registration-form" style="margin-top:0;">
+                <input type="hidden" name="_subject" value="NUEVA SOLICITUD DE COLEGIO - SKASNU 2027">
+                <!-- PARA ENVIAR A MÁS CORREOS DESCOMENTA LA LÍNEA DE ABAJO Y PON LOS CORREOS SEPARADOS POR COMA -->
+                <!-- <input type="hidden" name="_cc" value="correo1@gmail.com,correo2@gmail.com"> -->
+                <input type="hidden" name="Tipo_Registro" value="Institución Educativa">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label data-i18n="form-school">Nombre de la Institución Educativa *</label>
+                        <input type="text" name="Institución" class="form-control" required placeholder="Ej. Unidad Educativa xyz">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="form-city">Ciudad / Sector *</label>
+                        <input type="text" name="Ciudad" class="form-control" required placeholder="Ej. Quito, Tumbaco">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label data-i18n="form-coord">Nombre del Docente/Coordinador *</label>
+                        <input type="text" name="Coordinador" class="form-control" required placeholder="Nombre completo">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="form-email">Correo Institucional del Coordinador *</label>
+                        <input type="email" name="Correo_Coordinador" class="form-control" required placeholder="coordinador@colegio.edu.ec">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="flex: 0 0 48%;">
+                        <label data-i18n="form-phone">Teléfono / WhatsApp *</label>
+                        <input type="tel" name="Teléfono" class="form-control" required placeholder="099 xxxx xxx">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label data-i18n="form-delegates">Cantidad estimada de estudiantes a participar *</label>
+                        <input type="number" name="Cantidad_Delegados" class="form-control" required min="1" placeholder="Ej. 15">
+                    </div>
+                </div>
+
                 <div class="form-group">
-                    <label data-i18n="form-school">Nombre de la Institución Educativa *</label>
-                    <input type="text" name="Institución" class="form-control" required placeholder="Ej. Unidad Educativa xyz">
+                    <label data-i18n="form-reason">¿Por qué su institución desea participar en SKASNU? *</label>
+                    <textarea name="Motivación" class="form-control" required placeholder="Breve descripción..."></textarea>
                 </div>
+
+                <p style="font-size: 0.85rem; color: var(--text-sec);" data-i18n="form-disclaimer">
+                    <i class="fas fa-info-circle"></i> Al enviar esta solicitud, confirmas que representas oficialmente a la institución educativa mencionada. El envío no garantiza los cupos; nuestro equipo de admisiones revisará la solicitud y te contactará para formalizar el proceso.
+                </p>
+
+                <div style="display: flex; gap: 15px; margin-top: 10px; flex-wrap: wrap;">
+                    <button type="submit" class="btn-hero" style="flex: 1; justify-content: center;" data-i18n="form-submit">
+                        <i class="fas fa-paper-plane"></i> Enviar Solicitud Institucional
+                    </button>
+                    <a href="https://wa.me/593994769262?text=Hola,%20tengo%20una%20duda%20sobre%20la%20inscripción%20a%20SKASNU%202027" target="_blank" class="btn-hero btn-hero-outline" style="flex: 1; justify-content: center; background: #25D366; color: white; border-color: #25D366; box-shadow: 0 8px 24px rgba(37, 211, 102, 0.35);" data-i18n="btn-wsp">
+                        <i class="fab fa-whatsapp" style="font-size: 1.2rem;"></i> Escribir por WhatsApp
+                    </a>
+                </div>
+            </form>
+            <div id="success-inst" class="success-msg">
+                <h3><i class="fas fa-check-circle"></i> ¡Solicitud enviada con éxito!</h3>
+                <p>Hemos recibido la solicitud de tu institución. Nuestro equipo la revisará y nos pondremos en contacto con el coordinador muy pronto.</p>
+            </div>
+        </div>
+
+        <!-- FORMULARIO 2: DELEGADO INDIVIDUAL -->
+        <div id="form-del" class="form-wrapper">
+            <form onsubmit="handleSkasnuForm(event, 'del')" class="registration-form" style="margin-top:0;">
+                <input type="hidden" name="_subject" value="NUEVO REGISTRO: Delegado Individual - SKASNU 2027">
+                <!-- <input type="hidden" name="_cc" value="correo1@gmail.com,correo2@gmail.com"> -->
+                <input type="hidden" name="Tipo_Registro" value="Delegado Individual">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label data-i18n="form-name">Nombre Completo *</label>
+                        <input type="text" name="Nombre" class="form-control" required placeholder="Ej. Juan Pérez">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="form-id">Cédula de Identidad *</label>
+                        <input type="text" name="Cedula" class="form-control" required placeholder="Número de identificación">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label data-i18n="form-school-del">Institución Educativa a la que pertenece *</label>
+                        <input type="text" name="Institucion" class="form-control" required placeholder="Nombre de su colegio">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="form-committee">Comité de preferencia *</label>
+                        <select name="Comite_Preferencia" class="form-control" required>
+                            <option value="">Seleccione un comité...</option>
+                            <option value="Consejo de Seguridad (ES)">Consejo de Seguridad (ES)</option>
+                            <option value="Asamblea General DISEC (ES)">Asamblea General DISEC (ES)</option>
+                            <option value="UNICEF Junior (ES)">UNICEF Junior (ES)</option>
+                            <option value="Human Rights Council (EN)">Human Rights Council (EN)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label data-i18n="form-email-del">Correo Electrónico *</label>
+                        <input type="email" name="Correo" class="form-control" required placeholder="su.correo@ejemplo.com">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="form-phone">Teléfono / WhatsApp *</label>
+                        <input type="tel" name="Telefono" class="form-control" required placeholder="099 xxxx xxx">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 15px; margin-top: 10px; flex-wrap: wrap;">
+                    <button type="submit" class="btn-hero" style="flex: 1; justify-content: center;" data-i18n="form-submit-del">
+                        <i class="fas fa-paper-plane"></i> Enviar Inscripción de Delegado
+                    </button>
+                </div>
+            </form>
+            <div id="success-del" class="success-msg">
+                <h3><i class="fas fa-check-circle"></i> ¡Inscripción recibida!</h3>
+                <p>Tus datos han sido registrados correctamente. Nos comunicaremos contigo vía correo electrónico con los siguientes pasos.</p>
+            </div>
+        </div>
+
+        <!-- FORMULARIO 3: PRESIDENCIA -->
+        <div id="form-pres" class="form-wrapper">
+            <div class="warn" style="margin-top: 0; margin-bottom: 25px; border-left-color: var(--primary); background: var(--primary-soft);">
+                <strong><i class="fas fa-star" style="color: var(--primary);"></i> Postulación de Excelencia:</strong> El cargo de presidencia está reservado para delegados con trayectoria destacada y experiencia comprobable en Modelos de Naciones Unidas. Solo los perfiles más competentes serán seleccionados.
+            </div>
+            <form onsubmit="handleSkasnuForm(event, 'pres')" class="registration-form" style="margin-top:0;">
+                <input type="hidden" name="_subject" value="POSTULACIÓN PRESIDENCIA - SKASNU 2027">
+                <!-- <input type="hidden" name="_cc" value="correo1@gmail.com,correo2@gmail.com"> -->
+                <input type="hidden" name="Tipo_Registro" value="Postulación Presidencia">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label data-i18n="form-name">Nombre Completo *</label>
+                        <input type="text" name="Nombre" class="form-control" required placeholder="Ej. Juan Pérez">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="form-id">Cédula de Identidad *</label>
+                        <input type="text" name="Cedula" class="form-control" required placeholder="Número de identificación">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label data-i18n="form-school-del">Institución Educativa a la que pertenece *</label>
+                        <input type="text" name="Institucion" class="form-control" required placeholder="Nombre de su colegio">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="form-pres-com">Comité al que postula para presidir *</label>
+                        <select name="Comite_Postulacion" class="form-control" required>
+                            <option value="">Seleccione un comité...</option>
+                            <option value="Consejo de Seguridad (ES)">Consejo de Seguridad (ES)</option>
+                            <option value="Asamblea General DISEC (ES)">Asamblea General DISEC (ES)</option>
+                            <option value="UNICEF Junior (ES)">UNICEF Junior (ES)</option>
+                            <option value="Human Rights Council (EN)">Human Rights Council (EN)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label data-i18n="form-email-del">Correo Electrónico *</label>
+                        <input type="email" name="Correo" class="form-control" required placeholder="su.correo@ejemplo.com">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="form-phone">Teléfono / WhatsApp *</label>
+                        <input type="tel" name="Telefono" class="form-control" required placeholder="099 xxxx xxx">
+                    </div>
+                </div>
+
                 <div class="form-group">
-                    <label data-i18n="form-city">Ciudad / Sector *</label>
-                    <input type="text" name="Ciudad" class="form-control" required placeholder="Ej. Quito, Tumbaco">
+                    <label data-i18n="form-history">Menciona tu historia (Antecedentes y reconocimientos en Modelos ONU) *</label>
+                    <textarea name="Historia_Experiencia" class="form-control" required placeholder="Detalla tu experiencia previa como delegado o mesa directiva, modelos en los que has participado y reconocimientos obtenidos..."></textarea>
                 </div>
-            </div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label data-i18n="form-coord">Nombre del Docente/Coordinador *</label>
-                    <input type="text" name="Coordinador" class="form-control" required placeholder="Nombre completo">
+                <div style="display: flex; gap: 15px; margin-top: 10px; flex-wrap: wrap;">
+                    <button type="submit" class="btn-hero" style="flex: 1; justify-content: center;" data-i18n="form-submit-pres">
+                        <i class="fas fa-gavel"></i> Enviar Postulación a Presidencia
+                    </button>
                 </div>
-                <div class="form-group">
-                    <label data-i18n="form-email">Correo Institucional del Coordinador *</label>
-                    <input type="email" name="Correo_Coordinador" class="form-control" required placeholder="coordinador@colegio.edu.ec">
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group" style="flex: 0 0 48%;">
-                    <label data-i18n="form-phone">Teléfono / WhatsApp *</label>
-                    <input type="tel" name="Teléfono" class="form-control" required placeholder="099 xxxx xxx">
-                </div>
-                <div class="form-group" style="flex: 1;">
-                    <label data-i18n="form-delegates">Cantidad estimada de estudiantes a participar *</label>
-                    <input type="number" name="Cantidad_Delegados" class="form-control" required min="1" placeholder="Ej. 15">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label data-i18n="form-reason">¿Por qué su institución desea participar en SKASNU? *</label>
-                <textarea name="Motivación" class="form-control" required placeholder="Breve descripción..."></textarea>
-            </div>
-
-            <p style="font-size: 0.85rem; color: var(--text-sec);" data-i18n="form-disclaimer">
-                <i class="fas fa-info-circle"></i> Al enviar esta solicitud, confirmas que representas oficialmente a la institución educativa mencionada. El envío no garantiza los cupos; nuestro equipo de admisiones revisará la solicitud y te contactará para formalizar el proceso.
-            </p>
-
-            <div style="display: flex; gap: 15px; margin-top: 10px; flex-wrap: wrap;">
-                <button type="submit" class="btn-hero" style="flex: 1; justify-content: center;" data-i18n="form-submit">
-                    <i class="fas fa-paper-plane"></i> Enviar Solicitud Institucional
-                </button>
-                <a href="https://wa.me/593994769262?text=Hola,%20tengo%20una%20duda%20sobre%20la%20inscripción%20a%20SKASNU%202027" target="_blank" class="btn-hero btn-hero-outline" style="flex: 1; justify-content: center; background: #25D366; color: white; border-color: #25D366; box-shadow: 0 8px 24px rgba(37, 211, 102, 0.35);" data-i18n="btn-wsp">
-                    <i class="fab fa-whatsapp" style="font-size: 1.2rem;"></i> Escribir por WhatsApp
+            </form>
+            <div id="success-pres" class="success-msg">
+                <h3><i class="fas fa-check-circle"></i> ¡Postulación inicial recibida!</h3>
+                <p>Para completar tu postulación a presidencia, requerimos que llenes el siguiente formulario complementario con detalles técnicos.</p>
+                <!-- BOTÓN HACIA GOOGLE FORMS -->
+                <a href="https://forms.gle/TU_ENLACE_DE_GOOGLE_FORMS_AQUI" target="_blank" class="btn-hero" style="background: var(--secondary); margin-top: 10px;">
+                    <i class="fas fa-clipboard-list"></i> Completar en Google Forms
                 </a>
             </div>
-        </form>
+        </div>
 
         <div class="warn" data-i18n="ins-warn">
             <strong><i class="fas fa-exclamation-triangle"></i> Los cupos se asignan tras la aprobación y confirmación de pago.</strong> Los comités con mayor demanda suelen cerrarse antes de la fecha límite.
@@ -1362,32 +1551,32 @@ footer {
 </section>
 
 <footer>
-        <div class="footer-content">
-            <div class="footer-logo">
-                <img src="Img/Logo-Despertar (Oscuro).webp?v=1" alt="Logo de la Unidad Educativa Despertar" width="150" height="50" loading="lazy">
-                <h3>Unidad Educativa Particular Despertar</h3>
-            </div>
-            <div class="footer-links" style="margin-bottom:20px;">
-                <a href="https://uepdespertar.edu.ec/nosotros/" target="_blank" data-i18n="ft-about">Sobre Nosotros</a>
-            </div>
-            
-            <div class="footer-social">
-                <a href="https://www.facebook.com/uepdespertar" aria-label="Visítanos en Facebook">
-                    <i class="fab fa-facebook-f"></i>
-                </a>
-                <a href="https://www.youtube.com/@DespertarSKAS" aria-label="Mira nuestros videos en YouTube">
-                    <i class="fab fa-youtube"></i>
-                </a>
-                <a href="https://www.instagram.com/skas_despertar" aria-label="Síguenos en Instagram">
-                    <i class="fab fa-instagram"></i>
-                </a>
-            </div>
-            
-            <div class="copyright">
-                <p data-i18n="ft-copy">© 2026 Plataforma Educativa - Unidad Educativa Particular Despertar.</p>
-            </div>
+    <div class="footer-content">
+        <div class="footer-logo">
+            <img src="Img/Logo-Despertar (Oscuro).webp?v=1" alt="Logo de la Unidad Educativa Despertar" width="150" height="50" loading="lazy">
+            <h3>Unidad Educativa Particular Despertar</h3>
         </div>
-    </footer>
+        <div class="footer-links" style="margin-bottom:20px;">
+            <a href="https://uepdespertar.edu.ec/nosotros/" target="_blank" data-i18n="ft-about">Sobre Nosotros</a>
+        </div>
+        
+        <div class="footer-social">
+            <a href="https://www.facebook.com/uepdespertar" aria-label="Visítanos en Facebook">
+                <i class="fab fa-facebook-f"></i>
+            </a>
+            <a href="https://www.youtube.com/@DespertarSKAS" aria-label="Mira nuestros videos en YouTube">
+                <i class="fab fa-youtube"></i>
+            </a>
+            <a href="https://www.instagram.com/skas_despertar" aria-label="Síguenos en Instagram">
+                <i class="fab fa-instagram"></i>
+            </a>
+        </div>
+        
+        <div class="copyright">
+            <p data-i18n="ft-copy">© 2026 Plataforma Educativa - Unidad Educativa Particular Despertar.</p>
+        </div>
+    </div>
+</footer>
 
 <!-- ================= MODAL SOPORTE ================= -->
 <div class="overlay-bg" id="overlaySoporte" style="display:none;"></div>
@@ -1473,16 +1662,13 @@ function initTheme() {
 }
 
 // =============================================================
-// MENÚ LATERAL
+// MENÚ LATERAL Y SOPORTE
 // =============================================================
 function toggleMenu() {
     document.getElementById('sideMenu').classList.toggle('active');
     document.getElementById('overlayMenu').classList.toggle('active');
 }
 
-// =============================================================
-// MODAL SOPORTE
-// =============================================================
 function abrirSoporte() {
     toggleMenu();
     document.getElementById('modalSoporte').style.display = 'flex';
@@ -1496,10 +1682,9 @@ document.getElementById('modalSoporte').addEventListener('click', function(e) {
 });
 
 // =============================================================
-// COUNTDOWN
+// COUNTDOWN Y FILTROS
 // =============================================================
 function initCountdown() {
-    // 27 de Enero de 2027 a las 08:00 AM hora Ecuador (UTC-5) equivale a las 13:00 UTC
     var TARGET = Date.UTC(2027, 0, 27, 13, 0, 0);
     function tick() {
         var diff = TARGET - Date.now();
@@ -1522,9 +1707,6 @@ function initCountdown() {
     setInterval(tick, 1000);
 }
 
-// =============================================================
-// FILTROS DE COMITÉS
-// =============================================================
 function initFilters() {
     document.querySelectorAll('.filters button').forEach(function(b) {
         b.addEventListener('click', function() {
@@ -1541,9 +1723,6 @@ function initFilters() {
     });
 }
 
-// =============================================================
-// SCROLL SUAVE
-// =============================================================
 document.querySelectorAll('a[href^="#"]').forEach(a => {
     a.addEventListener('click', function(e) {
         const href = this.getAttribute('href');
@@ -1564,15 +1743,13 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
 // =============================================================
 const translations = {
     es: {
-        // Menu
+        // Menu & Nav
         "menu-title": '<i class="fas fa-bars"></i> Menú',
         "menu-home": '<i class="fas fa-home"></i> Inicio',
         "menu-login": '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión',
         "menu-about": '<i class="fas fa-school"></i> Sobre el Colegio',
         "menu-mun": '<i class="fas fa-globe-americas"></i> Modelo ONU SKASNU',
         "menu-support": '<i class="fas fa-headset"></i> Soporte Técnico',
-
-        // Header Nav
         "nav-about": 'El Modelo',
         "nav-committees": 'Comités',
         "nav-distinctions": 'Diferenciadores',
@@ -1585,30 +1762,23 @@ const translations = {
         "hero-place": '<i class="fas fa-map-marker-alt"></i> Campus Despertar · Quito, Ecuador',
         "hero-tagline": 'Modelo de Naciones Unidas · Unidad Educativa Despertar',
         "hero-quote": '“La paz no es la ausencia de conflicto, sino la presencia de justicia.” <small>— MARTIN LUTHER KING JR.</small>',
-        "cd-days": 'Días',
-        "cd-hours": 'Horas',
-        "cd-mins": 'Min',
-        "cd-secs": 'Seg',
+        "cd-days": 'Días', "cd-hours": 'Horas', "cd-mins": 'Min', "cd-secs": 'Seg',
         "cd-lbl": 'Para el inicio del modelo · 27 de enero de 2027',
         "btn-enroll": '<i class="fas fa-pen-fancy"></i> Inscribir mi delegación',
         "btn-committees": '<i class="fas fa-list-ul"></i> Ver comités',
-        "stat-1-t": '4',
-        "stat-1-s": 'Comités de simulación',
-        "stat-2-t": '2',
-        "stat-2-s": 'Idiomas de debate',
-        "stat-3-t": '12–18',
-        "stat-3-s": 'Años de edad',
-        "stat-4-t": '$35',
-        "stat-4-s": 'Por delegado',
+        "stat-1-t": '4', "stat-1-s": 'Comités de simulación',
+        "stat-2-t": '2', "stat-2-s": 'Idiomas de debate',
+        "stat-3-t": '12–18', "stat-3-s": 'Años de edad',
+        "stat-4-t": '$35', "stat-4-s": 'Por delegado',
 
         // Edition Section
         "ed-eyebrow": 'La edición 2026',
         "ed-title": 'Un modelo con <span class="highlight">identidad propia</span>: pensamiento crítico y diálogo global',
         "ed-p1": '<strong>SKASNU</strong> es el Modelo de Naciones Unidas anual de la Unidad Educativa Particular Despertar. Su nombre rinde homenaje a los ideales de cooperación internacional que sostienen a las Naciones Unidas. <strong>Este evento está diseñado estrictamente como un circuito académico intercolegial.</strong>',
         "ed-p2": 'Esta edición reúne de manera exclusiva a delegaciones de <strong>instituciones educativas de Quito y el Valle de Tumbaco</strong>. No se aceptan inscripciones individuales ni de personas externas a unidades educativas formalmente acreditadas. Esto garantiza un entorno académico riguroso y seguro, con comités en español e inglés.',
-        "ed-info1-lbl": '<i class="fas fa-brain"></i> Nuestra convicción',
+        "ed-info1-lbl": 'Nuestra convicción',
         "ed-info1-p": 'El trabajo intelectual del delegado es <strong>estrictamente personal</strong>: la investigación, el documento de posición, el discurso de apertura y la negociación en sala son suyos. SKASNU no admite el uso de inteligencia artificial para producir contenido de debate — la excelencia se demuestra con criterio propio, no con herramientas externas.',
-        "ed-info2-lbl": '<i class="fas fa-handshake"></i> Formación para el futuro',
+        "ed-info2-lbl": 'Formación para el futuro',
         "ed-info2-p": 'Los delegados desarrollan habilidades de investigación, oratoria, negociación, liderazgo y redacción diplomática — competencias clave para su vida universitaria y profesional. Cada comité trabaja <strong>dos temas</strong>: uno ya publicado por la organización y uno definido por su presidencia.',
 
         // Committees Section
@@ -1618,29 +1788,12 @@ const translations = {
         "filt-all": '<i class="fas fa-globe"></i> Todos',
         "filt-es": '<i class="fas fa-language"></i> En español',
         "filt-en": '<i class="fas fa-language"></i> En inglés',
-        "filt-econ": '<i class="fas fa-chart-line"></i> Economía y desarrollo',
-        "filt-court": '<i class="fas fa-gavel"></i> Cortes',
         "filt-jr": '<i class="fas fa-child"></i> Junior',
         
         "chip-cs": 'Consejo de Seguridad',
         "chip-ag": 'Asamblea General — DISEC',
-        "chip-ecosoc": 'ECOSOC',
-        "chip-acnur": 'ACNUR',
-        "chip-unctad": 'UNCTAD',
-        "chip-oit": 'OIT',
-        "chip-unodc": 'UNODC',
-        "chip-cedaw": 'CEDAW',
-        "chip-cp": 'Cumbre Presidencial',
-        "chip-an": 'Asamblea Nacional',
-        "chip-cidi": 'CIDI OEA',
         "chip-unicef": 'UNICEF Junior',
         "chip-hrc": 'Human Rights Council',
-        "chip-sc": 'Security Council — EN',
-        "chip-cst": 'Commission on Science &amp; Technology',
-        "chip-undp": 'United Nations Development Programme',
-        "chip-cij": 'Corte Internacional de Justicia',
-        "chip-cpi": 'Corte Penal Internacional',
-        "chip-ciadi": 'CIADI',
         "com-note": '<i class="fas fa-info-circle"></i> Los comités con mayor demanda suelen cerrarse antes de la fecha límite. Recomendamos confirmar cupos con anticipación.',
 
         // Distinctions Section
@@ -1656,7 +1809,7 @@ const translations = {
         "dist-deb-p": 'Formato de debate que prioriza la argumentación y la refutación directa, a diferencia de los comités tradicionales basados en cooperación. Ideal para delegados que quieren medir su oratoria en un entorno competitivo.',
         "dist-aw-t": 'Premiación integral',
         "dist-aw-p": 'Al cierre del modelo se entregan reconocimientos a la mejor delegación, mejores oradores, menciones honoríficas y premios especiales por comité, además del reconocimiento a la institución destacada.',
-        "dist-info-lbl": '<i class="fas fa-bolt"></i> Sin preparación previa posible',
+        "dist-info-lbl": 'Sin preparación previa posible',
         "dist-info-p": 'Ambas disciplinas se juzgan en vivo: o el delegado sabe, o no sabe. Son la expresión más pura del modelo — el momento en que se ve exactamente de qué es capaz un estudiante cuando no hay nada entre él y la pregunta.',
 
         // Campus Section
@@ -1680,11 +1833,16 @@ const translations = {
 
         // Inscription Section
         "ins-eyebrow": 'Inversión e inscripción',
-        "ins-title": 'Solicitud de <span class="highlight">Participación Institucional</span>',
-        "ins-sub": 'Exclusivo para unidades educativas. Completa el siguiente formulario para que nuestro comité organizador evalúe la solicitud de tu colegio y nos comuniquemos con el docente coordinador para coordinar cupos, pagos y logística.',
+        "ins-title": 'Solicitud de <span class="highlight">Participación</span>',
+        "ins-sub": 'Exclusivo para unidades educativas. Selecciona tu perfil y completa el formulario correspondiente para que nuestro comité organizador evalúe tu solicitud.',
         "ins-pd": 'Por delegado',
         "ins-pi": 'Por institución',
         "ins-note": '<i class="fas fa-check-circle"></i> Incluye materiales, refrigerios, almuerzo los tres días, certificación individual y acceso a todas las actividades.',
+        
+        // Forms Labels
+        "tab-inst": 'Institución Educativa',
+        "tab-del": 'Delegado Individual',
+        "tab-pres": 'Postulante a Presidencia',
         "form-school": 'Nombre de la Institución Educativa *',
         "form-city": 'Ciudad / Sector *',
         "form-coord": 'Nombre del Docente/Coordinador *',
@@ -1694,8 +1852,16 @@ const translations = {
         "form-reason": '¿Por qué su institución desea participar en SKASNU? *',
         "form-disclaimer": '<i class="fas fa-info-circle"></i> Al enviar esta solicitud, confirmas que representas oficialmente a la institución educativa mencionada. El envío no garantiza los cupos; nuestro equipo de admisiones revisará la solicitud y te contactará para formalizar el proceso.',
         "form-submit": '<i class="fas fa-paper-plane"></i> Enviar Solicitud Institucional',
+        "form-name": 'Nombre Completo *',
+        "form-id": 'Cédula de Identidad *',
+        "form-school-del": 'Institución Educativa a la que pertenece *',
+        "form-committee": 'Comité de preferencia *',
+        "form-pres-com": 'Comité al que postula para presidir *',
+        "form-email-del": 'Correo Electrónico *',
+        "form-history": 'Menciona tu historia (Antecedentes y reconocimientos en Modelos ONU) *',
+        "form-submit-del": '<i class="fas fa-paper-plane"></i> Enviar Inscripción de Delegado',
+        "form-submit-pres": '<i class="fas fa-gavel"></i> Enviar Postulación a Presidencia',
         "ins-warn": '<strong><i class="fas fa-exclamation-triangle"></i> Los cupos se asignan tras la aprobación y confirmación de pago.</strong> Los comités con mayor demanda suelen cerrarse antes de la fecha límite.',
-        "btn-ins": '<i class="fas fa-paper-plane"></i> Inscribir mi delegación',
         "btn-wsp": '<i class="fab fa-whatsapp"></i> Escribir por WhatsApp',
 
         // Footer & Modal
@@ -1705,15 +1871,13 @@ const translations = {
         "btn-close": 'Cerrar'
     },
     en: {
-        // Menu
+        // Menu & Nav
         "menu-title": '<i class="fas fa-bars"></i> Menu',
         "menu-home": '<i class="fas fa-home"></i> Home',
         "menu-login": '<i class="fas fa-sign-in-alt"></i> Login',
         "menu-about": '<i class="fas fa-school"></i> About the School',
         "menu-mun": '<i class="fas fa-globe-americas"></i> SKASNU MUN',
         "menu-support": '<i class="fas fa-headset"></i> Technical Support',
-
-        // Header Nav
         "nav-about": 'The Model',
         "nav-committees": 'Committees',
         "nav-distinctions": 'Distinctions',
@@ -1726,30 +1890,23 @@ const translations = {
         "hero-place": '<i class="fas fa-map-marker-alt"></i> Campus Despertar · Quito, Ecuador',
         "hero-tagline": 'Model United Nations · Unidad Educativa Despertar',
         "hero-quote": '“Peace is not the absence of conflict, but the presence of justice.” <small>— MARTIN LUTHER KING JR.</small>',
-        "cd-days": 'Days',
-        "cd-hours": 'Hours',
-        "cd-mins": 'Min',
-        "cd-secs": 'Sec',
+        "cd-days": 'Days', "cd-hours": 'Hours', "cd-mins": 'Min', "cd-secs": 'Sec',
         "cd-lbl": 'Until the model begins · January 27, 2027',
         "btn-enroll": '<i class="fas fa-pen-fancy"></i> Register my delegation',
         "btn-committees": '<i class="fas fa-list-ul"></i> View committees',
-        "stat-1-t": '4',
-        "stat-1-s": 'Simulation Committees',
-        "stat-2-t": '2',
-        "stat-2-s": 'Debate languages',
-        "stat-3-t": '12–18',
-        "stat-3-s": 'Years of age',
-        "stat-4-t": '$35',
-        "stat-4-s": 'Per delegate',
+        "stat-1-t": '4', "stat-1-s": 'Simulation Committees',
+        "stat-2-t": '2', "stat-2-s": 'Debate languages',
+        "stat-3-t": '12–18', "stat-3-s": 'Years of age',
+        "stat-4-t": '$35', "stat-4-s": 'Per delegate',
 
         // Edition Section
         "ed-eyebrow": 'The 2026 Edition',
         "ed-title": 'A model with its <span class="highlight">own identity</span>: critical thinking and global dialogue',
         "ed-p1": '<strong>SKASNU</strong> is the annual Model United Nations of Unidad Educativa Particular Despertar. Its name honors the ideals of international cooperation that uphold the United Nations. <strong>This event is strictly designed as an inter-school academic circuit.</strong>',
         "ed-p2": 'This edition exclusively brings together delegations from <strong>educational institutions in Quito and the Tumbaco Valley</strong>. Individual registrations or registrations from individuals outside formally accredited educational units are not accepted. This guarantees a rigorous and safe academic environment, with committees in Spanish and English.',
-        "ed-info1-lbl": '<i class="fas fa-brain"></i> Our conviction',
+        "ed-info1-lbl": 'Our conviction',
         "ed-info1-p": 'The delegate\'s intellectual work is <strong>strictly personal</strong>: the research, the position paper, the opening speech, and the negotiation in the room are entirely their own. SKASNU does not allow the use of artificial intelligence to produce debate content — excellence is demonstrated with one\'s own criteria, not with external tools.',
-        "ed-info2-lbl": '<i class="fas fa-handshake"></i> Training for the future',
+        "ed-info2-lbl": 'Training for the future',
         "ed-info2-p": 'Delegates develop skills in research, public speaking, negotiation, leadership, and diplomatic writing — key competencies for their university and professional lives. Each committee works on <strong>two topics</strong>: one previously published by the organization and one defined by its presidency.',
 
         // Committees Section
@@ -1759,29 +1916,12 @@ const translations = {
         "filt-all": '<i class="fas fa-globe"></i> All',
         "filt-es": '<i class="fas fa-language"></i> In Spanish',
         "filt-en": '<i class="fas fa-language"></i> In English',
-        "filt-econ": '<i class="fas fa-chart-line"></i> Economy & Development',
-        "filt-court": '<i class="fas fa-gavel"></i> Courts',
         "filt-jr": '<i class="fas fa-child"></i> Junior',
         
         "chip-cs": 'Security Council',
         "chip-ag": 'General Assembly — DISEC',
-        "chip-ecosoc": 'ECOSOC',
-        "chip-acnur": 'UNHCR',
-        "chip-unctad": 'UNCTAD',
-        "chip-oit": 'ILO',
-        "chip-unodc": 'UNODC',
-        "chip-cedaw": 'CEDAW',
-        "chip-cp": 'Presidential Summit',
-        "chip-an": 'National Assembly',
-        "chip-cidi": 'OAS CIDI',
         "chip-unicef": 'UNICEF Junior',
         "chip-hrc": 'Human Rights Council',
-        "chip-sc": 'Security Council — EN',
-        "chip-cst": 'Commission on Science &amp; Technology',
-        "chip-undp": 'United Nations Development Programme',
-        "chip-cij": 'International Court of Justice',
-        "chip-cpi": 'International Criminal Court',
-        "chip-ciadi": 'ICSID',
         "com-note": '<i class="fas fa-info-circle"></i> Committees with the highest demand usually close before the deadline. We recommend confirming spots in advance.',
 
         // Distinctions Section
@@ -1797,7 +1937,7 @@ const translations = {
         "dist-deb-p": 'A debate format that prioritizes argumentation and direct refutation, unlike traditional cooperation-based committees. Ideal for delegates who want to measure their public speaking skills in a competitive environment.',
         "dist-aw-t": 'Comprehensive Awards',
         "dist-aw-p": 'At the closing of the model, recognitions are awarded to the best delegation, best speakers, honorable mentions, and special awards per committee, in addition to recognition for the outstanding institution.',
-        "dist-info-lbl": '<i class="fas fa-bolt"></i> No prior preparation possible',
+        "dist-info-lbl": 'No prior preparation possible',
         "dist-info-p": 'Both disciplines are judged live: either the delegate knows it, or they don\'t. They are the purest expression of the model — the exact moment when you see what a student is capable of when nothing stands between them and the question.',
 
         // Campus Section
@@ -1821,11 +1961,16 @@ const translations = {
 
         // Inscription Section
         "ins-eyebrow": 'Investment and Registration',
-        "ins-title": 'Institutional <span class="highlight">Participation Request</span>',
-        "ins-sub": 'Exclusive for educational units. Complete the following form for our organizing committee to evaluate your school\'s request. We will contact the coordinating teacher to arrange spots, payments, and logistics.',
+        "ins-title": '<span class="highlight">Participation</span> Request',
+        "ins-sub": 'Exclusive for educational units. Select your profile and complete the corresponding form for our organizing committee to evaluate your request.',
         "ins-pd": 'Per delegate',
         "ins-pi": 'Per institution',
         "ins-note": '<i class="fas fa-check-circle"></i> Includes materials, snacks, lunch all three days, individual certification, and access to all activities.',
+        
+        // Forms Labels
+        "tab-inst": 'Educational Institution',
+        "tab-del": 'Individual Delegate',
+        "tab-pres": 'Presidency Applicant',
         "form-school": 'Name of the Educational Institution *',
         "form-city": 'City / Area *',
         "form-coord": 'Name of the Coordinating Teacher *',
@@ -1835,8 +1980,16 @@ const translations = {
         "form-reason": 'Why does your institution want to participate in SKASNU? *',
         "form-disclaimer": '<i class="fas fa-info-circle"></i> By submitting this request, you confirm that you officially represent the mentioned educational institution. Submission does not guarantee spots; our admissions team will review the request and contact you to formalize the process.',
         "form-submit": '<i class="fas fa-paper-plane"></i> Submit Institutional Request',
+        "form-name": 'Full Name *',
+        "form-id": 'National ID *',
+        "form-school-del": 'Educational Institution you belong to *',
+        "form-committee": 'Preferred Committee *',
+        "form-pres-com": 'Committee you are applying to chair *',
+        "form-email-del": 'Email Address *',
+        "form-history": 'Mention your history (Background and recognitions in MUNs) *',
+        "form-submit-del": '<i class="fas fa-paper-plane"></i> Submit Delegate Registration',
+        "form-submit-pres": '<i class="fas fa-gavel"></i> Submit Presidency Application',
         "ins-warn": '<strong><i class="fas fa-exclamation-triangle"></i> Spots are assigned after approval and payment confirmation.</strong> Committees with the highest demand usually close before the deadline.',
-        "btn-ins": '<i class="fas fa-paper-plane"></i> Register my delegation',
         "btn-wsp": '<i class="fab fa-whatsapp"></i> Contact via WhatsApp',
 
         // Footer & Modal
@@ -1860,7 +2013,7 @@ function applyTranslations() {
     document.querySelectorAll('[data-i18n]').forEach(element => {
         const key = element.getAttribute('data-i18n');
         if (translations[currentLang] && translations[currentLang][key]) {
-            element.innerHTML = translations[currentLang][key]; // innerHTML mantiene iconos <i> y tags <b>
+            element.innerHTML = translations[currentLang][key];
         }
     });
     document.documentElement.lang = currentLang; 
@@ -1876,6 +2029,61 @@ function updateLangButton() {
 function initLanguage() {
     applyTranslations();
     updateLangButton();
+}
+
+// =============================================================
+// LÓGICA DE FORMULARIOS (TABS Y ENVÍO AJAX)
+// =============================================================
+function switchForm(targetId) {
+    // Quitar activo de todos los botones
+    document.querySelectorAll('.form-tab').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    // Poner activo al clickeado
+    document.querySelector(`.form-tab[data-target="${targetId}"]`).classList.add('active');
+
+    // Ocultar todos los formularios
+    document.querySelectorAll('.form-wrapper').forEach(wrapper => {
+        wrapper.classList.remove('active');
+    });
+    // Mostrar el seleccionado
+    document.getElementById(targetId).classList.add('active');
+}
+
+async function handleSkasnuForm(event, type) {
+    event.preventDefault();
+    const form = event.target;
+    const btn = form.querySelector('button[type="submit"]');
+    const originalText = btn.innerHTML;
+
+    btn.disabled = true;
+    btn.innerHTML = currentLang === 'es' ? '<i class="fas fa-spinner fa-spin"></i> Enviando...' : '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+        const response = await fetch('https://formsubmit.co/ajax/skasfotos@gmail.com', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            form.style.display = 'none';
+            document.getElementById(`success-${type}`).style.display = 'block';
+            form.reset();
+        } else {
+            throw new Error('Error de servidor');
+        }
+    } catch (error) {
+        alert(currentLang === 'es' ? 'Hubo un error al enviar. Por favor, intenta de nuevo.' : 'There was an error sending. Please try again.');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
 }
 </script>
 
