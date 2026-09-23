@@ -4,12 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="description" content="SKASNU 2026 — Modelo de Naciones Unidas - Unidad Educativa Despertar">
+<meta name="description" content="SKASNU 2027 — Modelo de Naciones Unidas - Unidad Educativa Despertar">
 <meta name="theme-color" content="#6A0DAD">
 
-<title>SKASNU 2026 — Modelo ONU | Unidad Educativa Despertar</title>
+<title>SKASNU 2027 — Modelo ONU | Unidad Educativa Despertar</title>
 
 <link rel="icon" type="image/png" href="Img/Logo_pestaña.webp">
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="preload" as="image" href="Img/collage_claro.webp">
@@ -815,10 +816,10 @@ strong { color: var(--text-main); font-weight: 600; }
    ========================================================================== */
 .prices {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 18px;
     margin-top: 30px;
-    max-width: 660px;
+    max-width: 800px;
 }
 .pbox {
     background: var(--bg-card);
@@ -843,7 +844,7 @@ strong { color: var(--text-main); font-weight: 600; }
 }
 .pbox b {
     display: block;
-    font-size: 2.4rem;
+    font-size: 2.2rem;
     font-weight: 700;
     color: var(--text-main);
     margin-top: 8px;
@@ -1144,7 +1145,7 @@ footer {
     <div class="hero-content">
         <span class="hero-pill" data-i18n="hero-pill"><i class="fas fa-school"></i> Exclusivo para Instituciones Educativas</span>
 
-        <img class="hero-logo" src="Img/SKASNU_logo.png" alt="Logo SKASNU 2026">
+        <img class="hero-logo" src="Img/SKASNU_logo.png" alt="Logo SKASNU 2027">
 
         <h1><span class="accent">2027</span></h1>
         <div class="hair"></div>
@@ -1158,8 +1159,8 @@ footer {
         <div class="hero-tagline" data-i18n="hero-tagline">Modelo de Naciones Unidas · Unidad Educativa Despertar</div>
 
         <p class="hero-quote" data-i18n="hero-quote">
-            “La paz no es la ausencia de conflicto, sino la presencia de justicia.”
-            <small>— MARTIN LUTHER KING JR.</small>
+            “Establecer la paz duradera es el trabajo de la educación; todo lo que la política puede hacer es mantenernos fuera de la guerra.”
+            <small>— MARIA MONTESSORI</small>
         </p>
 
         <!-- COUNTDOWN -->
@@ -1184,8 +1185,8 @@ footer {
         <!-- STATS -->
         <div class="stats">
             <div class="stat"><b data-i18n="stat-1-t">4</b><span data-i18n="stat-1-s">Comités de simulación</span></div>
-            <div class="stat"><b data-i18n="stat-2-t">2</b><span data-i18n="stat-2-s">Idiomas de debate</span></div>
-            <div class="stat"><b data-i18n="stat-3-t">12–18</b><span data-i18n="stat-3-s">Años de edad</span></div>
+            <div class="stat"><b data-i18n="stat-2-t">1</b><span data-i18n="stat-2-s">Idioma de debate</span></div>
+            <div class="stat"><b data-i18n="stat-3-t">7–18</b><span data-i18n="stat-3-s">Años de edad</span></div>
             <div class="stat"><b data-i18n="stat-4-t">$35</b><span data-i18n="stat-4-s">Por delegado</span></div>
         </div>
     </div>
@@ -1194,7 +1195,7 @@ footer {
 <!-- ================= SOBRE EL MODELO ================= -->
 <section id="edicion">
     <div class="wrap">
-        <div class="eyebrow" data-i18n="ed-eyebrow">La edición 2026</div>
+        <div class="eyebrow" data-i18n="ed-eyebrow">La edición 2027</div>
         <h2 class="section-title" data-i18n="ed-title">Un modelo con <span class="highlight">identidad propia</span>: pensamiento crítico y diálogo global</h2>
 
         <p class="body" data-i18n="ed-p1">
@@ -1202,10 +1203,9 @@ footer {
         </p>
 
         <p class="body" data-i18n="ed-p2">
-            Esta edición reúne de manera exclusiva a delegaciones de <strong>instituciones educativas de Quito y el Valle de Tumbaco</strong>. No se aceptan inscripciones individuales ni de personas externas a unidades educativas formalmente acreditadas. Esto garantiza un entorno académico riguroso y seguro, con comités en español e inglés.
+            Esta edición reúne de manera exclusiva a delegaciones de <strong>instituciones educativas de Quito y el Valle de Tumbaco</strong>. No se aceptan inscripciones individuales ni de personas externas a unidades educativas formalmente acreditadas. Esto garantiza un entorno académico riguroso y seguro, con comités exclusivamente en español.
         </p>
 
-        <!-- CAJAS MODIFICADAS: SIN ICONOS COMO SE PIDIÓ -->
         <div class="info-box">
             <span class="lbl" data-i18n="ed-info1-lbl">Nuestra convicción</span>
             <p data-i18n="ed-info1-p">El trabajo intelectual del delegado es <strong>estrictamente personal</strong>: la investigación, el documento de posición, el discurso de apertura y la negociación en sala son suyos. SKASNU no admite el uso de inteligencia artificial para producir contenido de debate — la excelencia se demuestra con criterio propio, no con herramientas externas.</p>
@@ -1227,16 +1227,15 @@ footer {
 
         <div class="filters">
             <button class="on" data-f="all" data-i18n="filt-all"><i class="fas fa-globe"></i> Todos</button>
-            <button data-f="es" data-i18n="filt-es"><i class="fas fa-language"></i> En español</button>
-            <button data-f="en" data-i18n="filt-en"><i class="fas fa-language"></i> En inglés</button>
             <button data-f="junior" data-i18n="filt-jr"><i class="fas fa-child"></i> Junior</button>
+            <button data-f="senior" data-i18n="filt-sr"><i class="fas fa-user-tie"></i> Senior</button>
         </div>
 
         <div class="chips" id="chips">
             <div class="chip" data-lang="es" data-kind="senior"><span data-i18n="chip-cs">Consejo de Seguridad</span><i class="flag">ES</i></div>
-            <div class="chip" data-lang="es" data-kind="senior"><span data-i18n="chip-ag">Asamblea General — DISEC</span><i class="flag">ES</i></div>
-            <div class="chip" data-lang="es" data-kind="junior"><span data-i18n="chip-unicef">UNICEF Junior</span><i class="flag">ES</i></div>
-            <div class="chip" data-lang="en" data-kind="senior"><span data-i18n="chip-hrc">Human Rights Council</span><i class="flag">EN</i></div>
+            <div class="chip" data-lang="es" data-kind="senior"><span data-i18n="chip-onum">ONU Mujeres</span><i class="flag">ES</i></div>
+            <div class="chip" data-lang="es" data-kind="junior"><span data-i18n="chip-dhj">Derechos Humanos Junior</span><i class="flag">ES</i></div>
+            <div class="chip" data-lang="es" data-kind="senior"><span data-i18n="chip-sochum">SOCHUM</span><i class="flag">ES</i></div>
         </div>
 
         <p class="note" data-i18n="com-note"><i class="fas fa-info-circle"></i> Los comités con mayor demanda suelen cerrarse antes de la fecha límite. Recomendamos confirmar cupos con anticipación.</p>
@@ -1248,34 +1247,34 @@ footer {
     <div class="wrap">
         <div class="eyebrow" data-i18n="dist-eyebrow">Lo que nos distingue</div>
         <h2 class="section-title" data-i18n="dist-title">Disciplinas que <span class="highlight">solo existen aquí</span></h2>
-        <p class="section-subtitle" data-i18n="dist-sub">Dos competencias adicionales que permiten a los delegados destacar más allá de la dinámica tradicional de comité.</p>
+        <p class="section-subtitle" data-i18n="dist-sub">Pilares y reconocimientos que permiten a los delegados vivir una experiencia más allá de la dinámica tradicional de comité.</p>
 
         <div class="cards">
             <div class="card">
-                <i class="fas fa-globe-americas card-icon"></i>
-                <span class="tag" data-i18n="dist-tag-own1">Disciplina propia</span>
-                <h3 data-i18n="dist-geo-t">GEO SKASNU</h3>
-                <p data-i18n="dist-geo-p">Competencia de conocimiento geopolítico con finales en vivo ante el pleno durante la segunda jornada del modelo. Preguntas sobre historia, geografía, actualidad internacional y diplomacia.</p>
+                <i class="fas fa-seedling card-icon"></i>
+                <span class="tag" data-i18n="dist-tag-own1">Identidad</span>
+                <h3 data-i18n="dist-geo-t">Entorno Montessori</h3>
+                <p data-i18n="dist-geo-p">Un modelo que fomenta la independencia, el respeto mutuo y el aprendizaje colaborativo, reflejando los principios de la educación Montessori en cada debate.</p>
             </div>
 
             <div class="card">
-                <i class="fas fa-comments card-icon"></i>
-                <span class="tag" data-i18n="dist-tag-own2">Disciplina propia</span>
-                <h3 data-i18n="dist-deb-t">DEBATE SKASNU</h3>
-                <p data-i18n="dist-deb-p">Formato de debate que prioriza la argumentación y la refutación directa, a diferencia de los comités tradicionales basados en cooperación. Ideal para delegados que quieren medir su oratoria en un entorno competitivo.</p>
+                <i class="fas fa-leaf card-icon"></i>
+                <span class="tag" data-i18n="dist-tag-own2">Sostenibilidad</span>
+                <h3 data-i18n="dist-deb-t">Menú Vegetariano</h3>
+                <p data-i18n="dist-deb-p">Promovemos el cuidado ambiental y el respeto por la vida ofreciendo alimentación completamente vegetariana durante todas las jornadas del modelo.</p>
             </div>
 
             <div class="card">
-                <i class="fas fa-award card-icon"></i>
+                <i class="fas fa-hands-helping card-icon"></i>
                 <span class="tag" data-i18n="dist-tag-rec">Reconocimiento</span>
-                <h3 data-i18n="dist-aw-t">Premiación integral</h3>
-                <p data-i18n="dist-aw-p">Al cierre del modelo se entregan reconocimientos a la mejor delegación, mejores oradores, menciones honoríficas y premios especiales por comité, además del reconocimiento a la institución destacada.</p>
+                <h3 data-i18n="dist-aw-t">Liderazgo Constructivo</h3>
+                <p data-i18n="dist-aw-p">Más allá de la competencia, reconocemos la capacidad de llegar a consensos, la empatía y la construcción de soluciones conjuntas de cada delegación.</p>
             </div>
         </div>
 
         <div class="info-box" style="margin-top:30px;">
-            <span class="lbl" data-i18n="dist-info-lbl">Sin preparación previa posible</span>
-            <p data-i18n="dist-info-p">Ambas disciplinas se juzgan en vivo: o el delegado sabe, o no sabe. Son la expresión más pura del modelo — el momento en que se ve exactamente de qué es capaz un estudiante cuando no hay nada entre él y la pregunta.</p>
+            <span class="lbl" data-i18n="dist-info-lbl">Educar para la paz</span>
+            <p data-i18n="dist-info-p">Nuestro enfoque integra la excelencia académica con un profundo sentido de responsabilidad ambiental y social. Cada delegado experimenta un entorno donde el bienestar y la diplomacia van de la mano.</p>
         </div>
     </div>
 </section>
@@ -1284,21 +1283,21 @@ footer {
 <section class="alt" id="campus">
     <div class="wrap">
         <div class="eyebrow" data-i18n="cam-eyebrow">La sede y el cronograma</div>
-        <h2 class="section-title" data-i18n="cam-title">Tres jornadas en el <span class="highlight">Campus Despertar</span></h2>
+        <h2 class="section-title" data-i18n="cam-title">Dos jornadas en el <span class="highlight">Campus Despertar</span></h2>
         <p class="section-subtitle" data-i18n="cam-sub">El modelo se desarrolla íntegramente en las instalaciones de la Unidad Educativa Particular Despertar, en Quito. Los delegados no salen del campus durante la jornada.</p>
 
         <div class="cards">
             <div class="card">
                 <i class="fas fa-school card-icon"></i>
                 <span class="tag" data-i18n="cam-tag1">Instalaciones</span>
-                <h3 data-i18n="cam-t1">Coliseo y aulas</h3>
-                <p data-i18n="cam-p1">Plenarias, ceremonias y cócteles en el coliseo principal; comités en aulas equipadas con proyector y sonido.</p>
+                <h3 data-i18n="cam-t1">Áreas de trabajo</h3>
+                <p data-i18n="cam-p1">Plenarias, ceremonias y comités desarrollados en áreas abiertas y salones adaptados a nuestra filosofía, promoviendo un ambiente armónico.</p>
             </div>
             <div class="card">
                 <i class="fas fa-utensils card-icon"></i>
                 <span class="tag" data-i18n="cam-tag2">Servicios</span>
                 <h3 data-i18n="cam-t2">Alimentación incluida</h3>
-                <p data-i18n="cam-p2">Refrigerios y almuerzo los tres días del modelo, con opciones vegetarianas bajo solicitud previa.</p>
+                <p data-i18n="cam-p2">Refrigerios y almuerzo los dos días del modelo, con un menú 100% vegetariano.</p>
             </div>
             <div class="card">
                 <i class="fas fa-shield-alt card-icon"></i>
@@ -1319,7 +1318,7 @@ footer {
             </div>
             <div class="irow hl">
                 <div class="iday" data-i18n="cam-d2">Jueves 28 Ene</div>
-                <div class="itxt" data-i18n="cam-t2x">SKASNU Día 2 — Sesiones de comité · Finales en vivo de GEO SKASNU · Clausura, premiaciones y cóctel de despedida</div>
+                <div class="itxt" data-i18n="cam-t2x">SKASNU Día 2 — Sesiones de comité · Clausura, premiaciones y cóctel de despedida</div>
             </div>
         </div>
     </div>
@@ -1342,7 +1341,8 @@ footer {
                 <b>USD 40</b>
             </div>
         </div>
-        <p class="note" style="margin-bottom: 20px;" data-i18n="ins-note"><i class="fas fa-check-circle"></i> Incluye materiales, refrigerios, almuerzo los tres días, certificación individual y acceso a todas las actividades.</p>
+        <p class="note" style="margin-bottom: 5px;" data-i18n="ins-note"><i class="fas fa-check-circle"></i> Incluye materiales, refrigerios, almuerzo los dos días, certificación individual y acceso a todas las actividades.</p>
+        <p class="note" style="margin-bottom: 20px; color: var(--primary); font-weight: 600;" data-i18n="ins-pres"><i class="fas fa-star"></i> Los presidentes de mesa no pagan inscripción.</p>
 
         <!-- SISTEMA DE PESTAÑAS -->
         <div class="form-tabs">
@@ -1355,8 +1355,7 @@ footer {
         <div id="form-inst" class="form-wrapper active">
             <form onsubmit="handleSkasnuForm(event, 'inst')" class="registration-form" style="margin-top:0;">
                 <input type="hidden" name="_subject" value="NUEVA SOLICITUD DE COLEGIO - SKASNU 2027">
-                <!-- PARA ENVIAR A MÁS CORREOS DESCOMENTA LA LÍNEA DE ABAJO Y PON LOS CORREOS SEPARADOS POR COMA -->
-                <!-- <input type="hidden" name="_cc" value="correo1@gmail.com,correo2@gmail.com"> -->
+                <input type="hidden" name="_cc" value="tippabloeducacion@gmail.com">
                 <input type="hidden" name="Tipo_Registro" value="Institución Educativa">
 
                 <div class="form-row">
@@ -1392,11 +1391,6 @@ footer {
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label data-i18n="form-reason">¿Por qué su institución desea participar en SKASNU? *</label>
-                    <textarea name="Motivación" class="form-control" required placeholder="Breve descripción..."></textarea>
-                </div>
-
                 <p style="font-size: 0.85rem; color: var(--text-sec);" data-i18n="form-disclaimer">
                     <i class="fas fa-info-circle"></i> Al enviar esta solicitud, confirmas que representas oficialmente a la institución educativa mencionada. El envío no garantiza los cupos; nuestro equipo de admisiones revisará la solicitud y te contactará para formalizar el proceso.
                 </p>
@@ -1420,7 +1414,7 @@ footer {
         <div id="form-del" class="form-wrapper">
             <form onsubmit="handleSkasnuForm(event, 'del')" class="registration-form" style="margin-top:0;">
                 <input type="hidden" name="_subject" value="NUEVO REGISTRO: Delegado Individual - SKASNU 2027">
-                <!-- <input type="hidden" name="_cc" value="correo1@gmail.com,correo2@gmail.com"> -->
+                <input type="hidden" name="_cc" value="tippabloeducacion@gmail.com">
                 <input type="hidden" name="Tipo_Registro" value="Delegado Individual">
                 
                 <div class="form-row">
@@ -1443,10 +1437,10 @@ footer {
                         <label data-i18n="form-committee">Comité de preferencia *</label>
                         <select name="Comite_Preferencia" class="form-control" required>
                             <option value="">Seleccione un comité...</option>
-                            <option value="Consejo de Seguridad (ES)">Consejo de Seguridad (ES)</option>
-                            <option value="Asamblea General DISEC (ES)">Asamblea General DISEC (ES)</option>
-                            <option value="UNICEF Junior (ES)">UNICEF Junior (ES)</option>
-                            <option value="Human Rights Council (EN)">Human Rights Council (EN)</option>
+                            <option value="Consejo de Seguridad">Consejo de Seguridad</option>
+                            <option value="ONU Mujeres">ONU Mujeres</option>
+                            <option value="Derechos Humanos Junior">Derechos Humanos Junior</option>
+                            <option value="SOCHUM">SOCHUM</option>
                         </select>
                     </div>
                 </div>
@@ -1481,7 +1475,7 @@ footer {
             </div>
             <form onsubmit="handleSkasnuForm(event, 'pres')" class="registration-form" style="margin-top:0;">
                 <input type="hidden" name="_subject" value="POSTULACIÓN PRESIDENCIA - SKASNU 2027">
-                <!-- <input type="hidden" name="_cc" value="correo1@gmail.com,correo2@gmail.com"> -->
+                <input type="hidden" name="_cc" value="tippabloeducacion@gmail.com">
                 <input type="hidden" name="Tipo_Registro" value="Postulación Presidencia">
                 
                 <div class="form-row">
@@ -1504,10 +1498,10 @@ footer {
                         <label data-i18n="form-pres-com">Comité al que postula para presidir *</label>
                         <select name="Comite_Postulacion" class="form-control" required>
                             <option value="">Seleccione un comité...</option>
-                            <option value="Consejo de Seguridad (ES)">Consejo de Seguridad (ES)</option>
-                            <option value="Asamblea General DISEC (ES)">Asamblea General DISEC (ES)</option>
-                            <option value="UNICEF Junior (ES)">UNICEF Junior (ES)</option>
-                            <option value="Human Rights Council (EN)">Human Rights Council (EN)</option>
+                            <option value="Consejo de Seguridad">Consejo de Seguridad</option>
+                            <option value="ONU Mujeres">ONU Mujeres</option>
+                            <option value="Derechos Humanos Junior">Derechos Humanos Junior</option>
+                            <option value="SOCHUM">SOCHUM</option>
                         </select>
                     </div>
                 </div>
@@ -1573,7 +1567,7 @@ footer {
         </div>
         
         <div class="copyright">
-            <p data-i18n="ft-copy">© 2026 Plataforma Educativa - Unidad Educativa Particular Despertar.</p>
+            <p data-i18n="ft-copy">© 2027 Plataforma Educativa - Unidad Educativa Particular Despertar.</p>
         </div>
     </div>
 </footer>
@@ -1761,21 +1755,21 @@ const translations = {
         "hero-dates": '<i class="far fa-calendar-alt"></i> 27 y 28 de enero de 2027',
         "hero-place": '<i class="fas fa-map-marker-alt"></i> Campus Despertar · Quito, Ecuador',
         "hero-tagline": 'Modelo de Naciones Unidas · Unidad Educativa Despertar',
-        "hero-quote": '“La paz no es la ausencia de conflicto, sino la presencia de justicia.” <small>— MARTIN LUTHER KING JR.</small>',
+        "hero-quote": '“Establecer la paz duradera es el trabajo de la educación; todo lo que la política puede hacer es mantenernos fuera de la guerra.” <small>— MARIA MONTESSORI</small>',
         "cd-days": 'Días', "cd-hours": 'Horas', "cd-mins": 'Min', "cd-secs": 'Seg',
         "cd-lbl": 'Para el inicio del modelo · 27 de enero de 2027',
         "btn-enroll": '<i class="fas fa-pen-fancy"></i> Inscribir mi delegación',
         "btn-committees": '<i class="fas fa-list-ul"></i> Ver comités',
         "stat-1-t": '4', "stat-1-s": 'Comités de simulación',
-        "stat-2-t": '2', "stat-2-s": 'Idiomas de debate',
-        "stat-3-t": '12–18', "stat-3-s": 'Años de edad',
+        "stat-2-t": '1', "stat-2-s": 'Idioma de debate',
+        "stat-3-t": '7–18', "stat-3-s": 'Años de edad',
         "stat-4-t": '$35', "stat-4-s": 'Por delegado',
 
         // Edition Section
-        "ed-eyebrow": 'La edición 2026',
+        "ed-eyebrow": 'La edición 2027',
         "ed-title": 'Un modelo con <span class="highlight">identidad propia</span>: pensamiento crítico y diálogo global',
         "ed-p1": '<strong>SKASNU</strong> es el Modelo de Naciones Unidas anual de la Unidad Educativa Particular Despertar. Su nombre rinde homenaje a los ideales de cooperación internacional que sostienen a las Naciones Unidas. <strong>Este evento está diseñado estrictamente como un circuito académico intercolegial.</strong>',
-        "ed-p2": 'Esta edición reúne de manera exclusiva a delegaciones de <strong>instituciones educativas de Quito y el Valle de Tumbaco</strong>. No se aceptan inscripciones individuales ni de personas externas a unidades educativas formalmente acreditadas. Esto garantiza un entorno académico riguroso y seguro, con comités en español e inglés.',
+        "ed-p2": 'Esta edición reúne de manera exclusiva a delegaciones de <strong>instituciones educativas de Quito y el Valle de Tumbaco</strong>. No se aceptan inscripciones individuales ni de personas externas a unidades educativas formalmente acreditadas. Esto garantiza un entorno académico riguroso y seguro, con comités exclusivamente en español.',
         "ed-info1-lbl": 'Nuestra convicción',
         "ed-info1-p": 'El trabajo intelectual del delegado es <strong>estrictamente personal</strong>: la investigación, el documento de posición, el discurso de apertura y la negociación en sala son suyos. SKASNU no admite el uso de inteligencia artificial para producir contenido de debate — la excelencia se demuestra con criterio propio, no con herramientas externas.',
         "ed-info2-lbl": 'Formación para el futuro',
@@ -1786,42 +1780,41 @@ const translations = {
         "com-title": 'Encuentra tu <span class="highlight">foro ideal</span>',
         "com-sub": 'Cada delegado elige <strong>sus opciones</strong> en orden de preferencia al momento de que su colegio apruebe su participación. Contamos con 4 foros altamente especializados.',
         "filt-all": '<i class="fas fa-globe"></i> Todos',
-        "filt-es": '<i class="fas fa-language"></i> En español',
-        "filt-en": '<i class="fas fa-language"></i> En inglés',
         "filt-jr": '<i class="fas fa-child"></i> Junior',
+        "filt-sr": '<i class="fas fa-user-tie"></i> Senior',
         
         "chip-cs": 'Consejo de Seguridad',
-        "chip-ag": 'Asamblea General — DISEC',
-        "chip-unicef": 'UNICEF Junior',
-        "chip-hrc": 'Human Rights Council',
+        "chip-onum": 'ONU Mujeres',
+        "chip-dhj": 'Derechos Humanos Junior',
+        "chip-sochum": 'SOCHUM',
         "com-note": '<i class="fas fa-info-circle"></i> Los comités con mayor demanda suelen cerrarse antes de la fecha límite. Recomendamos confirmar cupos con anticipación.',
 
         // Distinctions Section
         "dist-eyebrow": 'Lo que nos distingue',
         "dist-title": 'Disciplinas que <span class="highlight">solo existen aquí</span>',
-        "dist-sub": 'Dos competencias adicionales que permiten a los delegados destacar más allá de la dinámica tradicional de comité.',
-        "dist-tag-own1": 'Disciplina propia',
-        "dist-tag-own2": 'Disciplina propia',
+        "dist-sub": 'Pilares y reconocimientos que permiten a los delegados vivir una experiencia más allá de la dinámica tradicional de comité.',
+        "dist-tag-own1": 'Identidad',
+        "dist-tag-own2": 'Sostenibilidad',
         "dist-tag-rec": 'Reconocimiento',
-        "dist-geo-t": 'GEO SKASNU',
-        "dist-geo-p": 'Competencia de conocimiento geopolítico con finales en vivo ante el pleno durante la segunda jornada del modelo. Preguntas sobre historia, geografía, actualidad internacional y diplomacia.',
-        "dist-deb-t": 'DEBATE SKASNU',
-        "dist-deb-p": 'Formato de debate que prioriza la argumentación y la refutación directa, a diferencia de los comités tradicionales basados en cooperación. Ideal para delegados que quieren medir su oratoria en un entorno competitivo.',
-        "dist-aw-t": 'Premiación integral',
-        "dist-aw-p": 'Al cierre del modelo se entregan reconocimientos a la mejor delegación, mejores oradores, menciones honoríficas y premios especiales por comité, además del reconocimiento a la institución destacada.',
-        "dist-info-lbl": 'Sin preparación previa posible',
-        "dist-info-p": 'Ambas disciplinas se juzgan en vivo: o el delegado sabe, o no sabe. Son la expresión más pura del modelo — el momento en que se ve exactamente de qué es capaz un estudiante cuando no hay nada entre él y la pregunta.',
+        "dist-geo-t": 'Entorno Montessori',
+        "dist-geo-p": 'Un modelo que fomenta la independencia, el respeto mutuo y el aprendizaje colaborativo, reflejando los principios de la educación Montessori en cada debate.',
+        "dist-deb-t": 'Menú Vegetariano',
+        "dist-deb-p": 'Promovemos el cuidado ambiental y el respeto por la vida ofreciendo alimentación completamente vegetariana durante todas las jornadas del modelo.',
+        "dist-aw-t": 'Liderazgo Constructivo',
+        "dist-aw-p": 'Más allá de la competencia, reconocemos la capacidad de llegar a consensos, la empatía y la construcción de soluciones conjuntas de cada delegación.',
+        "dist-info-lbl": 'Educar para la paz',
+        "dist-info-p": 'Nuestro enfoque integra la excelencia académica con un profundo sentido de responsabilidad ambiental y social. Cada delegado experimenta un entorno donde el bienestar y la diplomacia van de la mano.',
 
         // Campus Section
         "cam-eyebrow": 'La sede y el cronograma',
-        "cam-title": 'Tres jornadas en el <span class="highlight">Campus Despertar</span>',
+        "cam-title": 'Dos jornadas en el <span class="highlight">Campus Despertar</span>',
         "cam-sub": 'El modelo se desarrolla íntegramente en las instalaciones de la Unidad Educativa Particular Despertar, en Quito. Los delegados no salen del campus durante la jornada.',
         "cam-tag1": 'Instalaciones',
-        "cam-t1": 'Coliseo y aulas',
-        "cam-p1": 'Plenarias, ceremonias y cócteles en el coliseo principal; comités en aulas equipadas con proyector y sonido.',
+        "cam-t1": 'Áreas de trabajo',
+        "cam-p1": 'Plenarias, ceremonias y comités desarrollados en áreas abiertas y salones adaptados a nuestra filosofía, promoviendo un ambiente armónico.',
         "cam-tag2": 'Servicios',
         "cam-t2": 'Alimentación incluida',
-        "cam-p2": 'Refrigerios y almuerzo los tres días del modelo, con opciones vegetarianas bajo solicitud previa.',
+        "cam-p2": 'Refrigerios y almuerzo los dos días del modelo, con un menú 100% vegetariano.',
         "cam-tag3": 'Seguridad',
         "cam-t3": 'Acompañamiento institucional',
         "cam-p3": 'Personal docente y administrativo a cargo de cada comité, con protocolos de seguridad durante toda la jornada.',
@@ -1829,7 +1822,7 @@ const translations = {
         "cam-d1": 'Miércoles 27 Ene',
         "cam-t1x": 'SKASNU Día 1 — Registro · Ceremonia de inauguración · Apertura de comités y primera sesión de debate',
         "cam-d2": 'Jueves 28 Ene',
-        "cam-t2x": 'SKASNU Día 2 — Sesiones de comité · Finales en vivo de GEO SKASNU · Clausura, premiaciones y cóctel de despedida',
+        "cam-t2x": 'SKASNU Día 2 — Sesiones de comité · Clausura, premiaciones y cóctel de despedida',
 
         // Inscription Section
         "ins-eyebrow": 'Inversión e inscripción',
@@ -1837,7 +1830,8 @@ const translations = {
         "ins-sub": 'Exclusivo para unidades educativas. Selecciona tu perfil y completa el formulario correspondiente para que nuestro comité organizador evalúe tu solicitud.',
         "ins-pd": 'Por delegado',
         "ins-pi": 'Por institución',
-        "ins-note": '<i class="fas fa-check-circle"></i> Incluye materiales, refrigerios, almuerzo los tres días, certificación individual y acceso a todas las actividades.',
+        "ins-note": '<i class="fas fa-check-circle"></i> Incluye materiales, refrigerios, almuerzo los dos días, certificación individual y acceso a todas las actividades.',
+        "ins-pres": '<i class="fas fa-star"></i> Los presidentes de mesa no pagan inscripción.',
         
         // Forms Labels
         "tab-inst": 'Institución Educativa',
@@ -1849,7 +1843,6 @@ const translations = {
         "form-email": 'Correo Institucional del Coordinador *',
         "form-phone": 'Teléfono / WhatsApp *',
         "form-delegates": 'Cantidad estimada de estudiantes a participar *',
-        "form-reason": '¿Por qué su institución desea participar en SKASNU? *',
         "form-disclaimer": '<i class="fas fa-info-circle"></i> Al enviar esta solicitud, confirmas que representas oficialmente a la institución educativa mencionada. El envío no garantiza los cupos; nuestro equipo de admisiones revisará la solicitud y te contactará para formalizar el proceso.',
         "form-submit": '<i class="fas fa-paper-plane"></i> Enviar Solicitud Institucional',
         "form-name": 'Nombre Completo *',
@@ -1866,7 +1859,7 @@ const translations = {
 
         // Footer & Modal
         "ft-about": 'Sobre Nosotros',
-        "ft-copy": '© 2026 Plataforma Educativa - Unidad Educativa Particular Despertar.',
+        "ft-copy": '© 2027 Plataforma Educativa - Unidad Educativa Particular Despertar.',
         "mod-title": 'Contacto de Soporte',
         "btn-close": 'Cerrar'
     },
@@ -1889,21 +1882,21 @@ const translations = {
         "hero-dates": '<i class="far fa-calendar-alt"></i> January 27 and 28, 2027',
         "hero-place": '<i class="fas fa-map-marker-alt"></i> Campus Despertar · Quito, Ecuador',
         "hero-tagline": 'Model United Nations · Unidad Educativa Despertar',
-        "hero-quote": '“Peace is not the absence of conflict, but the presence of justice.” <small>— MARTIN LUTHER KING JR.</small>',
+        "hero-quote": '“Establishing lasting peace is the work of education; all politics can do is keep us out of war.” <small>— MARIA MONTESSORI</small>',
         "cd-days": 'Days', "cd-hours": 'Hours', "cd-mins": 'Min', "cd-secs": 'Sec',
         "cd-lbl": 'Until the model begins · January 27, 2027',
         "btn-enroll": '<i class="fas fa-pen-fancy"></i> Register my delegation',
         "btn-committees": '<i class="fas fa-list-ul"></i> View committees',
         "stat-1-t": '4', "stat-1-s": 'Simulation Committees',
-        "stat-2-t": '2', "stat-2-s": 'Debate languages',
-        "stat-3-t": '12–18', "stat-3-s": 'Years of age',
+        "stat-2-t": '1', "stat-2-s": 'Debate language',
+        "stat-3-t": '7–18', "stat-3-s": 'Years of age',
         "stat-4-t": '$35', "stat-4-s": 'Per delegate',
 
         // Edition Section
-        "ed-eyebrow": 'The 2026 Edition',
+        "ed-eyebrow": 'The 2027 Edition',
         "ed-title": 'A model with its <span class="highlight">own identity</span>: critical thinking and global dialogue',
         "ed-p1": '<strong>SKASNU</strong> is the annual Model United Nations of Unidad Educativa Particular Despertar. Its name honors the ideals of international cooperation that uphold the United Nations. <strong>This event is strictly designed as an inter-school academic circuit.</strong>',
-        "ed-p2": 'This edition exclusively brings together delegations from <strong>educational institutions in Quito and the Tumbaco Valley</strong>. Individual registrations or registrations from individuals outside formally accredited educational units are not accepted. This guarantees a rigorous and safe academic environment, with committees in Spanish and English.',
+        "ed-p2": 'This edition exclusively brings together delegations from <strong>educational institutions in Quito and the Tumbaco Valley</strong>. Individual registrations or registrations from individuals outside formally accredited educational units are not accepted. This guarantees a rigorous and safe academic environment, with committees exclusively in Spanish.',
         "ed-info1-lbl": 'Our conviction',
         "ed-info1-p": 'The delegate\'s intellectual work is <strong>strictly personal</strong>: the research, the position paper, the opening speech, and the negotiation in the room are entirely their own. SKASNU does not allow the use of artificial intelligence to produce debate content — excellence is demonstrated with one\'s own criteria, not with external tools.',
         "ed-info2-lbl": 'Training for the future',
@@ -1914,42 +1907,41 @@ const translations = {
         "com-title": 'Find your <span class="highlight">ideal forum</span>',
         "com-sub": 'Each delegate chooses <strong>their options</strong> in order of preference once their school approves their participation. We have 4 highly specialized forums.',
         "filt-all": '<i class="fas fa-globe"></i> All',
-        "filt-es": '<i class="fas fa-language"></i> In Spanish',
-        "filt-en": '<i class="fas fa-language"></i> In English',
         "filt-jr": '<i class="fas fa-child"></i> Junior',
+        "filt-sr": '<i class="fas fa-user-tie"></i> Senior',
         
         "chip-cs": 'Security Council',
-        "chip-ag": 'General Assembly — DISEC',
-        "chip-unicef": 'UNICEF Junior',
-        "chip-hrc": 'Human Rights Council',
+        "chip-onum": 'UN Women',
+        "chip-dhj": 'Junior Human Rights',
+        "chip-sochum": 'SOCHUM',
         "com-note": '<i class="fas fa-info-circle"></i> Committees with the highest demand usually close before the deadline. We recommend confirming spots in advance.',
 
         // Distinctions Section
         "dist-eyebrow": 'What distinguishes us',
         "dist-title": 'Disciplines that <span class="highlight">only exist here</span>',
-        "dist-sub": 'Two additional competitions that allow delegates to stand out beyond the traditional committee dynamic.',
-        "dist-tag-own1": 'Signature discipline',
-        "dist-tag-own2": 'Signature discipline',
+        "dist-sub": 'Pillars and recognitions that allow delegates to experience the model beyond the traditional committee dynamic.',
+        "dist-tag-own1": 'Identity',
+        "dist-tag-own2": 'Sustainability',
         "dist-tag-rec": 'Recognition',
-        "dist-geo-t": 'GEO SKASNU',
-        "dist-geo-p": 'A geopolitical knowledge competition with live finals before the plenary during the second day of the model. Questions cover history, geography, international current events, and diplomacy.',
-        "dist-deb-t": 'DEBATE SKASNU',
-        "dist-deb-p": 'A debate format that prioritizes argumentation and direct refutation, unlike traditional cooperation-based committees. Ideal for delegates who want to measure their public speaking skills in a competitive environment.',
-        "dist-aw-t": 'Comprehensive Awards',
-        "dist-aw-p": 'At the closing of the model, recognitions are awarded to the best delegation, best speakers, honorable mentions, and special awards per committee, in addition to recognition for the outstanding institution.',
-        "dist-info-lbl": 'No prior preparation possible',
-        "dist-info-p": 'Both disciplines are judged live: either the delegate knows it, or they don\'t. They are the purest expression of the model — the exact moment when you see what a student is capable of when nothing stands between them and the question.',
+        "dist-geo-t": 'Montessori Environment',
+        "dist-geo-p": 'A model that fosters independence, mutual respect, and collaborative learning, reflecting Montessori principles in every debate.',
+        "dist-deb-t": 'Vegetarian Menu',
+        "dist-deb-p": 'We promote environmental care and respect for life by offering a completely vegetarian menu throughout the model.',
+        "dist-aw-t": 'Constructive Leadership',
+        "dist-aw-p": 'Beyond competition, we recognize the ability to reach consensus, empathy, and the joint construction of solutions.',
+        "dist-info-lbl": 'Educating for peace',
+        "dist-info-p": 'Our approach integrates academic excellence with a deep sense of environmental and social responsibility. Each delegate experiences an environment where well-being and diplomacy go hand in hand.',
 
         // Campus Section
         "cam-eyebrow": 'The venue and schedule',
-        "cam-title": 'Three days at the <span class="highlight">Despertar Campus</span>',
+        "cam-title": 'Two days at the <span class="highlight">Despertar Campus</span>',
         "cam-sub": 'The model takes place entirely within the facilities of the Unidad Educativa Particular Despertar, in Quito. Delegates do not leave the campus during the day.',
         "cam-tag1": 'Facilities',
-        "cam-t1": 'Coliseum and classrooms',
-        "cam-p1": 'Plenaries, ceremonies, and cocktails in the main coliseum; committees in classrooms equipped with projectors and sound.',
+        "cam-t1": 'Work Areas',
+        "cam-p1": 'Plenaries, ceremonies, and committees held in open areas and rooms adapted to our philosophy, promoting a harmonious environment.',
         "cam-tag2": 'Services',
         "cam-t2": 'Meals included',
-        "cam-p2": 'Snacks and lunch all three days of the model, with vegetarian options upon prior request.',
+        "cam-p2": 'Snacks and lunch on both days of the model, featuring a 100% vegetarian menu.',
         "cam-tag3": 'Security',
         "cam-t3": 'Institutional support',
         "cam-p3": 'Teaching and administrative staff in charge of each committee, with security protocols throughout the day.',
@@ -1957,7 +1949,7 @@ const translations = {
         "cam-d1": 'Wednesday Jan 27',
         "cam-t1x": 'SKASNU Day 1 — Registration · Opening ceremony · Committee openings and first debate session',
         "cam-d2": 'Thursday Jan 28',
-        "cam-t2x": 'SKASNU Day 2 — Committee sessions · Live finals of GEO SKASNU · Closing, awards and farewell cocktail',
+        "cam-t2x": 'SKASNU Day 2 — Committee sessions · Closing, awards and farewell cocktail',
 
         // Inscription Section
         "ins-eyebrow": 'Investment and Registration',
@@ -1965,7 +1957,8 @@ const translations = {
         "ins-sub": 'Exclusive for educational units. Select your profile and complete the corresponding form for our organizing committee to evaluate your request.',
         "ins-pd": 'Per delegate',
         "ins-pi": 'Per institution',
-        "ins-note": '<i class="fas fa-check-circle"></i> Includes materials, snacks, lunch all three days, individual certification, and access to all activities.',
+        "ins-note": '<i class="fas fa-check-circle"></i> Includes materials, snacks, lunch on both days, individual certification, and access to all activities.',
+        "ins-pres": '<i class="fas fa-star"></i> Chairs/Presidents do not pay registration fees.',
         
         // Forms Labels
         "tab-inst": 'Educational Institution',
@@ -1977,7 +1970,6 @@ const translations = {
         "form-email": 'Coordinator\'s Institutional Email *',
         "form-phone": 'Phone / WhatsApp *',
         "form-delegates": 'Estimated number of participating students *',
-        "form-reason": 'Why does your institution want to participate in SKASNU? *',
         "form-disclaimer": '<i class="fas fa-info-circle"></i> By submitting this request, you confirm that you officially represent the mentioned educational institution. Submission does not guarantee spots; our admissions team will review the request and contact you to formalize the process.',
         "form-submit": '<i class="fas fa-paper-plane"></i> Submit Institutional Request',
         "form-name": 'Full Name *',
@@ -1994,7 +1986,7 @@ const translations = {
 
         // Footer & Modal
         "ft-about": 'About Us',
-        "ft-copy": '© 2026 Educational Platform - Unidad Educativa Particular Despertar.',
+        "ft-copy": '© 2027 Educational Platform - Unidad Educativa Particular Despertar.',
         "mod-title": 'Support Contact',
         "btn-close": 'Close'
     }
