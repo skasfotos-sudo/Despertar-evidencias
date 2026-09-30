@@ -1954,9 +1954,10 @@ def estadisticas_almacenamiento():
             return JSONResponse(status_code=500, content={"error": "No se pudo conectar a la BD"})
         c = conn.cursor(cursor_factory=RealDictCursor)
 
-        # 1. Usuarios activos (excluyendo admin)
-        c.execute("SELECT COUNT(*) as total FROM Usuarios WHERE Tipo != 0")
-        usuarios_activos = c.fetchone()['total']
+        # 1. Usuarios activos (excluyendo admin, asegurando tipo entero)
+        c.execute("SELECT COUNT(*) as total FROM Usuarios WHERE CAST(Tipo AS INTEGER) != 0")
+        row_u = c.fetchone()
+        usuarios_activos = row_u['total'] if row_u else 0
 
         # 2. Evidencias totales y desglose exacto
         c.execute("""
@@ -1969,25 +1970,28 @@ def estadisticas_almacenamiento():
                 COALESCE(SUM(Tamanio_KB), 0) as total_kb
             FROM Evidencias
         """)
-        stats_ev = c.fetchone()
+        stats_ev = c.fetchone() or {}
         
-        total_evidencias_academicas = stats_ev['total_academicas'] if stats_ev else 0
-        desglose = {
-            "fotos": stats_ev['fotos'] if stats_ev else 0,
-            "videos": stats_ev['videos'] if stats_ev else 0,
-            "documentos": stats_ev['documentos'] if stats_ev else 0,
-            "referencias": stats_ev['referencias'] if stats_ev else 0,
-            "total": (stats_ev['fotos'] or 0) + (stats_ev['videos'] or 0) + (stats_ev['documentos'] or 0) + (stats_ev['referencias'] or 0)
-        }
-        
-        total_kb = float(stats_ev['total_kb']) if stats_ev and stats_ev['total_kb'] else 0.0
-        gb_usados = total_kb / (1024 * 1024)
-
         # 3. Solicitudes pendientes
         c.execute("SELECT COUNT(*) as total FROM Solicitudes WHERE UPPER(Estado) = 'PENDIENTE'")
-        solicitudes_pendientes = c.fetchone()['total']
+        row_s = c.fetchone()
+        solicitudes_pendientes = row_s['total'] if row_s else 0
+        
+        # Lectura a prueba de fallos (Soporta mayúsculas y minúsculas de Postgres)
+        total_evidencias_academicas = stats_ev.get('total_academicas') or stats_ev.get('TOTAL_ACADEMICAS') or 0
+        
+        desglose = {
+            "fotos": stats_ev.get('fotos') or stats_ev.get('FOTOS') or 0,
+            "videos": stats_ev.get('videos') or stats_ev.get('VIDEOS') or 0,
+            "documentos": stats_ev.get('documentos') or stats_ev.get('DOCUMENTOS') or 0,
+            "referencias": stats_ev.get('referencias') or stats_ev.get('REFERENCIAS') or 0
+        }
+        desglose["total"] = desglose["fotos"] + desglose["videos"] + desglose["documentos"] + desglose["referencias"]
+        
+        total_kb = float(stats_ev.get('total_kb') or stats_ev.get('TOTAL_KB') or 0.0)
+        gb_usados = total_kb / (1024 * 1024)
 
-        # 4. Costos estimados (La IA cobra por todas las fotos, incluyendo referencias)
+        # 4. Costos estimados
         costo_storage = gb_usados * 0.023
         costo_ia = desglose['total'] * 0.001
 
@@ -2007,7 +2011,8 @@ def estadisticas_almacenamiento():
 
     except Exception as e:
         import traceback
-        return JSONResponse(status_code=500, content={"error": str(e), "detalle": traceback.format_exc()})
+        print(f"❌ Error 500 en dashboard: {traceback.format_exc()}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
     finally:
         if conn: conn.close()
 
@@ -2559,30 +2564,38 @@ def todas_evidencias(cedula: str):
 
 @app.delete("/eliminar_evidencia/{id}")
 async def eliminar_evidencia(id: int, admin_cedula: str = Form(...)): # 1. Pedir quién es
+    conn = None
     try:
         conn = get_db_connection()
         c = conn.cursor(cursor_factory=RealDictCursor)
+        
+        admin_cedula = admin_cedula.strip() # Limpiamos espacios ocultos
         
         # 2. Verificar que sea Admin
         c.execute("SELECT Tipo FROM Usuarios WHERE CI = %s", (admin_cedula,))
         admin = c.fetchone()
         
-        # Leer el rol de forma segura, ignorando si PostgreSQL lo devuelve como 'Tipo' o 'tipo'
-        tipo_admin = admin.get('Tipo') if admin and admin.get('Tipo') is not None else (admin.get('tipo') if admin else None)
-        
-        if not admin or tipo_admin != 0:
-             conn.close()
-             return JSONResponse({"error": "No autorizado"}, status_code=403)
+        if not admin:
+             return JSONResponse({"error": "Credenciales inválidas o sesión expirada"}, status_code=403)
+
+        # Leer el rol de forma segura y FORZAR a que sea un número entero
+        tipo_admin = admin.get('Tipo') if admin.get('Tipo') is not None else admin.get('tipo')
+        try:
+            tipo_admin = int(tipo_admin)
+        except:
+            tipo_admin = -1
+            
+        if tipo_admin != 0:
+             return JSONResponse({"error": "No autorizado. Solo los administradores pueden borrar archivos."}, status_code=403)
         
         # 1. Buscar la evidencia
         c.execute("SELECT * FROM Evidencias WHERE id = %s", (id,))
         evidencia = c.fetchone()
         
         if not evidencia:
-            conn.close()
             raise HTTPException(status_code=404, detail="Evidencia no encontrada")
             
-        # 🛡️ CORRECCIÓN: Buscamos la URL con seguridad (mayúsculas o minúsculas)
+        # Buscamos la URL con seguridad (mayúsculas o minúsculas)
         url = evidencia.get('Url_Archivo') or evidencia.get('url_archivo')
         
         # 2. Borrar de la Nube (Si tiene URL válida)
@@ -2619,14 +2632,13 @@ async def eliminar_evidencia(id: int, admin_cedula: str = Form(...)): # 1. Pedir
                     c.execute("UPDATE Usuarios SET Foto = '' WHERE CI = %s", (ci_estudiante,))
 
         conn.commit()
-        conn.close()
-        
         return JSONResponse({"mensaje": "Evidencia eliminada correctamente"})
         
     except Exception as e:
-        # Imprimimos el error exacto en los logs de Railway
         print(f"❌ Error CRÍTICO eliminando evidencia {id}: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
+    finally:
+        if conn: conn.close()
     
 @app.get("/diagnostico_usuario/{cedula}")
 async def diagnostico_usuario(cedula: str):
