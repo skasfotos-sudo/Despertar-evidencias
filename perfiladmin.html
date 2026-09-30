@@ -1231,72 +1231,75 @@ body.dark-mode .swal2-textarea {
             </div>
         </section>
 
-        <!-- SUBIDA CON IA -->
+        <!-- PANEL: SUBIDA DE EVIDENCIAS (DISEÑO PROFESIONAL CON PESTAÑAS) -->
         <section id="panel-upload" class="panel-section">
-        <h2 style="color:var(--primary); margin-bottom:20px;">Subida de Evidencias</h2>
+            <h2 style="color:var(--primary); margin-bottom:25px;">Gestor de Subidas</h2>
             
-            <div id="dropZoneIA" class="storage-calc drop-zone" style="text-align:center; margin-bottom:30px;">
-                <i class="fas fa-robot" style="font-size:3rem; color:var(--primary); margin-bottom:15px;"></i>
-                <h3>Subida Inteligente (Reconocimiento Facial)</h3>
-                <p style="margin-bottom:20px; color:var(--text-sec);">
-    Arrastra tus archivos aquí o haz clic para seleccionar.<br>
-    <span style="color: #f9a825; font-weight: 600;">⚠️ Máximo 50 archivos a la vez.</span><br>
-    <small>El sistema asignará automáticamente la foto al estudiante correcto.</small>
-</p>
-                
-                <input type="file" id="fileInputIA" multiple 
-                       accept="image/*,video/*,.pdf,.doc,.docx,.mp3,.mp4" 
-                       style="display:none" onchange="handleUploadIA(this)">
-                
-                <button class="btn-primary" onclick="document.getElementById('fileInputIA').click()" 
-                        style="font-size:1.1rem; padding:15px 30px;">
-                    <i class="fas fa-cloud-upload-alt"></i> Seleccionar Archivos
+            <div style="display:flex; gap:15px; margin-bottom:25px; flex-wrap:wrap;">
+                <button id="btnTabIA" onclick="switchUploadTab('IA')" class="btn-primary" style="flex:1; justify-content:center; padding:15px; font-size:1.1rem; border-radius:12px; transition:0.3s; background:var(--primary);">
+                    <i class="fas fa-robot"></i> Inteligencia Artificial
                 </button>
-                
-                <div id="uploadProgress" style="margin-top:20px; display:none;">
-                    <div class="storage-bar-bg">
-                        <div id="progressBar" class="storage-bar-fill" style="width:0%"></div>
-                    </div>
-                    <p id="progressText" style="margin-top:10px;">Procesando...</p>
-                </div>
-               <div id="uploadLog" style="text-align:left; margin-top:20px; max-height:300px;
-                     overflow-y:auto; font-size:0.9rem; padding:10px; background:var(--bg-input); 
-                     border-radius:8px;"></div>
+                <button id="btnTabManual" onclick="switchUploadTab('Manual')" class="btn-primary" style="flex:1; justify-content:center; padding:15px; font-size:1.1rem; border-radius:12px; transition:0.3s; background:var(--bg-card); color:var(--text-main); border:2px solid var(--border-color);">
+                    <i class="fas fa-hand-pointer"></i> Asignación Manual
+                </button>
             </div>
-            <!-- SUBIDA MANUAL -->
-            <div style="border-top:2px solid var(--border-color); padding-top:30px;">
-                <h4><i class="fas fa-hand-pointer"></i> Subida Manual</h4>
-                <p style="font-size:0.9rem; color:var(--text-sec); margin-bottom:15px;">
-                    Para archivos sin rostro (PDF, Docs) o correcciones.
+
+            <!-- CONTENEDOR IA -->
+            <div id="uploadTabIA" class="storage-calc" style="text-align:center; animation: fadeIn 0.3s;">
+                <i class="fas fa-robot" style="font-size:3.5rem; color:var(--primary); margin-bottom:15px;"></i>
+                <h3 style="margin-bottom:10px;">Análisis con Rekognition</h3>
+                <p style="color:var(--text-sec); margin-bottom:25px; max-width:600px; margin-left:auto; margin-right:auto;">
+                    El sistema detectará automáticamente a qué estudiante pertenece cada foto o video.<br>
+                    <span style="color:var(--warning); font-weight:600;"><i class="fas fa-exclamation-triangle"></i> Máximo 50 archivos por lote.</span>
                 </p>
-                <form id="formManual" onsubmit="subirManual(event)">
-                    <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:end;">
-                        <div style="flex:1; min-width:200px;">
-                            <label class="form-group" style="display:block;">
-                                <div style="margin-bottom:8px; font-weight:600; font-size:0.9rem; color:var(--text-main);">
-                                    Archivo *</div>
-                                <input type="file" id="manualFile" class="form-control" 
-                                       accept="image/*,video/*,.pdf,.doc,.docx,.mp3,.mp4" required>
-                            </label>
-                        </div>
-                        <div style="flex:2; min-width:300px; position:relative;">
-                            <label class="form-group" style="display:block;">
-                                <div style="margin-bottom:8px; font-weight:600; font-size:0.9rem; color:var(--text-main);">
-                                    Nombre(s) del Estudiante *</div>
-                                <input type="text" id="manualNombres" 
-                                       placeholder="Ej: Juan Pérez, María Gómez" 
-                                       class="form-control" required 
-                                       onkeyup="mostrarSugerencias(this.value)">
-                            </label>
-                            <div id="suggestionsBox" style="display:none; position:absolute; 
-                                 background:var(--bg-card); border:1px solid var(--border-color); 
-                                 max-height:150px; overflow-y:auto; width:100%; z-index:100; 
-                                 border-radius:8px; margin-top:5px;"></div>
-                        </div>
-                        <button type="submit" class="btn-primary" style="background:var(--secondary);">
-                            <i class="fas fa-user-check"></i> Asignar Manualmente
-                        </button>
+                
+                <input type="file" id="fileInputIA" multiple accept="image/*,video/*,.pdf,.doc,.docx,.mp3,.mp4" style="display:none" onchange="handleUploadIA(this)">
+                
+                <div id="dropZoneIA" class="drop-zone" style="border: 2px dashed var(--primary-light); border-radius:12px; padding:40px 20px; cursor:pointer; background:var(--primary-soft); transition:0.3s;" onclick="document.getElementById('fileInputIA').click()">
+                    <i class="fas fa-cloud-upload-alt" style="font-size:2rem; color:var(--primary); margin-bottom:10px;"></i>
+                    <p style="font-weight:600; color:var(--text-main); margin:0;">Haz clic aquí o arrastra tus archivos</p>
+                </div>
+                
+                <div id="uploadProgress" style="margin-top:30px; display:none; background:var(--bg-input); padding:20px; border-radius:12px; border:1px solid var(--border-color);">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-weight:600;">
+                        <span id="progressText" style="color:var(--primary);">Inicializando IA...</span>
+                        <span id="progressPercentage">0%</span>
                     </div>
+                    <div class="storage-bar-bg" style="height:12px; margin:0;">
+                        <div id="progressBar" class="storage-bar-fill" style="width:0%; background:linear-gradient(90deg, var(--primary), var(--primary-light)); transition: width 0.3s ease;"></div>
+                    </div>
+                </div>
+                
+                <div id="uploadLog" style="text-align:left; margin-top:20px; max-height:300px; overflow-y:auto; font-size:0.9rem; padding:15px; background:var(--bg-input); border-radius:8px; border:1px solid var(--border-color); display:none;"></div>
+            </div>
+
+            <!-- CONTENEDOR MANUAL -->
+            <div id="uploadTabManual" class="storage-calc" style="display:none; animation: fadeIn 0.3s;">
+                <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                    <div style="width:50px; height:50px; background:rgba(46, 139, 87, 0.1); color:var(--secondary); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.5rem;">
+                        <i class="fas fa-file-signature"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin:0;">Asignación Directa</h3>
+                        <p style="color:var(--text-sec); font-size:0.9rem; margin:0;">Para documentos (PDF, Word) o correcciones manuales.</p>
+                    </div>
+                </div>
+                
+                <form id="formManual" onsubmit="subirManual(event)" style="background:var(--bg-input); padding:25px; border-radius:12px; border:1px solid var(--border-color);">
+                    <div class="form-group">
+                        <label style="color:var(--text-main);"><i class="fas fa-file-alt" style="color:var(--primary);"></i> 1. Selecciona el Archivo</label>
+                        <input type="file" id="manualFile" class="form-control" accept="image/*,video/*,.pdf,.doc,.docx,.mp3,.mp4" required style="background:var(--bg-card);">
+                    </div>
+                    
+                    <div class="form-group" style="position:relative;">
+                        <label style="color:var(--text-main);"><i class="fas fa-users" style="color:var(--primary);"></i> 2. Buscar Estudiante(s)</label>
+                        <input type="text" id="manualNombres" placeholder="Ej: Juan Pérez, María Gómez..." class="form-control" required onkeyup="mostrarSugerencias(this.value)" style="background:var(--bg-card); font-size:1.05rem;">
+                        <div id="suggestionsBox" style="display:none; position:absolute; background:var(--bg-card); border:1px solid var(--border-color); max-height:200px; overflow-y:auto; width:100%; z-index:100; border-radius:8px; margin-top:5px; box-shadow:0 10px 25px rgba(0,0,0,0.1);"></div>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary" style="background:var(--secondary); width:100%; justify-content:center; padding:15px; font-size:1.1rem; margin-top:10px;">
+                        <i class="fas fa-upload"></i> Subir y Asignar
+                    </button>
                 </form>
             </div>
         </section>
@@ -3589,9 +3592,12 @@ async function fijarFotoPerfil(cedula, urlFoto) {
             const datos = new FormData();
             datos.append('archivo', archivo);
             
-            // Actualizamos texto de progreso
-            texto.textContent = `Analizando ${i + 1} de ${total}: ${archivo.name}`;
-            barra.style.width = ((i / total) * 100) + '%';
+            // Actualizamos el contenedor dinámico
+            document.getElementById('uploadLog').style.display = 'block';
+            let porcentajeReal = Math.round((i / total) * 100);
+            texto.textContent = `Procesando: ${archivo.name}`;
+            document.getElementById('progressPercentage').textContent = `${porcentajeReal}%`;
+            barra.style.width = `${porcentajeReal}%`;
             
             try {
                 const respuesta = await fetch(`${API_URL}/subir_evidencia_ia`, {
@@ -3643,7 +3649,9 @@ async function fijarFotoPerfil(cedula, urlFoto) {
             barra.style.width = ((completados / total) * 100) + '%';
         }
         
-        texto.textContent = 'Proceso completado ✅';
+        texto.textContent = '¡Proceso completado! ✅';
+        document.getElementById('progressPercentage').textContent = `100%`;
+        barra.style.width = `100%`;
         if (input.tagName === 'INPUT') {
             input.value = '';
         }
@@ -4342,6 +4350,36 @@ async function fijarFotoPerfil(cedula, urlFoto) {
         }
     } catch (error) {
         Swal.fire('Error', error.message, 'error');
+    }
+}
+
+// ==========================================
+// CONTROL DE PESTAÑAS DE SUBIDA
+// ==========================================
+function switchUploadTab(tabName) {
+    const tabIA = document.getElementById('uploadTabIA');
+    const tabManual = document.getElementById('uploadTabManual');
+    const btnIA = document.getElementById('btnTabIA');
+    const btnManual = document.getElementById('btnTabManual');
+    
+    if (tabName === 'IA') {
+        tabIA.style.display = 'block';
+        tabManual.style.display = 'none';
+        btnIA.style.background = 'var(--primary)';
+        btnIA.style.color = 'white';
+        btnIA.style.border = 'none';
+        btnManual.style.background = 'var(--bg-card)';
+        btnManual.style.color = 'var(--text-main)';
+        btnManual.style.border = '2px solid var(--border-color)';
+    } else {
+        tabIA.style.display = 'none';
+        tabManual.style.display = 'block';
+        btnManual.style.background = 'var(--secondary)';
+        btnManual.style.color = 'white';
+        btnManual.style.border = 'none';
+        btnIA.style.background = 'var(--bg-card)';
+        btnIA.style.color = 'var(--text-main)';
+        btnIA.style.border = '2px solid var(--border-color)';
     }
 }
     </script>
