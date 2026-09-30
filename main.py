@@ -56,7 +56,7 @@ def crear_coleccion_rekognition():
 # --- CONFIGURACIÓN DE CORREO ---
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 465  # <--- Asegúrate de que sea 465
-SMTP_EMAIL = "karlos.ayala.lopez.1234@gmail.com"
+SMTP_EMAIL = "skasfotos@gmail.com"
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
 
 # --- 1. CONFIGURACIÓN Y CREDENCIALES AWS/B2 ---
@@ -2964,10 +2964,7 @@ def limpieza_duplicados_startup():
             if not url: continue
             
             filename = os.path.basename(url)
-            # Limpiar prefijos numéricos para comparar nombres reales
             clean_name = re.sub(r'^\d+_', '', filename)
-            
-            # CLAVE ÚNICA: Cédula + Nombre Archivo (Para que no mezcle alumnos)
             clave = f"{cedula}|{clean_name}"
             
             if clave not in agrupados: agrupados[clave] = []
@@ -2976,14 +2973,21 @@ def limpieza_duplicados_startup():
         eliminados_3 = 0
         for clave, lista in agrupados.items():
             if len(lista) > 1:
-                lista.sort(key=lambda x: x['id']) # El más antiguo se queda
+                lista.sort(key=lambda x: x['id']) 
                 duplicados = lista[1:] 
                 for dup in duplicados:
-                    # Aquí borramos de DB. NO borramos de nube por precaución en start-up.
                     c.execute("DELETE FROM Evidencias WHERE id = %s", (dup['id'],))
                     eliminados_3 += 1
 
         if eliminados_3 > 0: print(f"   ✨ Fase 3: {eliminados_3} archivos eliminados por nombre.")
+        
+        conn.commit()
+        
+    except Exception as e:
+        print(f"❌ Error general en limpieza startup: {e}")
+    finally:
+        if conn: conn.close()
+        print(f"✅ LIMPIEZA INICIAL FINALIZADA.")
 
         # =========================================================
         # FASE 4: SINCRONIZACIÓN SEGURA (SOLO LECTURA / ACTUALIZAR PESO)
