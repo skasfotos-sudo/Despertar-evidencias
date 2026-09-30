@@ -1231,20 +1231,43 @@ body.dark-mode .swal2-textarea {
             </div>
         </section>
 
-        <!-- PANEL: SUBIDA DE EVIDENCIAS (DISEÑO PROFESIONAL CON PESTAÑAS) -->
+        <!-- PANEL: SUBIDA DE EVIDENCIAS -->
         <section id="panel-upload" class="panel-section">
+            <style>
+                /* Animación de carga activa (poste de barbero) */
+                @keyframes progressMove {
+                    0% { background-position: 0 0; }
+                    100% { background-position: 40px 0; }
+                }
+                .progress-bar-animated {
+                    background-image: linear-gradient(45deg, rgba(255,255,255,0.2) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.2) 75%, transparent 75%, transparent);
+                    background-size: 40px 40px;
+                    animation: progressMove 1s linear infinite;
+                    background-color: var(--primary);
+                    transition: width 0.4s ease;
+                }
+                /* Botones de Pestañas */
+                .upload-tab-btn {
+                    flex: 1; padding: 15px; font-size: 1.1rem; border-radius: 12px; transition: 0.3s; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; border: 2px solid transparent;
+                }
+                .upload-tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(106, 13, 173, 0.3); }
+                .upload-tab-btn.inactive { background: var(--bg-card); color: var(--text-sec); border-color: var(--border-color); }
+                .upload-tab-btn.inactive:hover { border-color: var(--primary); color: var(--primary); }
+            </style>
+
             <h2 style="color:var(--primary); margin-bottom:25px;">Gestor de Subidas</h2>
             
+            <!-- PESTAÑAS -->
             <div style="display:flex; gap:15px; margin-bottom:25px; flex-wrap:wrap;">
-                <button id="btnTabIA" onclick="switchUploadTab('IA')" class="btn-primary" style="flex:1; justify-content:center; padding:15px; font-size:1.1rem; border-radius:12px; transition:0.3s; background:var(--primary);">
+                <button id="btnTabIA" onclick="switchUploadTab('IA')" class="upload-tab-btn active">
                     <i class="fas fa-robot"></i> Inteligencia Artificial
                 </button>
-                <button id="btnTabManual" onclick="switchUploadTab('Manual')" class="btn-primary" style="flex:1; justify-content:center; padding:15px; font-size:1.1rem; border-radius:12px; transition:0.3s; background:var(--bg-card); color:var(--text-main); border:2px solid var(--border-color);">
+                <button id="btnTabManual" onclick="switchUploadTab('Manual')" class="upload-tab-btn inactive">
                     <i class="fas fa-hand-pointer"></i> Asignación Manual
                 </button>
             </div>
 
-            <!-- CONTENEDOR IA -->
+            <!-- CONTENEDOR: INTELIGENCIA ARTIFICIAL -->
             <div id="uploadTabIA" class="storage-calc" style="text-align:center; animation: fadeIn 0.3s;">
                 <i class="fas fa-robot" style="font-size:3.5rem; color:var(--primary); margin-bottom:15px;"></i>
                 <h3 style="margin-bottom:10px;">Análisis con Rekognition</h3>
@@ -1256,49 +1279,50 @@ body.dark-mode .swal2-textarea {
                 <input type="file" id="fileInputIA" multiple accept="image/*,video/*,.pdf,.doc,.docx,.mp3,.mp4" style="display:none" onchange="handleUploadIA(this)">
                 
                 <div id="dropZoneIA" class="drop-zone" style="border: 2px dashed var(--primary-light); border-radius:12px; padding:40px 20px; cursor:pointer; background:var(--primary-soft); transition:0.3s;" onclick="document.getElementById('fileInputIA').click()">
-                    <i class="fas fa-cloud-upload-alt" style="font-size:2rem; color:var(--primary); margin-bottom:10px;"></i>
-                    <p style="font-weight:600; color:var(--text-main); margin:0;">Haz clic aquí o arrastra tus archivos</p>
+                    <i class="fas fa-cloud-upload-alt" style="font-size:2.5rem; color:var(--primary); margin-bottom:10px;"></i>
+                    <p style="font-weight:600; color:var(--text-main); margin:0; font-size:1.1rem;">Haz clic aquí o arrastra tus archivos</p>
                 </div>
                 
+                <!-- BARRA DE PROGRESO ANIMADA -->
                 <div id="uploadProgress" style="margin-top:30px; display:none; background:var(--bg-input); padding:20px; border-radius:12px; border:1px solid var(--border-color);">
                     <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-weight:600;">
                         <span id="progressText" style="color:var(--primary);">Inicializando IA...</span>
-                        <span id="progressPercentage">0%</span>
+                        <span id="progressPercentage" style="color:var(--text-main);">0%</span>
                     </div>
-                    <div class="storage-bar-bg" style="height:12px; margin:0;">
-                        <div id="progressBar" class="storage-bar-fill" style="width:0%; background:linear-gradient(90deg, var(--primary), var(--primary-light)); transition: width 0.3s ease;"></div>
+                    <div class="storage-bar-bg" style="height:14px; margin:0; background:var(--border-color);">
+                        <div id="progressBar" class="progress-bar-animated" style="width:10%;"></div>
                     </div>
                 </div>
                 
                 <div id="uploadLog" style="text-align:left; margin-top:20px; max-height:300px; overflow-y:auto; font-size:0.9rem; padding:15px; background:var(--bg-input); border-radius:8px; border:1px solid var(--border-color); display:none;"></div>
             </div>
 
-            <!-- CONTENEDOR MANUAL -->
+            <!-- CONTENEDOR: SUBIDA MANUAL -->
             <div id="uploadTabManual" class="storage-calc" style="display:none; animation: fadeIn 0.3s;">
-                <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
-                    <div style="width:50px; height:50px; background:rgba(46, 139, 87, 0.1); color:var(--secondary); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.5rem;">
+                <div style="display:flex; align-items:center; gap:15px; margin-bottom:25px;">
+                    <div style="width:60px; height:60px; background:rgba(46, 139, 87, 0.1); color:var(--secondary); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:2rem;">
                         <i class="fas fa-file-signature"></i>
                     </div>
                     <div>
-                        <h3 style="margin:0;">Asignación Directa</h3>
-                        <p style="color:var(--text-sec); font-size:0.9rem; margin:0;">Para documentos (PDF, Word) o correcciones manuales.</p>
+                        <h3 style="margin:0; font-size:1.4rem;">Asignación Directa</h3>
+                        <p style="color:var(--text-sec); font-size:0.95rem; margin:0;">Sube documentos, PDFs o corrige asignaciones manualmente.</p>
                     </div>
                 </div>
                 
-                <form id="formManual" onsubmit="subirManual(event)" style="background:var(--bg-input); padding:25px; border-radius:12px; border:1px solid var(--border-color);">
-                    <div class="form-group">
-                        <label style="color:var(--text-main);"><i class="fas fa-file-alt" style="color:var(--primary);"></i> 1. Selecciona el Archivo</label>
-                        <input type="file" id="manualFile" class="form-control" accept="image/*,video/*,.pdf,.doc,.docx,.mp3,.mp4" required style="background:var(--bg-card);">
+                <form id="formManual" onsubmit="subirManual(event)" style="background:var(--bg-input); padding:30px; border-radius:12px; border:1px solid var(--border-color);">
+                    <div class="form-group" style="margin-bottom:25px;">
+                        <label style="color:var(--text-main); font-size:1.1rem; margin-bottom:10px;"><i class="fas fa-upload" style="color:var(--secondary); margin-right:8px;"></i> 1. Selecciona el Archivo</label>
+                        <input type="file" id="manualFile" class="form-control" accept="image/*,video/*,.pdf,.doc,.docx,.mp3,.mp4" required style="background:var(--bg-card); padding:15px; font-size:1rem; border:2px dashed var(--border-color); cursor:pointer;">
                     </div>
                     
-                    <div class="form-group" style="position:relative;">
-                        <label style="color:var(--text-main);"><i class="fas fa-users" style="color:var(--primary);"></i> 2. Buscar Estudiante(s)</label>
-                        <input type="text" id="manualNombres" placeholder="Ej: Juan Pérez, María Gómez..." class="form-control" required onkeyup="mostrarSugerencias(this.value)" style="background:var(--bg-card); font-size:1.05rem;">
-                        <div id="suggestionsBox" style="display:none; position:absolute; background:var(--bg-card); border:1px solid var(--border-color); max-height:200px; overflow-y:auto; width:100%; z-index:100; border-radius:8px; margin-top:5px; box-shadow:0 10px 25px rgba(0,0,0,0.1);"></div>
+                    <div class="form-group" style="position:relative; margin-bottom:30px;">
+                        <label style="color:var(--text-main); font-size:1.1rem; margin-bottom:10px;"><i class="fas fa-users" style="color:var(--secondary); margin-right:8px;"></i> 2. Buscar Estudiante(s)</label>
+                        <input type="text" id="manualNombres" placeholder="Ej: Juan Pérez, María Gómez..." class="form-control" required onkeyup="mostrarSugerencias(this.value)" style="background:var(--bg-card); padding:15px; font-size:1.05rem;">
+                        <div id="suggestionsBox" style="display:none; position:absolute; background:var(--bg-card); border:1px solid var(--border-color); max-height:200px; overflow-y:auto; width:100%; z-index:100; border-radius:8px; margin-top:5px; box-shadow:0 10px 25px rgba(0,0,0,0.15);"></div>
                     </div>
                     
-                    <button type="submit" class="btn-primary" style="background:var(--secondary); width:100%; justify-content:center; padding:15px; font-size:1.1rem; margin-top:10px;">
-                        <i class="fas fa-upload"></i> Subir y Asignar
+                    <button type="submit" class="btn-primary" style="background:var(--secondary); width:100%; justify-content:center; padding:18px; font-size:1.2rem; border-radius:12px; box-shadow:0 6px 15px rgba(46, 139, 87, 0.3); transition:all 0.3s ease;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='none'">
+                        <i class="fas fa-check-circle" style="margin-right:8px;"></i> Subir y Asignar Archivo
                     </button>
                 </form>
             </div>
@@ -3551,53 +3575,45 @@ async function fijarFotoPerfil(cedula, urlFoto) {
     // FUNCIÓN DE SUBIDA IA MEJORADA (CON LÍMITE Y PROTECCIÓN)
     // ==========================================
     async function handleUploadIA(input) {
-        // Obtenemos los archivos (ya sea del input o del drag & drop)
         const archivos = input.files;
-        
-        // 1. VALIDACIÓN INICIAL
         if (archivos.length === 0) return;
 
-        // 2. LÍMITE DE SEGURIDAD (Para evitar "Failed to fetch")
-        const LIMITE_ARCHIVOS = 50; // Máximo 50 archivos por tanda
-        
+        const LIMITE_ARCHIVOS = 50;
         if (archivos.length > LIMITE_ARCHIVOS) {
             Swal.fire({
                 title: '⚠️ Demasiados archivos',
-                html: `Estás intentando subir <b>${archivos.length}</b> archivos.<br>
-                       El límite seguro es de <b>${LIMITE_ARCHIVOS}</b> por tanda para evitar errores de conexión.<br>
-                       <small>Por favor, divide la carpeta en partes más pequeñas.</small>`,
+                html: `Estás intentando subir <b>${archivos.length}</b> archivos.<br>El límite seguro es de <b>${LIMITE_ARCHIVOS}</b> por tanda.<br>`,
                 icon: 'warning',
                 confirmButtonColor: '#6A0DAD'
             });
-            // Limpiamos el input para que pueda intentar de nuevo
             if (input.tagName === 'INPUT') input.value = '';
-            return; // DETENEMOS LA EJECUCIÓN AQUÍ
+            return; 
         }
         
-        // Configuración visual
         const log = document.getElementById('uploadLog');
         const progreso = document.getElementById('uploadProgress');
         const barra = document.getElementById('progressBar');
         const texto = document.getElementById('progressText');
+        const porcentajeTexto = document.getElementById('progressPercentage');
         
-        log.innerHTML = '<div><i class="fas fa-info-circle"></i> Iniciando análisis de reconocimiento facial...</div>';
+        log.style.display = 'block';
+        log.innerHTML = '<div><i class="fas fa-info-circle"></i> Iniciando análisis con Inteligencia Artificial...</div>';
         progreso.style.display = 'block';
         
         let completados = 0;
         const total = archivos.length;
         
-        // 3. PROCESAMIENTO UNO A UNO (Secuencial para estabilidad)
         for (let i = 0; i < total; i++) {
             const archivo = archivos[i];
             const datos = new FormData();
             datos.append('archivo', archivo);
             
-            // Actualizamos el contenedor dinámico
-            document.getElementById('uploadLog').style.display = 'block';
-            let porcentajeReal = Math.round((i / total) * 100);
-            texto.textContent = `Procesando: ${archivo.name}`;
-            document.getElementById('progressPercentage').textContent = `${porcentajeReal}%`;
-            barra.style.width = `${porcentajeReal}%`;
+            // Actualización visual: Mostramos qué archivo se está analizando con un spinner
+            let porcentajeInicial = Math.round((i / total) * 100);
+            texto.innerHTML = `Analizando <b>${i + 1} de ${total}</b>: ${archivo.name} <i class="fas fa-spinner fa-spin" style="margin-left:8px;"></i>`;
+            porcentajeTexto.textContent = `${porcentajeInicial}%`;
+            // Garantizamos un mínimo del 10% para que se vea la animación
+            barra.style.width = `${Math.max(10, porcentajeInicial)}%`;
             
             try {
                 const respuesta = await fetch(`${API_URL}/subir_evidencia_ia`, {
@@ -3605,60 +3621,36 @@ async function fijarFotoPerfil(cedula, urlFoto) {
                     body: datos
                 });
                 
-                if (!respuesta.ok) {
-                    throw new Error(`Error servidor: ${respuesta.status}`);
-                }
-
+                if (!respuesta.ok) throw new Error(`Error servidor: ${respuesta.status}`);
                 const resultado = await respuesta.json();
                 
-                // Procesar respuesta
                 if (resultado && resultado.status) {
                     if (resultado.status === 'exito') {
-                        log.innerHTML += `<div style="color:var(--secondary); margin-top:5px; padding:5px; border-bottom:1px solid #eee;">
-                            <strong>✅ ${archivo.name}:</strong><br>${resultado.mensaje}
-                        </div>`;
+                        log.innerHTML += `<div style="color:var(--secondary); margin-top:5px; padding:5px; border-bottom:1px solid var(--border-color);"><strong>✅ ${archivo.name}:</strong><br>${resultado.mensaje}</div>`;
                     } else if (resultado.status === 'alerta') {
-                        log.innerHTML += `<div style="color:var(--warning); margin-top:5px; padding:5px; border-bottom:1px solid #eee;">
-                            <strong>⚠️ ${archivo.name}:</strong> ${resultado.mensaje}
-                        </div>`;
+                        log.innerHTML += `<div style="color:var(--warning); margin-top:5px; padding:5px; border-bottom:1px solid var(--border-color);"><strong>⚠️ ${archivo.name}:</strong> ${resultado.mensaje}</div>`;
                     }
                 } else {
-                    log.innerHTML += `<div style="color:var(--secondary); margin-top:5px; padding:5px; border-bottom:1px solid #eee;">
-                        <strong>✅ ${archivo.name}:</strong> Subido correctamente.
-                    </div>`;
+                    log.innerHTML += `<div style="color:var(--secondary); margin-top:5px; padding:5px; border-bottom:1px solid var(--border-color);"><strong>✅ ${archivo.name}:</strong> Subido correctamente.</div>`;
                 }
 
             } catch (error) {
-                console.error(error);
                 let mensajeError = error.message;
-                
-                // Mensaje amigable si es error de red
-                if (mensajeError.includes('Failed to fetch')) {
-                    mensajeError = "Error de conexión. Internet inestable o servidor saturado.";
-                }
-
-                log.innerHTML += `<div style="color:var(--error); margin-top:5px; padding:5px; border-bottom:1px solid #eee;">
-                    <strong>❌ ${archivo.name}:</strong> ${mensajeError}
-                </div>`;
+                if (mensajeError.includes('Failed to fetch')) mensajeError = "Error de conexión o video muy pesado.";
+                log.innerHTML += `<div style="color:var(--error); margin-top:5px; padding:5px; border-bottom:1px solid var(--border-color);"><strong>❌ ${archivo.name}:</strong> ${mensajeError}</div>`;
             }
             
-            // Scroll automático hacia abajo del log
             log.scrollTop = log.scrollHeight;
-            
             completados++;
-            barra.style.width = ((completados / total) * 100) + '%';
         }
         
-        texto.textContent = '¡Proceso completado! ✅';
-        document.getElementById('progressPercentage').textContent = `100%`;
-        barra.style.width = `100%`;
-        if (input.tagName === 'INPUT') {
-            input.value = '';
-        }
+        // Finalización
+        porcentajeTexto.textContent = '100%';
+        barra.style.width = '100%';
+        texto.innerHTML = '¡Proceso completado! <i class="fas fa-check-circle" style="color:var(--secondary);"></i>';
         
-        setTimeout(() => {
-            cargarDatosIniciales();
-        }, 1500);
+        if (input.tagName === 'INPUT') input.value = '';
+        setTimeout(() => { cargarDatosIniciales(); }, 1500);
     }
     // ==========================================
     // 11. FUNCIONES DE CAMBIO DE CONTRASEÑA
@@ -4365,21 +4357,13 @@ function switchUploadTab(tabName) {
     if (tabName === 'IA') {
         tabIA.style.display = 'block';
         tabManual.style.display = 'none';
-        btnIA.style.background = 'var(--primary)';
-        btnIA.style.color = 'white';
-        btnIA.style.border = 'none';
-        btnManual.style.background = 'var(--bg-card)';
-        btnManual.style.color = 'var(--text-main)';
-        btnManual.style.border = '2px solid var(--border-color)';
+        btnIA.className = 'upload-tab-btn active';
+        btnManual.className = 'upload-tab-btn inactive';
     } else {
         tabIA.style.display = 'none';
         tabManual.style.display = 'block';
-        btnManual.style.background = 'var(--secondary)';
-        btnManual.style.color = 'white';
-        btnManual.style.border = 'none';
-        btnIA.style.background = 'var(--bg-card)';
-        btnIA.style.color = 'var(--text-main)';
-        btnIA.style.border = '2px solid var(--border-color)';
+        btnIA.className = 'upload-tab-btn inactive';
+        btnManual.className = 'upload-tab-btn active';
     }
 }
     </script>
