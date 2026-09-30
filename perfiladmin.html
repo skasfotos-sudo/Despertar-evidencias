@@ -3097,24 +3097,24 @@ function abrirPrevisualizacion(url) {
     enlaceDescarga.href = url;
     const esVideo = url.match(/\.(mp4|avi|mov|webm|mkv)$/i);
     const esImagen = url.match(/\.(jpg|jpeg|png|gif|webp|avif)$/i);
-    const esDoc = url.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx)$/i);
+    const esPDF = url.match(/\.(pdf)$/i);
+    const esOffice = url.match(/\.(doc|docx|xls|xlsx|ppt|pptx)$/i);
+
+    // Variable con los eventos táctiles y de clic para bloquear el salto de imagen
+    const escudos = `onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchmove="event.stopPropagation()" ontouchend="event.stopPropagation()"`;
 
     if (esVideo) {
-        contenido.innerHTML = `<video src="${url}" class="lb-media-item" controls autoplay style="max-height:80vh; max-width:90vw;"></video>`;
+        contenido.innerHTML = `<video src="${url}" class="lb-media-item" controls autoplay style="max-height:80vh; max-width:90vw;" ${escudos}></video>`;
     } else if (esImagen) {
-        contenido.innerHTML = `<img src="${url}" class="lb-media-item" style="max-height:80vh; max-width:90vw;" onerror="this.src='Img/Logo_pestaña.webp'">`;
-    } else if (esDoc) {
-        // Visor de Google para evitar auto-descarga
-        const visorGoogle = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
-        contenido.innerHTML = `<iframe src="${visorGoogle}" class="lb-media-item" style="width:90vw; height:80vh; background:white; border-radius:8px;" frameborder="0"></iframe>`;
+        contenido.innerHTML = `<img src="${url}" class="lb-media-item" style="max-height:80vh; max-width:90vw;" onerror="this.src='Img/Logo_pestaña.webp'" ${escudos} onload="this.onclick = function(e){ e.stopPropagation(); this.classList.toggle('zoomed'); }">`;
+    } else if (esPDF) {
+        contenido.innerHTML = `<div class="lb-media-item" style="width:90vw; height:80vh; background:white; border-radius:8px; overflow:hidden; pointer-events:auto;" ${escudos}><embed src="${url}" type="application/pdf" width="100%" height="100%" style="border:none;"></div>`;
+    } else if (esOffice) {
+        const visorMS = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
+        contenido.innerHTML = `<div class="lb-media-item" style="width:90vw; height:80vh; background:white; border-radius:8px; overflow:hidden; pointer-events:auto;" ${escudos}><iframe src="${visorMS}" style="width:100%; height:100%; border:none;" frameborder="0"></iframe></div>`;
     } else {
         let nombreDoc = decodeURIComponent(url.split('/').pop()).replace(/^\d+_/, '');
-        contenido.innerHTML = `
-            <div style="color:white; text-align:center; padding: 20px;">
-                <i class="fas fa-file-alt" style="font-size:5rem; margin-bottom:15px; color:var(--primary-light);"></i>
-                <h3 style="margin-bottom:10px; word-break: break-all; max-width: 80vw;">${nombreDoc}</h3>
-                <p style="color:#ccc; font-size:0.9rem;">Archivo no visualizable. Haz clic en <b>Descargar</b>.</p>
-            </div>`;
+        contenido.innerHTML = `<div ${escudos} style="color:white; text-align:center; padding: 20px; pointer-events:auto;"><i class="fas fa-file-alt" style="font-size:5rem; margin-bottom:15px; color:var(--primary-light);"></i><h3 style="margin-bottom:10px; word-break: break-all; max-width: 80vw;">${nombreDoc}</h3><p style="color:#ccc; font-size:0.9rem;">Archivo no visualizable. Haz clic en <b>Descargar</b>.</p></div>`;
     }
 
     const btnEliminar = document.querySelector('.btn-lb-delete');
@@ -3142,34 +3142,37 @@ function actualizarVisor() {
     const url = evidencia.Url_Archivo || evidencia.url_archivo;
     enlaceDescarga.href = url;
     
-    const esVideo = url.match(/\.(mp4|avi|mov|webm|mkv)$/i);
+const esVideo = url.match(/\.(mp4|avi|mov|webm|mkv)$/i);
     const esImagen = url.match(/\.(jpg|jpeg|png|gif|webp|avif)$/i);
-    const esDoc = url.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx)$/i);
+    const esPDF = url.match(/\.(pdf)$/i);
+    const esOffice = url.match(/\.(doc|docx|xls|xlsx|ppt|pptx)$/i);
+    
+    // Escudos anticierre
+    const escudos = `onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchmove="event.stopPropagation()" ontouchend="event.stopPropagation()"`;
     
     contenido.innerHTML = ''; 
     contenido.style.opacity = '0';
     
     setTimeout(() => {
         if (esVideo) {
-            contenido.innerHTML = `<video src="${url}" class="lb-media-item" controls autoplay style="max-height:80vh; max-width:90vw;"></video>`;
+            contenido.innerHTML = `<video src="${url}" class="lb-media-item" controls autoplay style="max-height:80vh; max-width:90vw;" ${escudos}></video>`;
         } else if (esImagen) {
             const img = document.createElement('img');
             img.src = url; img.className = 'lb-media-item';
             img.onerror = function() { this.src='Img/Logo_pestaña.webp'; };
             img.onclick = function(e) { e.stopPropagation(); this.classList.toggle('zoomed'); };
+            img.ontouchstart = function(e) { e.stopPropagation(); };
+            img.ontouchmove = function(e) { e.stopPropagation(); };
+            img.ontouchend = function(e) { e.stopPropagation(); };
             contenido.appendChild(img);
-        } else if (esDoc) {
-            // Visor de Google embebido
-            const visorGoogle = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
-            contenido.innerHTML = `<div style="position:relative; width:90vw; height:80vh; background:white; border-radius:8px; overflow:hidden;"><iframe src="${visorGoogle}" style="width:100%; height:100%; border:none;" frameborder="0"></iframe></div>`;
+        } else if (esPDF) {
+            contenido.innerHTML = `<div class="lb-media-item" style="width:90vw; height:80vh; background:white; border-radius:8px; overflow:hidden; pointer-events:auto;" ${escudos}><embed src="${url}" type="application/pdf" width="100%" height="100%" style="border:none;"></div>`;
+        } else if (esOffice) {
+            const visorMS = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
+            contenido.innerHTML = `<div class="lb-media-item" style="width:90vw; height:80vh; background:white; border-radius:8px; overflow:hidden; pointer-events:auto;" ${escudos}><iframe src="${visorMS}" style="width:100%; height:100%; border:none;" frameborder="0"></iframe></div>`;
         } else {
             let nombreDoc = decodeURIComponent(url.split('/').pop()).replace(/^\d+_/, '');
-            contenido.innerHTML = `
-                <div style="color:white; text-align:center; padding: 20px;">
-                    <i class="fas fa-file-alt" style="font-size:5rem; margin-bottom:15px; color:var(--primary-light);"></i>
-                    <h3 style="margin-bottom:10px; word-break: break-all; max-width: 80vw;">${nombreDoc}</h3>
-                    <p style="color:#ccc; font-size:0.9rem;">Archivo no visualizable. Haz clic en <b>Descargar</b>.</p>
-                </div>`;
+            contenido.innerHTML = `<div ${escudos} style="color:white; text-align:center; padding: 20px; pointer-events:auto;"><i class="fas fa-file-alt" style="font-size:5rem; margin-bottom:15px; color:var(--primary-light);"></i><h3 style="margin-bottom:10px; word-break: break-all; max-width: 80vw;">${nombreDoc}</h3><p style="color:#ccc; font-size:0.9rem;">Archivo no visualizable. Haz clic en <b>Descargar</b>.</p></div>`;
         }
         contenido.style.opacity = '1';
     }, 100);
