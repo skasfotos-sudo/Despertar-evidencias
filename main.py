@@ -99,6 +99,8 @@ except Exception as e:
 
 # Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+# Silenciar el "Spam" de las peticiones GET automáticas de Uvicorn
+logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
 
 def enviar_correo_real(destinatario: str, asunto: str, mensaje: str, html: bool = False) -> bool:
     import requests
