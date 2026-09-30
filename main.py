@@ -103,31 +103,39 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
 
 def enviar_correo_real(destinatario: str, asunto: str, mensaje: str, html: bool = False) -> bool:
-    import requests
-    API_KEY = os.environ.get("RESEND_API_KEY")
+    """Envía correos utilizando el servidor SMTP de Gmail (Gratuito, seguro y sin APIs de terceros)"""
     try:
-        if not API_KEY:
-            logging.error("❌ La variable de entorno RESEND_API_KEY no está configurada.")
+        # Configuración del servidor desde las variables globales
+        servidor = SMTP_SERVER
+        puerto = SMTP_PORT
+        remitente = SMTP_EMAIL
+        password = SMTP_PASSWORD # Extraído de la variable de entorno en Railway
+        
+        if not password:
+            print("❌ No se encontró la contraseña SMTP_PASSWORD en el servidor.")
             return False
-        url = "https://api.resend.com/emails"
-        payload = {
-            "from": "onboarding@resend.dev",  # <--- CAMBIO TEMPORAL
-            "to": [destinatario],
-            "subject": asunto,
-            "html": mensaje if html else f"<p>{mensaje}</p>"
-        }
-        headers = {
-            "Authorization": f"Bearer {API_KEY}",
-            "Content-Type": "application/json"
-        }
-        response = requests.post(url, json=payload, headers=headers)
-        if response.status_code not in [200, 201]:
-            logging.error(f"❌ Resend error: {response.status_code} - {response.text}")
-        else:
-            logging.info(f"✅ Correo enviado a {destinatario}")
-        return response.status_code in [200, 201]
+
+        # Construir el mensaje de correo
+        msg = MIMEMultipart()
+        msg['From'] = f"Soporte U.E. Despertar <{remitente}>"
+        msg['To'] = destinatario
+        msg['Subject'] = asunto
+        
+        # Adjuntar el contenido (HTML o Texto)
+        tipo_contenido = "html" if html else "plain"
+        msg.attach(MIMEText(mensaje, tipo_contenido))
+
+        # Conectar al servidor de Gmail usando SSL
+        server = smtplib.SMTP_SSL(servidor, puerto)
+        server.login(remitente, password)
+        server.sendmail(remitente, destinatario, msg.as_string())
+        server.quit()
+        
+        print(f"✅ Correo enviado exitosamente a {destinatario}")
+        return True
+        
     except Exception as e:
-        logging.error(f"❌ Excepción en correo: {e}")
+        print(f"❌ Excepción crítica al enviar correo: {e}")
         return False
 
 # --- LÓGICA DE VOLUMEN PERSISTENTE ---
