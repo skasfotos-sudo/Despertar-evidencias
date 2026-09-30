@@ -1366,6 +1366,23 @@ async def subir_evidencia_ia(archivo: UploadFile = File(...)):
                 # No detenemos el proceso, continuamos para al menos guardar el archivo.
 
         # ------------------------------------------------------------
+        # 4.5. RECONEXIÓN INTELIGENTE (Prevenir Error SSL en videos largos)
+        # ------------------------------------------------------------
+        # Como la IA puede tardar minutos, Supabase cierra la conexión inactiva.
+        # Aquí verificamos si sigue viva, y si no, reconectamos silenciosamente.
+        try:
+            c.execute("SELECT 1")
+        except Exception:
+            print("   🔄 Reconectando a la Base de Datos (Conexión anterior expirada por inactividad)...")
+            if conn:
+                try: conn.close()
+                except: pass
+            conn = get_db_connection()
+            if not conn:
+                raise HTTPException(status_code=500, detail="Fallo al reconectar con la base de datos.")
+            c = conn.cursor(cursor_factory=RealDictCursor)
+
+        # ------------------------------------------------------------
         # 5. VERIFICAR SI EL ARCHIVO YA EXISTE (por Hash)
         # ------------------------------------------------------------
         c.execute("SELECT Url_Archivo, Tamanio_KB FROM Evidencias WHERE Hash = %s LIMIT 1", (file_hash,))
