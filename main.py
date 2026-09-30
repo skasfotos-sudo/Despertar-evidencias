@@ -3067,11 +3067,8 @@ def limpieza_duplicados_startup():
             conn_metricas.close()
         except Exception as e:
             print(f"⚠️ Error menor actualizando métricas: {e}")
-            
-    except Exception as e:
-        print(f"❌ Error general en limpieza startup: {e}")
-    finally:
-        if conn: conn.close()
+        finally:
+            if conn: conn.close()
         print(f"✅ MANTENIMIENTO TOTAL FINALIZADO.")
 
 @app.post("/recuperar_evidencias_nube")
