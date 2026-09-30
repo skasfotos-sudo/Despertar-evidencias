@@ -901,6 +901,72 @@ body.dark-mode .swal2-textarea {
         padding: 3px 10px;
     }
 }
+
+/* ==========================================================================
+           OPTIMIZACIÓN VISOR DE DOCUMENTOS (MÓVIL Y PC)
+           ========================================================================== */
+        .visor-doc-wrapper {
+            width: 90vw;
+            height: 80vh;
+            background: #ffffff;
+            border-radius: 12px;
+            /* 1. Propiedades VITALES para permitir scroll con 1 dedo en iPhone/Android */
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+            pointer-events: auto;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .visor-doc-wrapper iframe, .visor-doc-wrapper embed {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .visor-doc-wrapper {
+                width: 95vw;
+                /* 2. Reducimos la altura en celulares para que no tape los botones inferiores */
+                height: 65vh; 
+                border-radius: 8px;
+            }
+        }
+
+        /* ==========================================================================
+           OPTIMIZACIÓN VISOR DE DOCUMENTOS (MÓVIL Y PC)
+           ========================================================================== */
+        .visor-doc-wrapper {
+            width: 90vw;
+            height: 80vh;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden; 
+            pointer-events: auto;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .visor-doc-wrapper object, .visor-doc-wrapper iframe, .visor-doc-wrapper embed {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .visor-doc-wrapper {
+                width: 95vw;
+                height: 65vh; /* Evita que el documento tape los botones de Eliminar/Descargar */
+                border-radius: 8px;
+            }
+        }
     </style>
 </head>
 
@@ -3064,13 +3130,24 @@ function configurarEventosTeclado() {
             case 'Escape': cerrarLightbox(); break;
             case 'ArrowLeft': imagenAnterior(e); break;
             case 'ArrowRight': imagenSiguiente(e); break;
-            case 'Delete': eliminarEvidenciaActual(); break;
+            // Solo para perfiladmin.html, si no existe no pasa nada:
+            case 'Delete': if(typeof eliminarEvidenciaActual === 'function') eliminarEvidenciaActual(); break;
         }
     });
 
     const lbContent = document.getElementById('lightbox');
-    lbContent.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
-    lbContent.addEventListener('touchend', e => { touchEndX = e.changedTouches[0].screenX; handleSwipe(); }, {passive: true});
+    
+    lbContent.addEventListener('touchstart', e => { 
+        // ESCUDO: Si tocas el documento o la imagen, ignoramos el swipe para permitir hacer scroll
+        if(e.target.closest('.visor-doc-wrapper') || e.target.closest('.lb-media-item')) return;
+        touchStartX = e.changedTouches[0].screenX; 
+    }, {passive: true});
+
+    lbContent.addEventListener('touchend', e => { 
+        if(e.target.closest('.visor-doc-wrapper') || e.target.closest('.lb-media-item')) return;
+        touchEndX = e.changedTouches[0].screenX; 
+        handleSwipe(); 
+    }, {passive: true});
 }
 
 function handleSwipe() {
@@ -3100,21 +3177,21 @@ function abrirPrevisualizacion(url) {
     const esPDF = url.match(/\.(pdf)$/i);
     const esOffice = url.match(/\.(doc|docx|xls|xlsx|ppt|pptx)$/i);
 
-    // Variable con los eventos táctiles y de clic para bloquear el salto de imagen
-    const escudos = `onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchmove="event.stopPropagation()" ontouchend="event.stopPropagation()"`;
+    const escudos = `onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchmove="event.stopPropagation()"`;
 
     if (esVideo) {
-        contenido.innerHTML = `<video src="${url}" class="lb-media-item" controls autoplay style="max-height:80vh; max-width:90vw;" ${escudos}></video>`;
+        contenido.innerHTML = `<video src="${url}" class="lb-media-item visor-doc-wrapper" controls autoplay style="max-height:80vh; max-width:90vw;" ${escudos}></video>`;
     } else if (esImagen) {
-        contenido.innerHTML = `<img src="${url}" class="lb-media-item" style="max-height:80vh; max-width:90vw;" onerror="this.src='Img/Logo_pestaña.webp'" ${escudos} onload="this.onclick = function(e){ e.stopPropagation(); this.classList.toggle('zoomed'); }">`;
+        contenido.innerHTML = `<img src="${url}" class="lb-media-item visor-doc-wrapper" style="max-height:80vh; max-width:90vw;" onerror="this.src='Img/Logo_pestaña.webp'" ${escudos} onload="this.onclick = function(e){ e.stopPropagation(); this.classList.toggle('zoomed'); }">`;
     } else if (esPDF) {
-        contenido.innerHTML = `<div class="lb-media-item" style="width:90vw; height:80vh; background:white; border-radius:8px; overflow:hidden; pointer-events:auto;" ${escudos}><embed src="${url}" type="application/pdf" width="100%" height="100%" style="border:none;"></div>`;
+        const visorGoogle = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+        contenido.innerHTML = `<div class="visor-doc-wrapper" ${escudos}><iframe src="${visorGoogle}" allowfullscreen></iframe></div>`;
     } else if (esOffice) {
         const visorMS = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
-        contenido.innerHTML = `<div class="lb-media-item" style="width:90vw; height:80vh; background:white; border-radius:8px; overflow:hidden; pointer-events:auto;" ${escudos}><iframe src="${visorMS}" style="width:100%; height:100%; border:none;" frameborder="0"></iframe></div>`;
+        contenido.innerHTML = `<div class="visor-doc-wrapper" ${escudos}><iframe src="${visorMS}" allowfullscreen></iframe></div>`;
     } else {
         let nombreDoc = decodeURIComponent(url.split('/').pop()).replace(/^\d+_/, '');
-        contenido.innerHTML = `<div ${escudos} style="color:white; text-align:center; padding: 20px; pointer-events:auto;"><i class="fas fa-file-alt" style="font-size:5rem; margin-bottom:15px; color:var(--primary-light);"></i><h3 style="margin-bottom:10px; word-break: break-all; max-width: 80vw;">${nombreDoc}</h3><p style="color:#ccc; font-size:0.9rem;">Archivo no visualizable. Haz clic en <b>Descargar</b>.</p></div>`;
+        contenido.innerHTML = `<div class="visor-doc-wrapper" ${escudos} style="color:white; text-align:center; padding: 20px; pointer-events:auto;"><i class="fas fa-file-alt" style="font-size:5rem; margin-bottom:15px; color:var(--primary-light);"></i><h3 style="margin-bottom:10px; word-break: break-all; max-width: 80vw;">${nombreDoc}</h3><p style="color:#ccc; font-size:0.9rem;">Archivo no visualizable. Haz clic en <b>Descargar</b>.</p></div>`;
     }
 
     const btnEliminar = document.querySelector('.btn-lb-delete');
@@ -3147,32 +3224,29 @@ const esVideo = url.match(/\.(mp4|avi|mov|webm|mkv)$/i);
     const esPDF = url.match(/\.(pdf)$/i);
     const esOffice = url.match(/\.(doc|docx|xls|xlsx|ppt|pptx)$/i);
     
-    // Escudos anticierre
-    const escudos = `onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchmove="event.stopPropagation()" ontouchend="event.stopPropagation()"`;
+    const escudos = `onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchmove="event.stopPropagation()"`;
     
     contenido.innerHTML = ''; 
     contenido.style.opacity = '0';
     
     setTimeout(() => {
         if (esVideo) {
-            contenido.innerHTML = `<video src="${url}" class="lb-media-item" controls autoplay style="max-height:80vh; max-width:90vw;" ${escudos}></video>`;
+            contenido.innerHTML = `<video src="${url}" class="lb-media-item visor-doc-wrapper" controls autoplay style="max-height:80vh; max-width:90vw;" ${escudos}></video>`;
         } else if (esImagen) {
             const img = document.createElement('img');
-            img.src = url; img.className = 'lb-media-item';
+            img.src = url; img.className = 'lb-media-item visor-doc-wrapper';
             img.onerror = function() { this.src='Img/Logo_pestaña.webp'; };
             img.onclick = function(e) { e.stopPropagation(); this.classList.toggle('zoomed'); };
-            img.ontouchstart = function(e) { e.stopPropagation(); };
-            img.ontouchmove = function(e) { e.stopPropagation(); };
-            img.ontouchend = function(e) { e.stopPropagation(); };
             contenido.appendChild(img);
         } else if (esPDF) {
-            contenido.innerHTML = `<div class="lb-media-item" style="width:90vw; height:80vh; background:white; border-radius:8px; overflow:hidden; pointer-events:auto;" ${escudos}><embed src="${url}" type="application/pdf" width="100%" height="100%" style="border:none;"></div>`;
+            const visorGoogle = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+            contenido.innerHTML = `<div class="visor-doc-wrapper" ${escudos}><iframe src="${visorGoogle}" allowfullscreen></iframe></div>`;
         } else if (esOffice) {
             const visorMS = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
-            contenido.innerHTML = `<div class="lb-media-item" style="width:90vw; height:80vh; background:white; border-radius:8px; overflow:hidden; pointer-events:auto;" ${escudos}><iframe src="${visorMS}" style="width:100%; height:100%; border:none;" frameborder="0"></iframe></div>`;
+            contenido.innerHTML = `<div class="visor-doc-wrapper" ${escudos}><iframe src="${visorMS}" allowfullscreen></iframe></div>`;
         } else {
             let nombreDoc = decodeURIComponent(url.split('/').pop()).replace(/^\d+_/, '');
-            contenido.innerHTML = `<div ${escudos} style="color:white; text-align:center; padding: 20px; pointer-events:auto;"><i class="fas fa-file-alt" style="font-size:5rem; margin-bottom:15px; color:var(--primary-light);"></i><h3 style="margin-bottom:10px; word-break: break-all; max-width: 80vw;">${nombreDoc}</h3><p style="color:#ccc; font-size:0.9rem;">Archivo no visualizable. Haz clic en <b>Descargar</b>.</p></div>`;
+            contenido.innerHTML = `<div class="visor-doc-wrapper" ${escudos} style="color:white; text-align:center; padding: 20px; pointer-events:auto;"><i class="fas fa-file-alt" style="font-size:5rem; margin-bottom:15px; color:var(--primary-light);"></i><h3 style="margin-bottom:10px; word-break: break-all; max-width: 80vw;">${nombreDoc}</h3><p style="color:#ccc; font-size:0.9rem;">Archivo no visualizable. Haz clic en <b>Descargar</b>.</p></div>`;
         }
         contenido.style.opacity = '1';
     }, 100);
