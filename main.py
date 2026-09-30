@@ -1213,314 +1213,229 @@ def garantizar_limite_storage(ruta_archivo, limite_mb=1000):
     
     return ruta_archivo
 
+# =========================================================================
+# 1. FUNCIÓN DE SEGUNDO PLANO PARA VIDEOS (No bloquea el navegador)
+# =========================================================================
+def procesar_video_largo_background(path: str, url_final: str, file_hash: str, tamanio_kb: float, nombre_original: str, temp_dir_path: str):
+    print(f"🚀 [BACKGROUND] Iniciando análisis profundo de video: {nombre_original}")
+    conn = None
+    try:
+        cedulas_detectadas = set()
+        if rekog:
+            cap = cv2.VideoCapture(path)
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            if fps == 0 or np.isnan(fps): fps = 30.0 
+            
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            
+            # Analiza 1 frame por cada 1.5 segundos exactos para máxima precisión
+            salto_base = int(fps * 1.5) 
+            frame_count = 0
+            frames_enviados_aws = 0
+            MAX_FRAMES_AWS = 120 # Presupuesto masivo para videos largos
+            historial_previo = None
+            umbral_cambio_escena = 0.25 # Sensibilidad alta
+            
+            while cap.isOpened() and frames_enviados_aws < MAX_FRAMES_AWS and frame_count <= total_frames:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_count)
+                ret, frame = cap.read()
+                if not ret: break 
+                    
+                frame_pequeno = cv2.resize(frame, (160, 120))
+                gris = cv2.cvtColor(frame_pequeno, cv2.COLOR_BGR2GRAY)
+                hist_actual = cv2.calcHist([gris], [0], None, [256], [0, 256])
+                cv2.normalize(hist_actual, hist_actual)
+                
+                enviar_a_aws = False
+                if historial_previo is None:
+                    enviar_a_aws = True
+                else:
+                    similitud = cv2.compareHist(historial_previo, hist_actual, cv2.HISTCMP_CORREL)
+                    if similitud < (1.0 - umbral_cambio_escena):
+                        enviar_a_aws = True
+                        
+                # Forzar chequeo cada 15 segundos por si acaso
+                if frame_count > 0 and (frame_count % int(fps * 15) == 0):
+                    enviar_a_aws = True
+                
+                if enviar_a_aws:
+                    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+                        h, w = frame.shape[:2]
+                        if w > 1280:
+                            scale = 1280 / w
+                            frame = cv2.resize(frame, (1280, int(h * scale)))
+                        _, buffer = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+                        tmp.write(buffer.tobytes())
+                        tmp_path = tmp.name
+                        
+                    try:
+                        rostros_f = identificar_varios_rostros_aws(tmp_path)
+                        if rostros_f: cedulas_detectadas.update(rostros_f)
+                        frames_enviados_aws += 1
+                        historial_previo = hist_actual 
+                    except: pass
+                    finally:
+                        if os.path.exists(tmp_path): os.remove(tmp_path)
+                
+                frame_count += salto_base
+                
+            cap.release()
+            print(f"✅ [BACKGROUND] IA completada. AWS Calls: {frames_enviados_aws}/{MAX_FRAMES_AWS}")
+
+        # Guardado seguro en Base de Datos abriendo una NUEVA conexión para evitar error SSL
+        conn = get_db_connection()
+        if conn:
+            c = conn.cursor(cursor_factory=RealDictCursor)
+            if cedulas_detectadas:
+                for ced in cedulas_detectadas:
+                    c.execute("SELECT Nombre, Apellido, Tipo FROM Usuarios WHERE CI=%s", (ced,))
+                    u = c.fetchone()
+                    if u and (u.get('Tipo') or u.get('tipo')) == 1:
+                        c.execute("SELECT id FROM Evidencias WHERE CI_Estudiante = %s AND Hash = %s", (ced, file_hash))
+                        if not c.fetchone():
+                            c.execute("""
+                                INSERT INTO Evidencias (CI_Estudiante, Url_Archivo, Hash, Estado, Tipo_Archivo, Tamanio_KB, Asignado_Automaticamente) 
+                                VALUES (%s, %s, %s, 1, 'video', %s, 1)
+                            """, (ced, url_final, file_hash, tamanio_kb))
+            else:
+                c.execute("SELECT id FROM Evidencias WHERE Hash = %s AND CI_Estudiante = 'PENDIENTE'", (file_hash,))
+                if not c.fetchone():
+                    c.execute("""
+                        INSERT INTO Evidencias (CI_Estudiante, Url_Archivo, Hash, Estado, Tipo_Archivo, Tamanio_KB, Asignado_Automaticamente) 
+                        VALUES ('PENDIENTE', %s, %s, 1, 'video', %s, 0)
+                    """, (url_final, file_hash, tamanio_kb))
+                
+                # Conservamos tu auditoría exacta para videos sin rostros
+                registrar_auditoria("SUBIDA_IA_PENDIENTE", f"Archivo '{nombre_original}' enviado a Pendientes (Sin rostro/Duplicado)", "Sistema IA")
+            
+            conn.commit()
+            print(f"✅ [BACKGROUND] Asignación en BD completada para {nombre_original}.")
+
+    except Exception as e:
+        print(f"❌ [BACKGROUND] Error fatal: {e}")
+    finally:
+        if conn: conn.close()
+        # LIMPIEZA FINAL DEL ARCHIVO TEMPORAL
+        if temp_dir_path and os.path.exists(temp_dir_path):
+            shutil.rmtree(temp_dir_path, ignore_errors=True)
+
+# =========================================================================
+# 2. ENDPOINT PRINCIPAL DE SUBIDA (Fotos rápidas, Videos al Background)
+# =========================================================================
 @app.post("/subir_evidencia_ia")
-async def subir_evidencia_ia(archivo: UploadFile = File(...)):
+def subir_evidencia_ia(background_tasks: BackgroundTasks, archivo: UploadFile = File(...)):
+    # Usamos 'def' normal para habilitar el multihilo de FastAPI
     temp_dir = None
     conn = None
     try:
-        # ------------------------------------------------------------
-        # 1. SANITIZAR NOMBRE DE ARCHIVO (¡CLAVE PARA EVITAR ERROR 500!)
-        # ------------------------------------------------------------
-        # Elimina caracteres problemáticos: espacios, paréntesis, acentos, etc.
         import re
         nombre_original = archivo.filename
-        nombre_limpio = re.sub(r'[^\w\.\-]', '_', nombre_original)  # Solo letras, números, puntos y guiones
-        print(f"📥 Procesando: {nombre_original} -> {nombre_limpio}")
+        nombre_limpio = re.sub(r'[^\w\.\-]', '_', nombre_original)
+        print(f"📥 Procesando entrada: {nombre_original}")
 
-        # Crear directorio temporal y guardar con nombre limpio
         temp_dir = tempfile.mkdtemp()
         path = os.path.join(temp_dir, nombre_limpio)
+        
         with open(path, "wb") as f:
             shutil.copyfileobj(archivo.file, f)
-        print(f"   ✅ Archivo guardado en: {path}")
 
-        # ------------------------------------------------------------
-        # 2. CALCULAR HASH DEL ARCHIVO
-        # ------------------------------------------------------------
         file_hash = calcular_hash(path)
-        print(f"   🔑 Hash: {file_hash[:16]}...")
-
+        
         conn = get_db_connection()
-        if not conn:
-            raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+        if not conn: return JSONResponse({"status": "error", "mensaje": "Error de BD"}, status_code=500)
         c = conn.cursor(cursor_factory=RealDictCursor)
 
-        # ------------------------------------------------------------
-        # 3. DETERMINAR TIPO DE ARCHIVO
-        # ------------------------------------------------------------
+        # 1. VERIFICAR DUPLICADOS INMEDIATAMENTE
+        c.execute("SELECT Url_Archivo FROM Evidencias WHERE Hash = %s LIMIT 1", (file_hash,))
+        if c.fetchone():
+            if temp_dir and os.path.exists(temp_dir): shutil.rmtree(temp_dir)
+            return JSONResponse({"status": "exito", "mensaje": f"♻️ El archivo '{nombre_original}' ya había sido analizado y asignado previamente."})
+
+        # 2. DEFINIR TIPO
         ext = os.path.splitext(nombre_limpio)[1].lower()
         es_imagen = ext in ['.jpg', '.jpeg', '.png', '.bmp', '.webp', '.avif']
         es_video = ext in ['.mp4', '.avi', '.mov', '.mkv', '.webm']
         tipo_archivo = "video" if es_video else ("imagen" if es_imagen else "documento")
-        print(f"   📂 Tipo: {tipo_archivo}")
 
-        # ------------------------------------------------------------
-        # 4. RECONOCIMIENTO CON IA (Rostros + OCR) - MANEJO DE ERRORES
-        # ------------------------------------------------------------
-        cedulas_detectadas = set()
+        # 3. SUBIR A LA NUBE S3 INMEDIATAMENTE
+        path_procesado = garantizar_limite_storage(path)
+        tamanio_kb = os.path.getsize(path_procesado) / 1024
+        timestamp = int(ahora_ecuador().timestamp())
+        nombre_nube = f"evidencias/{timestamp}_{nombre_limpio}"
         
-        if rekog:
-            try:
-                if es_imagen:
-                    print("   👤 Detectando rostros...")
-                    try:
-                        rostros = identificar_varios_rostros_aws(path)
-                        print(f"   👥 Rostros encontrados: {rostros}")
-                        cedulas_detectadas.update(rostros)
-                    except Exception as e_rostro:
-                        print(f"   ⚠️ Error en detección de rostros: {e_rostro}")
-                    
-                    print("   📝 Detectando texto (OCR)...")
-                    try:
-                        textos_ceds, _ = buscar_estudiantes_por_texto(path, c)
-                        print(f"   📄 Cédulas por texto: {textos_ceds}")
-                        cedulas_detectadas.update(textos_ceds)
-                    except Exception as e_texto:
-                        print(f"   ⚠️ Error en OCR: {e_texto}")
-
-                elif es_video:
-                    print(f"   🎬 Procesamiento de Alta Velocidad y Precisión: {nombre_original}")
-                    cap = cv2.VideoCapture(path)
-                    
-                    fps = cap.get(cv2.CAP_PROP_FPS)
-                    if fps == 0 or np.isnan(fps): fps = 30.0 
-                    
-                    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                    duracion_segundos = total_frames / fps if fps > 0 else 0
-                    print(f"   ⏱️ Duración: {duracion_segundos:.1f} s. Fotogramas: {total_frames}")
-                    
-                    # 1. OPTIMIZACIÓN EXTREMA: Leeremos solo 1 frame cada 2 segundos.
-                    # Esto es más que suficiente para atrapar rostros en una clase sin causar un Timeout en el navegador.
-                    salto_base = int(fps * 2.0) 
-                    
-                    frame_count = 0
-                    frames_enviados_aws = 0
-                    
-                    # 2. LÍMITE ESTRICTO: Un video no debería necesitar más de 80 revisiones para encontrar a todos los alumnos.
-                    MAX_FRAMES_AWS = 80 
-                    
-                    historial_previo = None
-                    # 3. FILTRO AGRESIVO: 30% de cambio para enviar a AWS (Ignora movimientos pequeños, prioriza cambios de plano o gente nueva entrando)
-                    umbral_cambio_escena = 0.30 
-                    
-                    while cap.isOpened() and frames_enviados_aws < MAX_FRAMES_AWS and frame_count <= total_frames:
-                        # Saltar fotogramas en crudo (Velocidad pura)
-                        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_count)
-                        ret, frame = cap.read()
-                        
-                        if not ret: break 
-                            
-                        # Reducir imagen a 160x120 para cálculo matemático ultrarrápido
-                        frame_pequeno = cv2.resize(frame, (160, 120))
-                        gris = cv2.cvtColor(frame_pequeno, cv2.COLOR_BGR2GRAY)
-                        hist_actual = cv2.calcHist([gris], [0], None, [256], [0, 256])
-                        cv2.normalize(hist_actual, hist_actual)
-                        
-                        enviar_a_aws = False
-                        
-                        if historial_previo is None:
-                            enviar_a_aws = True
-                        else:
-                            similitud = cv2.compareHist(historial_previo, hist_actual, cv2.HISTCMP_CORREL)
-                            if similitud < (1.0 - umbral_cambio_escena):
-                                enviar_a_aws = True
-                                
-                        # Red de seguridad: Forzar un chequeo cada 20 segundos aunque la cámara no se mueva
-                        if frame_count > 0 and (frame_count % int(fps * 20) == 0):
-                            enviar_a_aws = True
-                        
-                        if enviar_a_aws:
-                            # 4. COMPRESIÓN DE SUBIDA: Comprimir imagen al 70% antes de enviarla a AWS para que suba más rápido
-                            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
-                                # Redimensionamos la imagen original a un máximo de 1280px de ancho (Ahorra un 60% de peso)
-                                h, w = frame.shape[:2]
-                                if w > 1280:
-                                    scale = 1280 / w
-                                    frame = cv2.resize(frame, (1280, int(h * scale)))
-                                
-                                _, buffer = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 70])
-                                tmp.write(buffer.tobytes())
-                                tmp_path = tmp.name
-                                
-                            try:
-                                print(f"      👁️ Scan AWS {frames_enviados_aws + 1} (Segundo: {frame_count/fps:.1f})")
-                                rostros_f = identificar_varios_rostros_aws(tmp_path)
-                                if rostros_f:
-                                    print(f"         👤 Rostros: {rostros_f}")
-                                    cedulas_detectadas.update(rostros_f)
-                                
-                                frames_enviados_aws += 1
-                                historial_previo = hist_actual 
-                                
-                            except Exception as e_frame:
-                                print(f"      ⚠️ Error AWS: {e_frame}")
-                            finally:
-                                if os.path.exists(tmp_path): os.remove(tmp_path)
-                        
-                        frame_count += salto_base
-                        
-                    cap.release()
-                    print(f"   ✅ Alta Precisión completada. Llamadas a AWS: {frames_enviados_aws}/{MAX_FRAMES_AWS}")
-            except Exception as e_ia:
-                print(f"   ❌ Error general en procesamiento IA: {e_ia}")
-                # No detenemos el proceso, continuamos para al menos guardar el archivo.
-
-        # ------------------------------------------------------------
-        # 4.5. RECONEXIÓN INTELIGENTE (Prevenir Error SSL en videos largos)
-        # ------------------------------------------------------------
-        # Como la IA puede tardar minutos, Supabase cierra la conexión inactiva.
-        # Aquí verificamos si sigue viva, y si no, reconectamos silenciosamente.
-        try:
-            c.execute("SELECT 1")
-        except Exception:
-            print("   🔄 Reconectando a la Base de Datos (Conexión anterior expirada por inactividad)...")
-            if conn:
-                try: conn.close()
-                except: pass
-            conn = get_db_connection()
-            if not conn:
-                raise HTTPException(status_code=500, detail="Fallo al reconectar con la base de datos.")
-            c = conn.cursor(cursor_factory=RealDictCursor)
-
-        # ------------------------------------------------------------
-        # 5. VERIFICAR SI EL ARCHIVO YA EXISTE (por Hash)
-        # ------------------------------------------------------------
-        c.execute("SELECT Url_Archivo, Tamanio_KB FROM Evidencias WHERE Hash = %s LIMIT 1", (file_hash,))
-        evidencia_existente = c.fetchone()
-        
-        url_final = ""
-        tamanio_kb = 0
-        
-        if evidencia_existente:
-            url_final = evidencia_existente.get('Url_Archivo') or evidencia_existente.get('url_archivo')
-            tamanio_kb = evidencia_existente.get('Tamanio_KB') or evidencia_existente.get('tamanio_kb') or 0
-            print(f"   ♻️ Archivo ya existente. Reutilizando URL: {url_final}")
+        if s3_client:
+            s3_client.upload_file(path_procesado, BUCKET_NAME, nombre_nube, ExtraArgs={'ACL': 'public-read'})
+            url_final = f"https://{BUCKET_NAME}.s3.us-east-005.backblazeb2.com/{nombre_nube}"
         else:
-            # ------------------------------------------------------------
-            # 6. SUBIR A LA NUBE (S3/Backblaze) - CON MANEJO DE ERRORES
-            # ------------------------------------------------------------
-            if not s3_client:
-                raise HTTPException(status_code=500, detail="Error crítico: No hay conexión con el almacenamiento en la nube.")
+            raise HTTPException(status_code=500, detail="Sin conexión a almacenamiento S3.")
 
-            # Optimizar imagen/video antes de subir
-            path_procesado = garantizar_limite_storage(path)
-            tamanio_kb = os.path.getsize(path_procesado) / 1024
-            
-            # Generar nombre único en la nube (usando nombre limpio)
-            timestamp = int(ahora_ecuador().timestamp())
-            nombre_nube = f"evidencias/{timestamp}_{nombre_limpio}"
-            
-            try:
-                s3_client.upload_file(
-                    path_procesado,
-                    BUCKET_NAME,
-                    nombre_nube,
-                    ExtraArgs={'ACL': 'public-read'}
-                )
-                url_final = f"https://{BUCKET_NAME}.s3.us-east-005.backblazeb2.com/{nombre_nube}"
-                print(f"   ✅ Archivo subido exitosamente a S3: {url_final}")
-            except Exception as e_s3:
-                print(f"   ❌ Error subiendo a S3: {e_s3}")
-                raise HTTPException(status_code=502, detail=f"Fallo al subir a la nube: {str(e_s3)}")
-
-        # ------------------------------------------------------------
-        # 7. ASIGNACIÓN INTELIGENTE
-        # ------------------------------------------------------------
-        asignados_nuevos = []
-        ya_tenian = []
+        # ====================================================
+        # 4A. BIFURCACIÓN PARA VIDEOS (AL SEGUNDO PLANO)
+        # ====================================================
+        if es_video:
+            background_tasks.add_task(procesar_video_largo_background, path_procesado, url_final, file_hash, tamanio_kb, nombre_original, temp_dir)
+            conn.close()
+            return JSONResponse({"status": "exito", "mensaje": "🎬 Video recibido correctamente. La IA lo está analizando en segundo plano para no congelar tu pantalla. Las asignaciones aparecerán en breve."})
         
-        if cedulas_detectadas:
-            print(f"   🎯 Cedulas detectadas: {cedulas_detectadas}")
-            for ced in cedulas_detectadas:
-                c.execute("SELECT Nombre, Apellido, Tipo FROM Usuarios WHERE CI=%s", (ced,))
-                u = c.fetchone()
-                
-                if u and (u.get('Tipo') or u.get('tipo')) == 1:
-                    nombre_completo = f"{u.get('Nombre') or u.get('nombre')} {u.get('Apellido') or u.get('apellido')}"
-                    
-                    # Verificar si este estudiante ya tiene esta evidencia
-                    c.execute("SELECT id FROM Evidencias WHERE CI_Estudiante = %s AND Hash = %s", (ced, file_hash))
-                    if c.fetchone():
-                        ya_tenian.append(nombre_completo)
-                    else:
+        # ====================================================
+        # 4B. BIFURCACIÓN PARA IMÁGENES (PROCESAMIENTO RÁPIDO)
+        # ====================================================
+        elif es_imagen:
+            cedulas_detectadas = set()
+            try:
+                rostros = identificar_varios_rostros_aws(path_procesado)
+                cedulas_detectadas.update(rostros)
+                textos_ceds, _ = buscar_estudiantes_por_texto(path_procesado, c)
+                cedulas_detectadas.update(textos_ceds)
+            except Exception as e:
+                print(f"Error IA Imagen: {e}")
+            
+            asignados_nuevos = []
+            if cedulas_detectadas:
+                for ced in cedulas_detectadas:
+                    c.execute("SELECT Nombre, Apellido, Tipo FROM Usuarios WHERE CI=%s", (ced,))
+                    u = c.fetchone()
+                    if u and (u.get('Tipo') or u.get('tipo')) == 1:
+                        nombre_completo = f"{u.get('Nombre') or u.get('nombre')} {u.get('Apellido') or u.get('apellido')}"
                         c.execute("""
-                            INSERT INTO Evidencias 
-                            (CI_Estudiante, Url_Archivo, Hash, Estado, Tipo_Archivo, Tamanio_KB, Asignado_Automaticamente) 
-                            VALUES (%s, %s, %s, 1, %s, %s, 1)
-                        """, (ced, url_final, file_hash, tipo_archivo, tamanio_kb))
+                            INSERT INTO Evidencias (CI_Estudiante, Url_Archivo, Hash, Estado, Tipo_Archivo, Tamanio_KB, Asignado_Automaticamente) 
+                            VALUES (%s, %s, %s, 1, 'imagen', %s, 1)
+                        """, (ced, url_final, file_hash, tamanio_kb))
                         asignados_nuevos.append(nombre_completo)
-
-            # Construir mensaje de respuesta
-            msg_parts = []
-            if asignados_nuevos:
-                msg_parts.append(f"✅ Evidencia asignada correctamente a: {', '.join(asignados_nuevos)}.")
-            if ya_tenian:
-                msg_parts.append(f"ℹ️ Omitiendo a: {', '.join(ya_tenian)} (ya la tenían en su perfil).")
-            
-            if not asignados_nuevos and ya_tenian:
-                msg = f"⚠️ Todos los usuarios detectados ({', '.join(ya_tenian)}) ya contaban con esta evidencia."
-                status = "alerta"
+                
+                msg = f"✅ Imagen asignada correctamente a: {', '.join(asignados_nuevos)}" if asignados_nuevos else "⚠️ No se detectó a ningún alumno registrado. Guardada en Pendientes."
+                status = "exito" if asignados_nuevos else "alerta"
             else:
-                msg = " ".join(msg_parts)
-                status = "exito"
-        else:
-            # ------------------------------------------------------------
-            # 8. SIN DETECCIÓN -> GUARDAR EN "PENDIENTES"
-            # ------------------------------------------------------------
-            print("   ⚠️ No se detectaron rostros ni texto. Guardando en Pendientes.")
-            c.execute("SELECT id FROM Evidencias WHERE Hash = %s AND CI_Estudiante = 'PENDIENTE'", (file_hash,))
-            if not c.fetchone():
                 c.execute("""
-                    INSERT INTO Evidencias 
-                    (CI_Estudiante, Url_Archivo, Hash, Estado, Tipo_Archivo, Tamanio_KB, Asignado_Automaticamente) 
-                    VALUES ('PENDIENTE', %s, %s, 1, %s, %s, 0)
-                """, (url_final, file_hash, tipo_archivo, tamanio_kb))
-                msg = "⚠️ No se identificó a nadie. Guardado en 'Pendientes'."
+                    INSERT INTO Evidencias (CI_Estudiante, Url_Archivo, Hash, Estado, Tipo_Archivo, Tamanio_KB, Asignado_Automaticamente) 
+                    VALUES ('PENDIENTE', %s, %s, 1, 'imagen', %s, 0)
+                """, (url_final, file_hash, tamanio_kb))
+                msg = "⚠️ Sin rostros. Guardada en 'Pendientes'."
                 status = "alerta"
-            else:
-                msg = "⚠️ El archivo ya se encuentra en la bandeja de 'Pendientes'."
-                status = "alerta"
+                registrar_auditoria("SUBIDA_IA_PENDIENTE", f"Archivo '{nombre_original}' enviado a Pendientes (Sin rostro/Duplicado)", "Sistema IA")
 
-            # Registrar auditoría
-            registrar_auditoria(
-                "SUBIDA_IA_PENDIENTE",
-                f"Archivo '{nombre_original}' enviado a Pendientes (Sin rostro/Duplicado)",
-                "Sistema IA"
-            )
-
-        # ------------------------------------------------------------
-        # 9. CONFIRMAR Y LIMPIAR
-        # ------------------------------------------------------------
-        conn.commit()
-        if temp_dir and os.path.exists(temp_dir):
-            shutil.rmtree(temp_dir)
+            conn.commit()
+            conn.close()
+            if temp_dir and os.path.exists(temp_dir): shutil.rmtree(temp_dir)
+            return JSONResponse({"status": status, "mensaje": msg})
         
-        return JSONResponse({"status": status, "mensaje": msg})
-
-    except HTTPException as http_exc:
-        # Excepciones lanzadas intencionalmente (ej: error de S3)
-        if temp_dir and os.path.exists(temp_dir):
-            shutil.rmtree(temp_dir)
-        print(f"❌ Error controlado: {http_exc.detail}")
-        return JSONResponse({"status": "error", "mensaje": http_exc.detail}, status_code=http_exc.status_code)
+        # ====================================================
+        # 4C. BIFURCACIÓN PARA DOCUMENTOS (SIN IA)
+        # ====================================================
+        else:
+            c.execute("""
+                INSERT INTO Evidencias (CI_Estudiante, Url_Archivo, Hash, Estado, Tipo_Archivo, Tamanio_KB, Asignado_Automaticamente) 
+                VALUES ('PENDIENTE', %s, %s, 1, %s, %s, 0)
+            """, (url_final, file_hash, tipo_archivo, tamanio_kb))
+            conn.commit()
+            conn.close()
+            if temp_dir and os.path.exists(temp_dir): shutil.rmtree(temp_dir)
+            registrar_auditoria("SUBIDA_IA_PENDIENTE", f"Archivo '{nombre_original}' enviado a Pendientes (Documento manual)", "Sistema IA")
+            return JSONResponse({"status": "alerta", "mensaje": "📄 Documento guardado en 'Pendientes'. Requiere asignación manual."})
 
     except Exception as e:
-        # Cualquier otro error inesperado
-        if temp_dir and os.path.exists(temp_dir):
-            shutil.rmtree(temp_dir)
-        print(f"❌ Error IA inesperado: {e}")
-        import traceback
-        traceback.print_exc()
-        return JSONResponse(
-            {"status": "error", "mensaje": f"Error interno del servidor: {str(e)}"},
-            status_code=500
-        )
-
-    finally:
-        if conn:
-            conn.close()
-        if temp_dir and os.path.exists(temp_dir):
-            shutil.rmtree(temp_dir)
+        if temp_dir and os.path.exists(temp_dir): shutil.rmtree(temp_dir)
+        return JSONResponse({"status": "error", "mensaje": f"Error del servidor: {str(e)}"}, status_code=500)
 
 @app.post("/subir_manual")
 async def subir_manual(
