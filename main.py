@@ -152,15 +152,19 @@ print(f"📁 Ruta base de datos: {DB_NAME}")
 def get_db_connection():
     try:
         import os
+        # Añadimos parámetros avanzados para evitar que Supabase cierre las conexiones silenciosamente (Error SSL)
         conn = psycopg2.connect(
             host=os.environ.get("SUPABASE_HOST", "aws-1-us-east-1.pooler.supabase.com"),
             port=int(os.environ.get("SUPABASE_PORT", "6543")),
             user=os.environ.get("SUPABASE_USER", "postgres.udklgsmabwwfxpstmpxj"),
             password=os.environ.get("SUPABASE_PASSWORD", "Monte55or¡2021&"),
-            dbname=os.environ.get("SUPABASE_DB", "postgres")
+            dbname=os.environ.get("SUPABASE_DB", "postgres"),
+            keepalives=1,
+            keepalives_idle=30,
+            keepalives_interval=10,
+            keepalives_count=5
         )
         conn.cursor_factory = RealDictCursor
-        # Eliminamos el print para no saturar los logs
         return conn
     except Exception as e:
         print(f"❌ Error conectando a Supabase: {e}")
@@ -1275,7 +1279,7 @@ async def subir_evidencia_ia(archivo: UploadFile = File(...)):
                         print(f"   ⚠️ Error en OCR: {e_texto}")
 
                 elif es_video:
-                    print(f"   🎬 Procesamiento de Alta Precisión: {nombre_original}")
+                    print(f"   🎬 Procesamiento de Alta Velocidad y Precisión: {nombre_original}")
                     cap = cv2.VideoCapture(path)
                     
                     fps = cap.get(cv2.CAP_PROP_FPS)
@@ -1283,37 +1287,37 @@ async def subir_evidencia_ia(archivo: UploadFile = File(...)):
                     
                     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
                     duracion_segundos = total_frames / fps if fps > 0 else 0
-                    
                     print(f"   ⏱️ Duración: {duracion_segundos:.1f} s. Fotogramas: {total_frames}")
                     
-                    # 1. ESCANEO CONSTANTE (Sin puntos ciegos masivos)
-                    # Leemos 1 fotograma cada 1.5 segundos sin importar si dura 1 minuto o 1 hora.
-                    salto_base = int(fps * 1.5) 
+                    # 1. OPTIMIZACIÓN EXTREMA: Leeremos solo 1 frame cada 2 segundos.
+                    # Esto es más que suficiente para atrapar rostros en una clase sin causar un Timeout en el navegador.
+                    salto_base = int(fps * 2.0) 
                     
                     frame_count = 0
                     frames_enviados_aws = 0
                     
-                    # Límite alto para videos largos (120 consultas = $0.12 USD máx por video)
-                    MAX_FRAMES_AWS = 120 
+                    # 2. LÍMITE ESTRICTO: Un video no debería necesitar más de 80 revisiones para encontrar a todos los alumnos.
+                    MAX_FRAMES_AWS = 80 
                     
                     historial_previo = None
-                    umbral_cambio_escena = 0.25 # Muy sensible: detecta si alguien camina por el fondo
+                    # 3. FILTRO AGRESIVO: 30% de cambio para enviar a AWS (Ignora movimientos pequeños, prioriza cambios de plano o gente nueva entrando)
+                    umbral_cambio_escena = 0.30 
                     
                     while cap.isOpened() and frames_enviados_aws < MAX_FRAMES_AWS and frame_count <= total_frames:
+                        # Saltar fotogramas en crudo (Velocidad pura)
                         cap.set(cv2.CAP_PROP_POS_FRAMES, frame_count)
                         ret, frame = cap.read()
                         
-                        if not ret:
-                            break 
+                        if not ret: break 
                             
-                        frame_pequeno = cv2.resize(frame, (320, 240))
+                        # Reducir imagen a 160x120 para cálculo matemático ultrarrápido
+                        frame_pequeno = cv2.resize(frame, (160, 120))
                         gris = cv2.cvtColor(frame_pequeno, cv2.COLOR_BGR2GRAY)
                         hist_actual = cv2.calcHist([gris], [0], None, [256], [0, 256])
                         cv2.normalize(hist_actual, hist_actual)
                         
                         enviar_a_aws = False
                         
-                        # 2. EVALUACIÓN CRÍTICA
                         if historial_previo is None:
                             enviar_a_aws = True
                         else:
@@ -1321,14 +1325,20 @@ async def subir_evidencia_ia(archivo: UploadFile = File(...)):
                             if similitud < (1.0 - umbral_cambio_escena):
                                 enviar_a_aws = True
                                 
-                        # 3. RED DE SEGURIDAD ANTIFANTASMAS
-                        # Si la cámara no se movió en 15 segundos, forzamos un envío a AWS para buscar gente nueva
-                        if frame_count > 0 and (frame_count % int(fps * 15) == 0):
+                        # Red de seguridad: Forzar un chequeo cada 20 segundos aunque la cámara no se mueva
+                        if frame_count > 0 and (frame_count % int(fps * 20) == 0):
                             enviar_a_aws = True
                         
                         if enviar_a_aws:
+                            # 4. COMPRESIÓN DE SUBIDA: Comprimir imagen al 70% antes de enviarla a AWS para que suba más rápido
                             with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
-                                _, buffer = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 85])
+                                # Redimensionamos la imagen original a un máximo de 1280px de ancho (Ahorra un 60% de peso)
+                                h, w = frame.shape[:2]
+                                if w > 1280:
+                                    scale = 1280 / w
+                                    frame = cv2.resize(frame, (1280, int(h * scale)))
+                                
+                                _, buffer = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 70])
                                 tmp.write(buffer.tobytes())
                                 tmp_path = tmp.name
                                 
@@ -1345,8 +1355,7 @@ async def subir_evidencia_ia(archivo: UploadFile = File(...)):
                             except Exception as e_frame:
                                 print(f"      ⚠️ Error AWS: {e_frame}")
                             finally:
-                                if os.path.exists(tmp_path):
-                                    os.remove(tmp_path)
+                                if os.path.exists(tmp_path): os.remove(tmp_path)
                         
                         frame_count += salto_base
                         
