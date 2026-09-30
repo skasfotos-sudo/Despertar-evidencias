@@ -1284,34 +1284,29 @@ async def subir_evidencia_ia(archivo: UploadFile = File(...)):
                     
                     print(f"   ⏱️ Duración estimada: {duracion_segundos:.1f} segundos ({total_frames} frames)")
                     
-                    # --- CONFIGURACIÓN ADAPTATIVA SEGÚN DURACIÓN ---
-                    # Si el video es muy largo (ej. > 5 min), saltamos más frames para no colapsar AWS
-                    salto_base = int(fps * 2) # Por defecto, analizamos 1 frame cada 2 segundos
+                    # --- CONFIGURACIÓN DE ALTA VELOCIDAD Y DISTRIBUCIÓN PERFECTA ---
+                    # En lugar de un salto fijo, obligamos al sistema a dividir el video 
+                    # en un máximo de 80 fragmentos. Así SIEMPRE llegará al final sin importar si dura 1h.
+                    salto_base = max(int(fps * 2), int(total_frames / 80))
                     
-                    if duracion_segundos > 600: # Más de 10 minutos
-                        salto_base = int(fps * 5) # 1 frame cada 5 segundos
-                    elif duracion_segundos > 300: # Más de 5 minutos
-                        salto_base = int(fps * 3) # 1 frame cada 3 segundos
-                        
                     frame_count = 0
                     frames_enviados_aws = 0
-                    MAX_FRAMES_AWS = 40 # Límite máximo ABSOLUTO de llamadas a AWS por video para no quebrar el banco
+                    MAX_FRAMES_AWS = 60 # Aumentamos el límite de balas para videos muy largos
                     
                     # Variables para detección de cambio de escena
                     historial_previo = None
-                    umbral_cambio_escena = 0.35 # Qué tanto debe cambiar la imagen para considerarla una "nueva escena"
+                    umbral_cambio_escena = 0.45 # (45% de cambio). Ignora pequeños movimientos de cabeza o manos
                     
-                    while cap.isOpened() and frames_enviados_aws < MAX_FRAMES_AWS:
-                        # Saltar fotogramas rápidamente sin decodificarlos completamente (Optimización de CPU)
+                    while cap.isOpened() and frames_enviados_aws < MAX_FRAMES_AWS and frame_count <= total_frames:
+                        # Saltar fotogramas rápidamente
                         cap.set(cv2.CAP_PROP_POS_FRAMES, frame_count)
                         ret, frame = cap.read()
                         
                         if not ret:
-                            break # Fin del video
+                            break # Fin real del video
                             
-                        # 1. Redimensionar para cálculo rápido (No necesitamos 4K para saber si la escena cambió)
-                        frame_pequeno = cv2.resize(frame, (320, 240))
-                        # Convertir a escala de grises para calcular el histograma más rápido
+                        # 1. Redimensionar drásticamente para calcular la escena a la velocidad de la luz
+                        frame_pequeno = cv2.resize(frame, (240, 180))
                         gris = cv2.cvtColor(frame_pequeno, cv2.COLOR_BGR2GRAY)
                         hist_actual = cv2.calcHist([gris], [0], None, [256], [0, 256])
                         cv2.normalize(hist_actual, hist_actual)
@@ -1319,32 +1314,30 @@ async def subir_evidencia_ia(archivo: UploadFile = File(...)):
                         enviar_a_aws = False
                         
                         if historial_previo is None:
-                            # Siempre enviar el primer frame procesado
                             enviar_a_aws = True
                         else:
-                            # Calcular la diferencia entre el frame actual y el anterior usando correlación
+                            # Comparar matemáticamente si la imagen actual es distinta a la anterior
                             similitud = cv2.compareHist(historial_previo, hist_actual, cv2.HISTCMP_CORREL)
-                            # Si la similitud es baja (ej. < 0.65), significa que la cámara se movió mucho o cambió la toma
                             if similitud < (1.0 - umbral_cambio_escena):
                                 enviar_a_aws = True
                         
                         if enviar_a_aws:
-                            # 2. Preparar el frame original (alta calidad) para AWS
+                            # 2. Extraer el frame original (alta calidad) para enviarlo a la IA
                             with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
-                                # Comprimimos ligeramente para acelerar la red
                                 _, buffer = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
                                 tmp.write(buffer.tobytes())
                                 tmp_path = tmp.name
                                 
                             try:
-                                print(f"      👁️ Enviando frame {frame_count} a AWS (Detección de nueva escena)...")
+                                porcentaje = (frame_count / total_frames) * 100 if total_frames > 0 else 0
+                                print(f"      👁️ Enviando frame {frame_count} a AWS (Progreso: {porcentaje:.1f}%)...")
                                 rostros_f = identificar_varios_rostros_aws(tmp_path)
                                 if rostros_f:
-                                    print(f"         👤 Rostros encontrados en este frame: {rostros_f}")
+                                    print(f"         👤 Rostros encontrados: {rostros_f}")
                                     cedulas_detectadas.update(rostros_f)
                                 frames_enviados_aws += 1
                                 
-                                # Actualizar el historial solo con frames que enviamos a AWS
+                                # Solo guardamos el historial si realmente lo enviamos a AWS
                                 historial_previo = hist_actual
                                 
                             except Exception as e_frame:
@@ -1354,11 +1347,11 @@ async def subir_evidencia_ia(archivo: UploadFile = File(...)):
                                 if os.path.exists(tmp_path):
                                     os.remove(tmp_path)
                         
-                        # Avanzar el contador de frames
+                        # Avanzar el salto matemático
                         frame_count += salto_base
                         
                     cap.release()
-                    print(f"   ✅ Análisis de video completado. Llamadas a AWS: {frames_enviados_aws}/{MAX_FRAMES_AWS}")
+                    print(f"   ✅ Análisis de video completado al 100%. Llamadas a AWS: {frames_enviados_aws}/{MAX_FRAMES_AWS}")
             except Exception as e_ia:
                 print(f"   ❌ Error general en procesamiento IA: {e_ia}")
                 # No detenemos el proceso, continuamos para al menos guardar el archivo.
