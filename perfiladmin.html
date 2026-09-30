@@ -1767,9 +1767,9 @@ body.dark-mode .swal2-textarea {
     // Iniciar actualizaciones automáticas existentes
     iniciarActualizacionesAutomaticas();
 
-    // --- NUEVO: ACTUALIZACIÓN DE LOGS CADA 5 SEGUNDOS ---
+    // --- NUEVO: ACTUALIZACIÓN DE LOGS CADA 30 SEGUNDOS ---
     if(typeof cargarLogs === 'function') {
-        setInterval(cargarLogs, 5000);
+        setInterval(cargarLogs, 30000);
     }
     // ----------------------------------------------------
     
@@ -1806,18 +1806,18 @@ body.dark-mode .swal2-textarea {
     }
 
     function iniciarActualizacionesAutomaticas() {
-        // Actualizar dashboard y notificaciones cada 10 segundos
+        // Actualizar dashboard y notificaciones cada 30 segundos
         intervaloActualizaciones = setInterval(() => {
             actualizarDatosDashboard();
             cargarSolicitudesPendientes();
-        }, 10000);
+        }, 30000);
         
-        // Actualizar solicitudes cada 15 segundos
+        // Actualizar solicitudes cada 45 segundos
         setInterval(() => {
             if (document.getElementById('panel-solicitudes').classList.contains('active')) {
                 cargarSolicitudes();
             }
-        }, 15000);
+        }, 45000);
     }
 
     async function actualizarDatosDashboard() {

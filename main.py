@@ -158,7 +158,7 @@ def get_db_connection():
             dbname=os.environ.get("SUPABASE_DB", "postgres")
         )
         conn.cursor_factory = RealDictCursor
-        print("✅ Conexión exitosa a Supabase.")
+        # Eliminamos el print para no saturar los logs
         return conn
     except Exception as e:
         print(f"❌ Error conectando a Supabase: {e}")
@@ -3585,5 +3585,5 @@ if __name__ == "__main__":
     print("=" * 60)
     print(f"🌍 Servidor forzado en Host: 0.0.0.0 | Puerto: {puerto_railway}")
     
-    # 2. Obligamos a Uvicorn a respetar nuestra configuración
-    uvicorn.run("main:app", host="0.0.0.0", port=puerto_railway)
+    # 2. Obligamos a Uvicorn a respetar nuestra configuración silenciando el spam de red
+    uvicorn.run("main:app", host="0.0.0.0", port=puerto_railway, access_log=False)
