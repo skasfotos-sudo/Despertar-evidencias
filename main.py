@@ -3199,7 +3199,7 @@ class ReasignarRequest(BaseModel):
 @app.post("/reasignar_evidencias")
 async def reasignar_evidencias(datos: ReasignarRequest):
     """
-    V2.0 - Reasignación Multi-Destino:
+    V2.0 - Reasignación Multi-Destino adaptada para PostgreSQL:
     - Permite enviar una lista de cédulas destino (separadas por comas).
     - Al primer destino le MUEVE el archivo.
     - A los siguientes destinos les crea una COPIA (Clon) en la base de datos.
@@ -3215,41 +3215,54 @@ async def reasignar_evidencias(datos: ReasignarRequest):
              return JSONResponse({"error": "Selección inválida"})
 
         conn = get_db_connection()
-        c = conn.cursor()
+        # 1. CORRECCIÓN: Usamos RealDictCursor para poder extraer los datos sin error
+        c = conn.cursor(cursor_factory=RealDictCursor)
         
         movidos = 0
         clonados = 0
         
-        # 1. Obtener datos originales de las evidencias antes de moverlas
-        placeholders = ','.join(['%s'] * len(ids_evidencias))
-        evidencias_originales = c.execute(f"SELECT * FROM Evidencias WHERE id IN ({placeholders})", ids_evidencias).fetchall()
+        # 2. CORRECCIÓN: Separar 'execute' y 'fetchall' en dos líneas (Regla estricta de PostgreSQL)
+        tupla_ids = tuple(ids_evidencias)
+        placeholders = ','.join(['%s'] * len(tupla_ids))
+        
+        c.execute(f"SELECT * FROM Evidencias WHERE id IN ({placeholders})", tupla_ids)
+        evidencias_originales = c.fetchall()
 
-        # 2. PROCESAR CADA EVIDENCIA
+        # 3. PROCESAR CADA EVIDENCIA
         for ev in evidencias_originales:
+            # Extraemos los datos previniendo las diferencias de mayúsculas/minúsculas de la BD
+            ev_id = ev.get('id') or ev.get('ID')
+            url = ev.get('Url_Archivo') or ev.get('url_archivo')
+            hash_arch = ev.get('Hash') or ev.get('hash')
+            estado = ev.get('Estado') or ev.get('estado')
+            tipo = ev.get('Tipo_Archivo') or ev.get('tipo_archivo')
+            peso = ev.get('Tamanio_KB') or ev.get('tamanio_kb')
+
             # A) Mover al PRIMER estudiante de la lista (UPDATE)
             primer_destino = cedulas_destino[0]
-            c.execute("UPDATE Evidencias SET CI_Estudiante = %s, Asignado_Automaticamente = 0 WHERE id = %s", (primer_destino, ev['id']))
+            c.execute("UPDATE Evidencias SET CI_Estudiante = %s, Asignado_Automaticamente = 0 WHERE id = %s", (primer_destino, ev_id))
             movidos += 1
             
-            # B) Clonar para el RESTO de estudiantes (INSERT)
+            # B) Clonar para el RESTO de estudiantes de la lista (INSERT)
             if len(cedulas_destino) > 1:
                 for otro_destino in cedulas_destino[1:]:
                     c.execute("""
                         INSERT INTO Evidencias (CI_Estudiante, Url_Archivo, Hash, Estado, Tipo_Archivo, Tamanio_KB, Asignado_Automaticamente)
                         VALUES (%s, %s, %s, %s, %s, %s, 0)
-                    """, (otro_destino, ev['Url_Archivo'], ev['Hash'], ev['Estado'], ev['Tipo_Archivo'], ev['Tamanio_KB']))
+                    """, (otro_destino, url, hash_arch, estado, tipo, peso))
                     clonados += 1
 
         conn.commit()
         conn.close()
         
-        mensaje = f"✅ Archivos movidos a 1 estudiante."
+        mensaje = f"✅ Archivos asignados correctamente a 1 estudiante."
         if clonados > 0:
-            mensaje += f" Y se crearon copias para {len(cedulas_destino)-1} estudiantes más."
+            mensaje += f" Y se crearon copias de la evidencia para {len(cedulas_destino)-1} estudiantes adicionales."
         
         return JSONResponse({"mensaje": mensaje})
         
     except Exception as e:
+        print(f"❌ Error en reasignar_evidencias: {e}")
         return JSONResponse({"error": str(e)})
 
 # --- ENDPOINT DE EMERGENCIA PARA CORREGIR ADMIN ---
