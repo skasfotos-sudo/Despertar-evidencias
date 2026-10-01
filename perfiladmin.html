@@ -958,6 +958,27 @@ body.dark-mode .swal2-textarea {
                 max-height: 75vh;
             }
         }
+
+        /* ==========================================================================
+           ESTILOS DEL MODAL DE REASIGNACIÓN (LISTA DE ESTUDIANTES)
+           ========================================================================== */
+        .usuario-item {
+            padding: 12px 15px; 
+            border-bottom: 1px solid var(--border-color);
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            cursor: pointer; 
+            transition: 0.2s; 
+            background: var(--bg-card);
+        }
+        .usuario-item:hover { 
+            background: var(--input-bg); 
+        }
+        .usuario-item.seleccionado { 
+            background: var(--primary-soft); 
+            border-left: 4px solid var(--primary); 
+        }
     </style>
 </head>
 
@@ -1737,8 +1758,6 @@ body.dark-mode .swal2-textarea {
     let evidenciasEstudianteActual = [];
     let usuarioSeleccionadoPassword = null;
     let intervaloActualizaciones = null;
-    let indiceVisorActual = 0;
-    let evidenciasVisor = [];
 
     // Inicializar al cargar
     document.addEventListener('DOMContentLoaded', function() {
@@ -3183,6 +3202,9 @@ async function limpiarSolicitudesAntiguas() {
 
 let touchStartX = 0;
 let touchEndX = 0;
+let visorModo = 'normal'; // Controla si estamos viendo evidencias normales, la bandeja de pendientes, o previsualizando
+let indiceVisorActual = 0;
+let evidenciasVisor = [];
 
 function configurarEventosTeclado() {
     document.addEventListener('keydown', (e) => {
@@ -3193,15 +3215,19 @@ function configurarEventosTeclado() {
             case 'Escape': cerrarLightbox(); break;
             case 'ArrowLeft': imagenAnterior(e); break;
             case 'ArrowRight': imagenSiguiente(e); break;
-            // Solo para perfiladmin.html, si no existe no pasa nada:
-            case 'Delete': if(typeof eliminarEvidenciaActual === 'function') eliminarEvidenciaActual(); break;
+            case 'Delete': 
+                if (visorModo === 'normal') eliminarEvidenciaActual(); 
+                else if (visorModo === 'pendientes') {
+                    const ev = evidenciasVisor[indiceVisorActual];
+                    if(ev) eliminarPendienteRapido(ev.id || ev.ID);
+                }
+                break;
         }
     });
 
     const lbContent = document.getElementById('lightbox');
     
     lbContent.addEventListener('touchstart', e => { 
-        // ESCUDO: Si tocas el documento o la imagen, ignoramos el swipe para permitir hacer scroll
         if(e.target.closest('.visor-doc-wrapper') || e.target.closest('.lb-media-item')) return;
         touchStartX = e.changedTouches[0].screenX; 
     }, {passive: true});
@@ -3219,50 +3245,57 @@ function handleSwipe() {
     if (touchEndX > touchStartX + SWIPE_THRESHOLD) imagenAnterior();
 }
 
+// 1. Visor para la Galería de Estudiantes
 function abrirVisor(indice) {
+    visorModo = 'normal';
     evidenciasVisor = evidenciasEstudianteActual.filter(e => (e.Tipo_Archivo || e.tipo_archivo) !== 'referencia');
     indiceVisorActual = indice;
     actualizarVisor();
     document.getElementById('lightbox').classList.add('active');
     document.body.style.overflow = 'hidden'; 
-    const btnEliminar = document.querySelector('.btn-lb-delete');
-    if(btnEliminar) btnEliminar.style.display = 'inline-flex';
+    
+    // Mostrar flechas
+    document.querySelector('.lb-prev').style.display = 'flex';
+    document.querySelector('.lb-next').style.display = 'flex';
 }
 
-function abrirPrevisualizacion(url) {
-    const lightbox = document.getElementById('lightbox');
-    const contenido = document.getElementById('lightboxContent');
-    const enlaceDescarga = document.getElementById('lbDownloadLink');
+// 2. Visor exclusivo para Bandeja de Pendientes
+function abrirVisorPendientes(indice) {
+    visorModo = 'pendientes';
+    evidenciasVisor = window.pendientesData || []; 
+    indiceVisorActual = indice;
+    actualizarVisor();
+    document.getElementById('lightbox').classList.add('active');
+    document.body.style.overflow = 'hidden'; 
     
-    enlaceDescarga.href = url;
-    const esVideo = url.match(/\.(mp4|avi|mov|webm|mkv)$/i);
-    const esImagen = url.match(/\.(jpg|jpeg|png|gif|webp|avif)$/i);
-    const esPDF = url.match(/\.(pdf)$/i);
-    const esOffice = url.match(/\.(doc|docx|xls|xlsx|ppt|pptx)$/i);
+    // Mostrar flechas
+    document.querySelector('.lb-prev').style.display = 'flex';
+    document.querySelector('.lb-next').style.display = 'flex';
+}
 
-    const escudos = `onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchmove="event.stopPropagation()"`;
+// 3. Visor de Previsualización (Para Solicitudes)
+function abrirPrevisualizacion(url) {
+    visorModo = 'previsualizacion';
+    evidenciasVisor = [{ Url_Archivo: url }];
+    indiceVisorActual = 0;
+    actualizarVisor();
+    document.getElementById('lightbox').classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    // Ocultar flechas porque solo hay 1 archivo
+    document.querySelector('.lb-prev').style.display = 'none';
+    document.querySelector('.lb-next').style.display = 'none';
+}
 
-    if (esVideo) {
-        contenido.innerHTML = `<video src="${url}" class="lb-media-item visor-doc-wrapper" controls autoplay style="max-height:80vh; max-width:90vw;" ${escudos}></video>`;
-    } else if (esImagen) {
-        contenido.innerHTML = `<img src="${url}" class="lb-media-item visor-doc-wrapper" style="max-height:80vh; max-width:90vw;" onerror="this.src='Img/Logo_pestaña.webp'" ${escudos} onload="this.onclick = function(e){ e.stopPropagation(); this.classList.toggle('zoomed'); }">`;
-    } else if (esPDF) {
-        const visorGoogle = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
-        contenido.innerHTML = `<div class="visor-doc-wrapper es-documento" ${escudos}><iframe src="${visorGoogle}" allowfullscreen></iframe></div>`;
-    } else if (esOffice) {
-        const visorMS = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
-        contenido.innerHTML = `<div class="visor-doc-wrapper es-documento" ${escudos}><iframe src="${visorMS}" allowfullscreen></iframe></div>`;
-    } else {
-        let nombreDoc = decodeURIComponent(url.split('/').pop()).replace(/^\d+_/, '');
-        contenido.innerHTML = `<div class="visor-doc-wrapper es-documento" ${escudos} style="color:white; text-align:center; padding: 20px; pointer-events:auto;"><i class="fas fa-file-alt" style="font-size:5rem; margin-bottom:15px; color:var(--primary-light);"></i><h3 style="margin-bottom:10px; word-break: break-all; max-width: 80vw;">${nombreDoc}</h3><p style="color:#ccc; font-size:0.9rem;">Archivo no visualizable. Haz clic en <b>Descargar</b>.</p></div>`;
-    }
-
-    const btnEliminar = document.querySelector('.btn-lb-delete');
-    if(btnEliminar) btnEliminar.style.display = 'none';
-    lightbox.classList.add('active');
+function asignarPendienteMasivoDesdeVisor(id) {
+    cerrarLightbox(); // Quitamos el visor de la pantalla para que no estorbe
+    asignarPendienteMasivo(id); // Llamamos al modal de reasignación
 }
 
 function cerrarLightbox() {
+    // Detener videos al cerrar
+    document.querySelectorAll('#lightboxContent video').forEach(v => v.pause());
+    
     document.getElementById('lightbox').classList.remove('active');
     document.body.style.overflow = '';
     document.getElementById('lightboxContent').innerHTML = ''; 
@@ -3277,77 +3310,94 @@ function actualizarVisor() {
     
     const evidencia = evidenciasVisor[indiceVisorActual];
     const contenido = document.getElementById('lightboxContent');
+    const panelBotones = document.querySelector('.lb-actions-panel');
     const enlaceDescarga = document.getElementById('lbDownloadLink');
     
     const url = evidencia.Url_Archivo || evidencia.url_archivo;
-    enlaceDescarga.href = url;
+    const id = evidencia.id || evidencia.ID;
     
-const esVideo = url.match(/\.(mp4|avi|mov|webm|mkv)$/i);
+    if (enlaceDescarga) enlaceDescarga.href = url;
+    
+    // --- MAGIA UX: Modificar los botones dinámicamente según dónde estemos ---
+    if (visorModo === 'pendientes') {
+        panelBotones.innerHTML = `
+            <button class="btn-lb-action" onclick="asignarPendienteMasivoDesdeVisor(${id})" style="background: var(--primary); color: white;">
+                <i class="fas fa-users"></i> Clasificar a Estudiante
+            </button>
+            <button class="btn-lb-action btn-lb-delete" onclick="eliminarPendienteRapido(${id}); cerrarLightbox();" style="background: var(--error); color: white;">
+                <i class="fas fa-trash"></i> Eliminar Definitivamente
+            </button>
+        `;
+    } else if (visorModo === 'normal') {
+        panelBotones.innerHTML = `
+            <a href="${url}" target="_blank" download class="btn-lb-action" style="background: white; color: var(--primary);">
+                <i class="fas fa-download"></i> Descargar
+            </a>
+            <button class="btn-lb-action btn-lb-delete" onclick="eliminarEvidenciaActual()">
+                <i class="fas fa-trash"></i> Eliminar Evidencia
+            </button>
+        `;
+    } else {
+        // Previsualización simple (sin botones adicionales)
+        panelBotones.innerHTML = '';
+    }
+    
+    const esVideo = url.match(/\.(mp4|avi|mov|webm|mkv)$/i);
     const esImagen = url.match(/\.(jpg|jpeg|png|gif|webp|avif)$/i);
     const esPDF = url.match(/\.(pdf)$/i);
     const esOffice = url.match(/\.(doc|docx|xls|xlsx|ppt|pptx)$/i);
-    
-    const escudos = `onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchmove="event.stopPropagation()"`;
     
     contenido.innerHTML = ''; 
     contenido.style.opacity = '0';
     
     setTimeout(() => {
-                const esPDF = urlActual.match(/\.(pdf)$/i);
-                const esOffice = urlActual.match(/\.(doc|docx|xls|xlsx|ppt|pptx)$/i);
-                const esVideo = urlActual.match(/\.(mp4|avi|mov|webm|mkv)$/i);
-                const esImagen = urlActual.match(/\.(jpg|jpeg|png|gif|webp|avif)$/i);
+        const escudos = `onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchmove="event.stopPropagation()"`;
 
-                // Escudo de clics SOLO para el recuadro blanco de los documentos
-                const escudos = `onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchmove="event.stopPropagation()"`;
-
-                if (esVideo) {
-                    // El video tiene su propio click de control, el wrapper no tiene escudos
-                    wrap.innerHTML = `
-                        <div class="visor-doc-wrapper">
-                            <video src="${urlActual}" class="lb-media-item" controls autoplay onclick="event.stopPropagation()"></video>
-                        </div>`;
-                } else if (esImagen) {
-                    // La imagen tiene zoom, el wrapper es transparente y se deja atravesar por el clic
-                    wrap.innerHTML = `
-                        <div class="visor-doc-wrapper">
-                            <img src="${urlActual}" class="lb-media-item" onerror="this.src='Img/Logo_pestaña.webp'" onclick="event.stopPropagation(); this.classList.toggle('zoomed');">
-                        </div>`;
-                } else if (esPDF) {
-                    const visorGoogle = `https://docs.google.com/gview?url=${encodeURIComponent(urlActual)}&embedded=true`;
-                    wrap.innerHTML = `
-                        <div class="visor-doc-wrapper es-documento" ${escudos}>
-                            <iframe src="${visorGoogle}" allowfullscreen style="width:100%; height:100%; border:none;"></iframe>
-                        </div>`;
-                } else if (esOffice) {
-                    const visorMS = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(urlActual)}`;
-                    wrap.innerHTML = `
-                        <div class="visor-doc-wrapper es-documento" ${escudos}>
-                            <iframe src="${visorMS}" allowfullscreen style="width:100%; height:100%; border:none;"></iframe>
-                        </div>`;
-                } else {
-                    let nombreDoc = decodeURIComponent(urlActual.split('/').pop()).replace(/^\d+_/, '');
-                    wrap.innerHTML = `
-                        <div class="visor-doc-wrapper es-documento" ${escudos} style="color:white; text-align:center; padding: 20px;">
-                            <i class="fas fa-file-archive" style="font-size:5rem; margin-bottom:15px; color:var(--primary-light);"></i>
-                            <h3 style="margin-bottom:10px; word-break: break-all; max-width: 80vw;">${nombreDoc}</h3>
-                            <p style="color:#ccc; font-size:0.9rem;">Archivo no visualizable. Haz clic en <b>Descargar</b>.</p>
-                        </div>`;
-                }
-                wrap.style.opacity = '1';
-            }, 100);
+        if (esVideo) {
+            contenido.innerHTML = `
+                <div class="visor-doc-wrapper">
+                    <video src="${url}" class="lb-media-item" controls autoplay onclick="event.stopPropagation()"></video>
+                </div>`;
+        } else if (esImagen) {
+            contenido.innerHTML = `
+                <div class="visor-doc-wrapper">
+                    <img src="${url}" class="lb-media-item" onerror="this.src='Img/Logo_pestaña.webp'" onclick="event.stopPropagation(); this.classList.toggle('zoomed');">
+                </div>`;
+        } else if (esPDF) {
+            const visorGoogle = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+            contenido.innerHTML = `
+                <div class="visor-doc-wrapper es-documento" ${escudos}>
+                    <iframe src="${visorGoogle}" allowfullscreen style="width:100%; height:100%; border:none;"></iframe>
+                </div>`;
+        } else if (esOffice) {
+            const visorMS = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
+            contenido.innerHTML = `
+                <div class="visor-doc-wrapper es-documento" ${escudos}>
+                    <iframe src="${visorMS}" allowfullscreen style="width:100%; height:100%; border:none;"></iframe>
+                </div>`;
+        } else {
+            let nombreDoc = decodeURIComponent(url.split('/').pop()).replace(/^\d+_/, '');
+            contenido.innerHTML = `
+                <div class="visor-doc-wrapper es-documento" ${escudos} style="color:white; text-align:center; padding: 20px;">
+                    <i class="fas fa-file-archive" style="font-size:5rem; margin-bottom:15px; color:var(--primary-light);"></i>
+                    <h3 style="margin-bottom:10px; word-break: break-all; max-width: 80vw;">${nombreDoc}</h3>
+                    <p style="color:#ccc; font-size:0.9rem;">Archivo no visualizable. Haz clic en <b>Descargar</b>.</p>
+                </div>`;
+        }
+        contenido.style.opacity = '1';
+    }, 100);
 }
 
 function imagenSiguiente(e) {
     if(e) e.stopPropagation();
-    if (evidenciasVisor.length === 0) return;
+    if (evidenciasVisor.length <= 1) return;
     indiceVisorActual = (indiceVisorActual + 1) % evidenciasVisor.length;
     actualizarVisor();
 }
 
 function imagenAnterior(e) {
     if(e) e.stopPropagation();
-    if (evidenciasVisor.length === 0) return;
+    if (evidenciasVisor.length <= 1) return;
     indiceVisorActual = (indiceVisorActual - 1 + evidenciasVisor.length) % evidenciasVisor.length;
     actualizarVisor();
 }
@@ -4070,13 +4120,34 @@ function abrirModalReasignar() {
 
 function renderizarListaReasignar(listaUsuarios) {
     const contenedor = document.getElementById('listaUsuariosReasignar');
-    const usuariosValidos = listaUsuarios.filter(u => u.tipo == 1 && u.cedula !== '9999999990');
+    // Obtenemos tu cédula actual para ocultarla de la lista
+    const miCedula = localStorage.getItem('usuario_cedula');
+    
+    // Filtramos: Que sean estudiantes (tipo 1), que no sea la bandeja (9999999990), y que NO seas tú
+    const usuariosValidos = listaUsuarios.filter(u => u.tipo == 1 && u.cedula !== '9999999990' && u.cedula !== miCedula);
+    
+    if(usuariosValidos.length === 0) {
+        contenedor.innerHTML = '<div style="padding:20px;text-align:center;color:#888;">No hay estudiantes disponibles</div>';
+        return;
+    }
+
     contenedor.innerHTML = usuariosValidos.map(u => {
         const isSelected = destinosSeleccionados.has(u.cedula) ? 'seleccionado' : '';
         const iconCheck = destinosSeleccionados.has(u.cedula) 
-            ? '<i class="fas fa-check-square" style="color:var(--info);"></i>' 
-            : '<i class="far fa-square" style="color:#ccc;"></i>';
-        return `<div class="usuario-item ${isSelected}" onclick="toggleDestino('${u.cedula}')"><div><strong>${u.nombre} ${u.apellido}</strong><br><small>${u.cedula}</small></div>${iconCheck}</div>`
+            ? '<i class="fas fa-check-square" style="color:var(--primary); font-size:1.4rem;"></i>' 
+            : '<i class="far fa-square" style="color:#ccc; font-size:1.4rem;"></i>';
+        
+        return `
+        <div class="usuario-item ${isSelected}" onclick="toggleDestino('${u.cedula}')">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <img src="${u.foto || 'Img/Logo_pestaña.webp'}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">
+                <div style="text-align:left;">
+                    <strong style="color:var(--text-main); font-size:0.95rem;">${u.nombre} ${u.apellido}</strong><br>
+                    <small style="color:var(--text-sec);">${u.cedula}</small>
+                </div>
+            </div>
+            ${iconCheck}
+        </div>`
     }).join('');
 }
 
@@ -4091,20 +4162,45 @@ function filtrarUsuariosReasignar(texto) {
     renderizarListaReasignar(filtrados);
 }
 
+// 1. NUEVA FUNCIÓN PARA ACTIVAR EL MODAL
+function asignarPendienteMasivo(id) {
+    // Engañamos al sistema para que crea que seleccionaste este archivo
+    evidenciasSeleccionadas = [id]; 
+    // Abrimos tu increíble modal de reasignación con buscador
+    abrirModalReasignar();
+}
+
+// 2. FUNCIÓN DE ASIGNACIÓN MASIVA ACTUALIZADA
 async function enviarReasignacionMasiva() {
     if (destinosSeleccionados.size === 0) return Swal.fire('Atención', 'Selecciona destinatarios.', 'warning');
+    
     try {
-        mostrarMensaje('Procesando...', 'info');
+        Swal.fire({title:'Asignando...', didOpen:()=>Swal.showLoading(), allowOutsideClick:false});
+        
         const res = await fetch(`${API_URL}/reasignar_evidencias`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ ids: evidenciasSeleccionadas.join(','), cedula_destino: Array.from(destinosSeleccionados).join(',') })
         });
+        
         const data = await res.json();
+        
         if(data.mensaje) {
-            mostrarMensaje(data.mensaje, 'success'); cerrarModal('modalReasignar'); cancelarSeleccion();
-        } else { mostrarMensaje('Error: ' + data.error, 'error'); }
-    } catch(e) { mostrarMensaje('Error de conexión', 'error'); }
+            Swal.fire('¡Clasificado!', data.mensaje, 'success'); 
+            cerrarModal('modalReasignar'); 
+            cancelarSeleccion();
+            
+            // LA MAGIA DE LA UX: Si estás en la pestaña de pendientes, la recarga automáticamente
+            const tabPendientes = document.getElementById('uploadTabPendientes');
+            if (tabPendientes && tabPendientes.style.display === 'block') {
+                cargarBandejaPendientes();
+            }
+        } else { 
+            Swal.fire('Error', data.error, 'error'); 
+        }
+    } catch(e) { 
+        Swal.fire('Error de conexión', e.message, 'error'); 
+    }
 }
 
 // ==========================================
@@ -4568,15 +4664,21 @@ async function cargarBandejaPendientes() {
             .map(u => `<option value="${u.cedula}">${u.nombre} ${u.apellido}</option>`)
             .join('');
         
-        pendientes.forEach(item => {
+        // Guardamos la data en una variable global para que el visor sepa navegar con las flechas
+        window.pendientesData = pendientes;
+        
+        pendientes.forEach((item, index) => {
             const url = item.Url_Archivo || item.url_archivo || '';
             const id = item.id || item.ID;
             const esVideo = url.match(/\.(mp4|avi|mov|webm|mkv)$/i);
             
-            // Generar visualizador rápido en la tarjeta
+            // Usamos abrirVisorPendientes(index) en lugar de abrirPrevisualizacion
             const mediaHtml = esVideo 
-                ? `<video src="${url}#t=0.1" style="width:100%; height:160px; object-fit:cover; border-radius:8px 8px 0 0; background:#000;" controls></video>`
-                : `<img src="${url}" style="width:100%; height:160px; object-fit:cover; border-radius:8px 8px 0 0; cursor:pointer;" onclick="window.open('${url}','_blank')" onerror="this.src='Img/Logo_pestaña.webp'">`;
+                ? `<div style="position:relative; width:100%; height:160px; cursor:pointer;" onclick="abrirVisorPendientes(${index})">
+                     <video src="${url}#t=0.1" style="width:100%; height:100%; object-fit:cover; border-radius:8px 8px 0 0; background:#000;" muted></video>
+                     <div class="video-overlay" style="border-radius:8px 8px 0 0; font-size:2rem; background:rgba(0,0,0,0.4);"><i class="fas fa-play-circle"></i></div>
+                   </div>`
+                : `<img src="${url}" style="width:100%; height:160px; object-fit:cover; border-radius:8px 8px 0 0; cursor:pointer;" onclick="abrirVisorPendientes(${index})" onerror="this.src='Img/Logo_pestaña.webp'">`;
 
             const card = document.createElement('div');
             card.style.cssText = 'background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; display:flex; flex-direction:column; box-shadow:var(--shadow-card); transition:0.3s;';
@@ -4585,19 +4687,13 @@ async function cargarBandejaPendientes() {
             
             card.innerHTML = `
                 ${mediaHtml}
-                <div style="padding:12px; display:flex; flex-direction:column; gap:10px; flex:1;">
-                    <select id="select-est-${id}" class="form-control" style="padding:8px; font-size:0.85rem; background:var(--input-bg);">
-                        <option value="">-- Asignar alumno --</option>
-                        ${opcionesAlumnos}
-                    </select>
-                    <div style="display:flex; gap:8px; margin-top:auto;">
-                        <button onclick="clasificarPendienteRapido(${id})" title="Confirmar Asignación" style="flex:1; background:var(--secondary); color:white; border:none; padding:10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.9rem; transition:0.2s;">
-                            <i class="fas fa-check"></i>
-                        </button>
-                        <button onclick="eliminarPendienteRapido(${id})" title="Eliminar Definitivamente" style="background:var(--error); color:white; border:none; padding:10px 15px; border-radius:6px; cursor:pointer; font-size:1rem; transition:0.2s;">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
+                <div style="padding:15px; display:flex; flex-direction:column; gap:10px; flex:1; justify-content: flex-end;">
+                    <button onclick="asignarPendienteMasivo(${id})" title="Asignar a uno o varios alumnos" style="width:100%; background:var(--primary); color:white; border:none; padding:10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.9rem; transition:0.2s; box-shadow: 0 4px 10px rgba(106, 13, 173, 0.2);">
+                        <i class="fas fa-users"></i> Asignar Alumnos
+                    </button>
+                    <button onclick="eliminarPendienteRapido(${id})" title="Descartar Archivo" style="width:100%; background:transparent; color:var(--error); border:1px solid var(--error); padding:8px; border-radius:6px; cursor:pointer; font-size:0.9rem; font-weight:600; transition:0.2s;" onmouseover="this.style.background='var(--error)'; this.style.color='white';" onmouseout="this.style.background='transparent'; this.style.color='var(--error)';">
+                        <i class="fas fa-trash"></i> Descartar
+                    </button>
                 </div>
             `;
             grid.appendChild(card);
@@ -4607,35 +4703,6 @@ async function cargarBandejaPendientes() {
     }
 }
 
-async function clasificarPendienteRapido(id) {
-    const select = document.getElementById(`select-est-${id}`);
-    const cedulaDestino = select.value;
-    
-    if(!cedulaDestino) {
-        return Swal.fire('Atención', 'Por favor, selecciona a un estudiante en el menú desplegable antes de asignar.', 'warning');
-    }
-    
-    try {
-        Swal.fire({title:'Asignando...', didOpen:()=>Swal.showLoading(), allowOutsideClick:false});
-        
-        const res = await fetch(`${API_URL}/reasignar_evidencias`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ ids: id.toString(), cedula_destino: cedulaDestino })
-        });
-        
-        const data = await res.json();
-        
-        if(data.mensaje) {
-            Swal.fire({title:'¡Clasificado!', text:'El archivo fue movido al perfil del estudiante.', icon:'success', timer:1500, showConfirmButton:false});
-            cargarBandejaPendientes(); // Recargar la lista inmediatamente
-        } else {
-            throw new Error(data.error || 'Error desconocido');
-        }
-    } catch(e) { 
-        Swal.fire('Error', 'No se pudo asignar. ' + e.message, 'error'); 
-    }
-}
 
 async function eliminarPendienteRapido(id) {
     const confirmacion = await Swal.fire({
