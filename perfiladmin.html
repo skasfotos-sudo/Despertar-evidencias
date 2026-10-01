@@ -2853,32 +2853,54 @@ body.dark-mode .swal2-textarea {
 let solicitudActualId = null;
 
 async function enviarGestion(id, accion) {
-    // 1. Obtener ID válido
     const solicitudId = id || solicitudActualId;
-    
-    // 2. Obtener mensaje y limpiarlo de espacios vacíos
     const mensajeInput = document.getElementById('mensajeAdmin');
-    const mensaje = mensajeInput ? mensajeInput.value.trim() : '';
+    let mensaje = mensajeInput ? mensajeInput.value.trim() : '';
 
     if (!solicitudId) {
         Swal.fire('Error', 'No se encontró el ID de la solicitud', 'error');
         return;
     }
 
-    // --- REGLA DE AUDITORÍA: MENSAJE OBLIGATORIO ---
-    if (mensaje === '') {
-        Swal.fire({
-            title: 'Justificación Obligatoria',
-            text: 'Debes escribir una respuesta, comentario o motivo antes de proceder. Todas las acciones administrativas quedan registradas.',
-            icon: 'warning',
-            confirmButtonColor: '#f9a825',
-            confirmButtonText: 'Entendido'
-        });
-        return; // Cortamos la ejecución aquí, no se envía nada a Python
+    // Identificar qué tipo de solicitud estamos procesando
+    const solicitud = solicitudes.find(s => (s.id || s.ID) == solicitudId);
+    const tipoSolicitud = solicitud ? (solicitud.tipo || solicitud.Tipo) : '';
+
+    // --- REGLA 1: RECUPERACIÓN DE CONTRASEÑA ---
+    if (tipoSolicitud === 'RECUPERACION_CONTRASENA') {
+        // Si va a enviar el correo, la contraseña NO puede estar vacía
+        if (accion === 'aprobar' && mensaje === '') {
+            Swal.fire({
+                title: 'Contraseña Requerida',
+                text: 'Debes escribir la nueva contraseña provisional en el campo de texto antes de enviarla por correo al estudiante.',
+                icon: 'warning',
+                confirmButtonColor: '#f9a825',
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
+        // Si decide ignorar y la caja está vacía, le asignamos un texto por defecto para cumplir con el servidor
+        if (accion === 'rechazar' && mensaje === '') {
+            mensaje = 'Solicitud de recuperación ignorada por el administrador.';
+        }
+    } 
+    // --- REGLA 2: OTRAS SOLICITUDES (Reportes, Subidas, etc.) ---
+    else {
+        // Para el resto de solicitudes, el mensaje siempre es obligatorio
+        if (mensaje === '') {
+            Swal.fire({
+                title: 'Justificación Obligatoria',
+                text: 'Debes escribir una respuesta o motivo. Todas las acciones administrativas quedan registradas en el sistema.',
+                icon: 'warning',
+                confirmButtonColor: '#f9a825',
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
     }
 
-    // 3. Confirmación si es rechazo (Acción destructiva)
-    if (accion === 'rechazar') {
+    // Confirmación visual si es rechazo general
+    if (accion === 'rechazar' && tipoSolicitud !== 'RECUPERACION_CONTRASENA') {
         const confirmacion = await Swal.fire({
             title: '¿Estás seguro?',
             text: "Esta acción rechazará la solicitud y borrará los archivos relacionados permanentemente.",
@@ -2894,7 +2916,6 @@ async function enviarGestion(id, accion) {
     try {
         Swal.fire({ title: 'Procesando...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
 
-        // 4. Preparar datos para el servidor
         const formData = new FormData();
         formData.append('id_solicitud', solicitudId);
         formData.append('accion', accion === 'aprobar' ? 'APROBADA' : 'RECHAZADA');

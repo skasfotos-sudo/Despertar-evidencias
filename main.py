@@ -2383,12 +2383,18 @@ async def gestionar_solicitud(
                 if not mensaje or len(mensaje) < 6:
                     return JSONResponse({"status": "error", "mensaje": "La nueva contraseña debe tener al menos 6 caracteres."})
                 
-                # 1. Encriptar y actualizar la contraseña en la Base de Datos
-                nuevo_hash = get_password_hash(mensaje)
-                c.execute("UPDATE Usuarios SET Password = %s WHERE CI = %s", (nuevo_hash, ci))
-                print(f"✅ Contraseña actualizada en BD para {ci}")
+                # 1. Extraer correctamente la cédula del solicitante desde la tabla Solicitudes
+                ci_estudiante = sol.get('ci_solicitante') or sol.get('CI_Solicitante')
                 
-                # 2. Enviar Correo al estudiante
+                if not ci_estudiante:
+                    return JSONResponse({"status": "error", "mensaje": "No se encontró la cédula del estudiante asociado a esta solicitud."})
+
+                # 2. Encriptar y actualizar la contraseña en la Base de Datos
+                nuevo_hash = get_password_hash(mensaje)
+                c.execute("UPDATE Usuarios SET Password = %s WHERE CI = %s", (nuevo_hash, ci_estudiante))
+                print(f"✅ Contraseña actualizada en BD para el estudiante con CI: {ci_estudiante}")
+                
+                # 3. Enviar Correo al estudiante con la nueva clave temporal
                 asunto = "🔐 Recuperación de Acceso - U.E. Despertar"
                 cuerpo = f"""
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
@@ -2407,10 +2413,10 @@ async def gestionar_solicitud(
                 </div>
                 """
                 if email_usuario and '@' in email_usuario:
-                    background_tasks.add_task(enviar_correo_real, email_usuario, asunto, cuerpo, True) # True = formato HTML
+                    background_tasks.add_task(enviar_correo_real, email_usuario, asunto, cuerpo, True)
                 
-                # Limpiamos el mensaje para el registro interno (auditoría)
-                mensaje = "Contraseña restablecida y enviada por correo."
+                # Ajustar mensaje de auditoría interna
+                mensaje = "Contraseña restablecida y enviada por correo al estudiante."
 
         # ---------------------------------------------------------
         # 3. ACTUALIZAR ESTADO DE LA SOLICITUD (SIEMPRE)
