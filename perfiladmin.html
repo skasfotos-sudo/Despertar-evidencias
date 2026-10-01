@@ -1225,7 +1225,6 @@ body.dark-mode .swal2-textarea {
         <!-- PANEL: SUBIDA DE EVIDENCIAS -->
         <section id="panel-upload" class="panel-section">
             <style>
-                /* Animación de carga activa (poste de barbero) */
                 @keyframes progressMove {
                     0% { background-position: 0 0; }
                     100% { background-position: 40px 0; }
@@ -1237,9 +1236,8 @@ body.dark-mode .swal2-textarea {
                     background-color: var(--primary);
                     transition: width 0.4s ease;
                 }
-                /* Botones de Pestañas */
                 .upload-tab-btn {
-                    flex: 1; padding: 15px; font-size: 1.1rem; border-radius: 12px; transition: 0.3s; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; border: 2px solid transparent;
+                    flex: 1; padding: 15px; font-size: 1.1rem; border-radius: 12px; transition: 0.3s; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; border: 2px solid transparent; min-width: 200px;
                 }
                 .upload-tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(106, 13, 173, 0.3); }
                 .upload-tab-btn.inactive { background: var(--bg-card); color: var(--text-sec); border-color: var(--border-color); }
@@ -1248,13 +1246,17 @@ body.dark-mode .swal2-textarea {
 
             <h2 style="color:var(--primary); margin-bottom:25px;">Gestor de Subidas</h2>
             
-            <!-- PESTAÑAS -->
+            <!-- PESTAÑAS (AHORA SON 3) -->
             <div style="display:flex; gap:15px; margin-bottom:25px; flex-wrap:wrap;">
                 <button id="btnTabIA" onclick="switchUploadTab('IA')" class="upload-tab-btn active">
                     <i class="fas fa-robot"></i> Inteligencia Artificial
                 </button>
                 <button id="btnTabManual" onclick="switchUploadTab('Manual')" class="upload-tab-btn inactive">
                     <i class="fas fa-hand-pointer"></i> Asignación Manual
+                </button>
+                <button id="btnTabPendientes" onclick="switchUploadTab('Pendientes')" class="upload-tab-btn inactive" style="position:relative;">
+                    <i class="fas fa-inbox"></i> Por Clasificar
+                    <span id="badgePendientes" style="position:absolute; top:-8px; right:-8px; background:var(--error); color:white; font-size:0.75rem; padding:3px 8px; border-radius:12px; display:none; box-shadow:0 2px 5px rgba(0,0,0,0.3);">0</span>
                 </button>
             </div>
 
@@ -1266,14 +1268,11 @@ body.dark-mode .swal2-textarea {
                     El sistema detectará automáticamente a qué estudiante pertenece cada foto o video.<br>
                     <span style="color:var(--warning); font-weight:600;"><i class="fas fa-exclamation-triangle"></i> Máximo 50 archivos por lote.</span>
                 </p>
-                
                 <input type="file" id="fileInputIA" multiple accept="image/*,video/*,.pdf,.doc,.docx,.mp3,.mp4" style="display:none" onchange="handleUploadIA(this)">
-                
                 <div id="dropZoneIA" class="drop-zone" style="border: 2px dashed var(--primary-light); border-radius:12px; padding:40px 20px; cursor:pointer; background:var(--primary-soft); transition:0.3s;" onclick="document.getElementById('fileInputIA').click()">
                     <i class="fas fa-cloud-upload-alt" style="font-size:2.5rem; color:var(--primary); margin-bottom:10px;"></i>
                     <p style="font-weight:600; color:var(--text-main); margin:0; font-size:1.1rem;">Haz clic aquí o arrastra tus archivos</p>
                 </div>
-                
                 <!-- BARRA DE PROGRESO ANIMADA -->
                 <div id="uploadProgress" style="margin-top:30px; display:none; background:var(--bg-input); padding:20px; border-radius:12px; border:1px solid var(--border-color);">
                     <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-weight:600;">
@@ -1284,38 +1283,68 @@ body.dark-mode .swal2-textarea {
                         <div id="progressBar" class="progress-bar-animated" style="width:10%;"></div>
                     </div>
                 </div>
-                
                 <div id="uploadLog" style="text-align:left; margin-top:20px; max-height:300px; overflow-y:auto; font-size:0.9rem; padding:15px; background:var(--bg-input); border-radius:8px; border:1px solid var(--border-color); display:none;"></div>
             </div>
 
             <!-- CONTENEDOR: SUBIDA MANUAL -->
             <div id="uploadTabManual" class="storage-calc" style="display:none; animation: fadeIn 0.3s;">
                 <div style="display:flex; align-items:center; gap:15px; margin-bottom:25px;">
-                    <div style="width:60px; height:60px; background:rgba(46, 139, 87, 0.1); color:var(--secondary); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:2rem;">
-                        <i class="fas fa-file-signature"></i>
-                    </div>
+                    <div style="width:60px; height:60px; background:rgba(46, 139, 87, 0.1); color:var(--secondary); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:2rem;"><i class="fas fa-file-signature"></i></div>
                     <div>
                         <h3 style="margin:0; font-size:1.4rem;">Asignación Directa</h3>
                         <p style="color:var(--text-sec); font-size:0.95rem; margin:0;">Sube documentos, PDFs o corrige asignaciones manualmente.</p>
                     </div>
                 </div>
-                
                 <form id="formManual" onsubmit="subirManual(event)" style="background:var(--bg-input); padding:30px; border-radius:12px; border:1px solid var(--border-color);">
                     <div class="form-group" style="margin-bottom:25px;">
                         <label style="color:var(--text-main); font-size:1.1rem; margin-bottom:10px;"><i class="fas fa-upload" style="color:var(--secondary); margin-right:8px;"></i> 1. Selecciona el Archivo</label>
                         <input type="file" id="manualFile" class="form-control" accept="image/*,video/*,.pdf,.doc,.docx,.mp3,.mp4" required style="background:var(--bg-card); padding:15px; font-size:1rem; border:2px dashed var(--border-color); cursor:pointer;">
                     </div>
-                    
                     <div class="form-group" style="position:relative; margin-bottom:30px;">
                         <label style="color:var(--text-main); font-size:1.1rem; margin-bottom:10px;"><i class="fas fa-users" style="color:var(--secondary); margin-right:8px;"></i> 2. Buscar Estudiante(s)</label>
                         <input type="text" id="manualNombres" placeholder="Ej: Juan Pérez, María Gómez..." class="form-control" required onkeyup="mostrarSugerencias(this.value)" style="background:var(--bg-card); padding:15px; font-size:1.05rem;">
                         <div id="suggestionsBox" style="display:none; position:absolute; background:var(--bg-card); border:1px solid var(--border-color); max-height:200px; overflow-y:auto; width:100%; z-index:100; border-radius:8px; margin-top:5px; box-shadow:0 10px 25px rgba(0,0,0,0.15);"></div>
                     </div>
-                    
                     <button type="submit" class="btn-primary" style="background:var(--secondary); width:100%; justify-content:center; padding:18px; font-size:1.2rem; border-radius:12px; box-shadow:0 6px 15px rgba(46, 139, 87, 0.3); transition:all 0.3s ease;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='none'">
                         <i class="fas fa-check-circle" style="margin-right:8px;"></i> Subir y Asignar Archivo
                     </button>
                 </form>
+            </div>
+
+            <!-- CONTENEDOR: BANDEJA DE PENDIENTES (NUEVO) -->
+            <div id="uploadTabPendientes" class="storage-calc" style="display:none; animation: fadeIn 0.3s; padding: 25px;">
+                <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                    <div style="width:60px; height:60px; background:rgba(249, 168, 37, 0.1); color:var(--warning); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:2.2rem;">
+                        <i class="fas fa-inbox"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin:0; font-size:1.4rem;">Bandeja de Pendientes</h3>
+                        <p style="color:var(--text-sec); font-size:0.95rem; margin:0;">Archivos no reconocidos por la IA listos para clasificación rápida.</p>
+                    </div>
+                </div>
+                
+                <!-- ADVERTENCIA ROJA -->
+                <div style="background:rgba(211, 47, 47, 0.05); border:1px solid rgba(211, 47, 47, 0.2); padding:15px; border-radius:10px; margin-bottom:25px; display:flex; gap:15px; align-items:flex-start;">
+                    <i class="fas fa-exclamation-triangle" style="color:var(--error); font-size:1.5rem; margin-top:3px;"></i>
+                    <div>
+                        <strong style="color:var(--error); font-size:1rem; display:block; margin-bottom:5px;">Límite de Tiempo: Archivos Volátiles</strong>
+                        <p style="margin:0; font-size:0.9rem; color:var(--text-main); line-height:1.4;">
+                            Los archivos en esta bandeja son temporales. <b>Se eliminarán de forma definitiva y automática de la nube</b> al ejecutar las herramientas de <i>Optimización de Sistema</i> o <i>Limpieza de Huérfanos</i> en la pestaña de Mantenimiento. Clasifícalos a tiempo para evitar pérdidas.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- GRID DE TARJETAS RÁPIDAS -->
+                <div id="gridPendientesRapido" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px;">
+                    <!-- Las tarjetas dinámicas van aquí -->
+                </div>
+                
+                <!-- ESTADO VACÍO -->
+                <div id="emptyPendientes" style="text-align:center; padding:40px; background:var(--bg-input); border-radius:12px; border:1px dashed var(--border-color); display:none;">
+                    <i class="fas fa-check-circle" style="font-size:4rem; color:var(--secondary); margin-bottom:15px; opacity:0.8;"></i>
+                    <h3 style="color:var(--text-main); margin-bottom:5px;">¡Bandeja Limpia!</h3>
+                    <p style="color:var(--text-sec); margin:0;">No hay archivos pendientes de clasificar en este momento.</p>
+                </div>
             </div>
         </section>
 
@@ -1517,6 +1546,7 @@ body.dark-mode .swal2-textarea {
             <span style="color:#aaa; font-size:0.8rem; letter-spacing:1px;">SELECCIONADOS</span><br>
             <strong style="font-size:1.2rem;"><span id="countSelection" style="color:var(--secondary);">0</span> archivos</strong>
         </div>
+        <button class="btn-float" style="background:var(--info);" onclick="abrirModalReasignar()"><i class="fas fa-exchange-alt"></i> Clasificar</button>
         <button class="btn-float" onclick="descargarSeleccionadas()"><i class="fas fa-download"></i> Descargar</button>
         <button class="btn-float danger" onclick="eliminarSeleccionadas()"><i class="fas fa-trash"></i> Eliminar</button>
         <button class="btn-float-cancel" onclick="cancelarSeleccion()" title="Cancelar">&times;</button>
@@ -3822,8 +3852,11 @@ async function fijarFotoPerfil(cedula, urlFoto) {
     async function optimizarSistema() {
         const confirmacion = await Swal.fire({
             title: '¿Optimizar sistema?',
-            text: '¿Deseas optimizar el sistema y limpiar caché? Esto puede mejorar el rendimiento.',
-            icon: 'question',
+            html: `¿Deseas optimizar el sistema y limpiar caché? Esto puede mejorar el rendimiento.<br><br>
+                   <strong style="color: #d32f2f; font-size: 0.95rem; border: 1px solid #d32f2f; padding: 10px; display: inline-block; border-radius: 8px; background: rgba(211, 47, 47, 0.05);">
+                   ⚠️ ALERTA DE PÉRDIDA DE DATOS: Al realizar esta acción, TODOS los archivos en la "Bandeja de Pendientes" se eliminarán permanentemente de la nube. Revísalos antes de continuar.
+                   </strong>`,
+            icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#6A0DAD',
             cancelButtonColor: '#5f6368',
@@ -3832,6 +3865,7 @@ async function fijarFotoPerfil(cedula, urlFoto) {
         });
         
         if (!confirmacion.isConfirmed) return;
+    
         
         try {
             const respuesta = await fetch(`${API_URL}/optimizar_sistema`, {
@@ -4145,7 +4179,10 @@ async function enviarReasignacionMasiva() {
         // 1. Confirmación Inicial
         const confirmacion = await Swal.fire({
             title: `¿Iniciar ${titulo}?`,
-            text: "Esta operación auditará el sistema en profundidad y no se puede deshacer.",
+            html: `Esta operación auditará el sistema en profundidad y no se puede deshacer.<br><br>
+                   <strong style="color: #d32f2f; font-size: 0.95rem; border: 1px solid #d32f2f; padding: 10px; display: inline-block; border-radius: 8px; background: rgba(211, 47, 47, 0.05);">
+                   ⚠️ ALERTA DE PÉRDIDA DE DATOS: Esta acción eliminará permanentemente TODOS los archivos de la "Bandeja de Pendientes". Si tienes archivos por clasificar, hazlo ahora.
+                   </strong>`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: colorPrincipal,
@@ -4467,24 +4504,170 @@ async function fijarFotoPerfil(cedula, urlFoto) {
 }
 
 // ==========================================
-// CONTROL DE PESTAÑAS DE SUBIDA
+// CONTROL DE PESTAÑAS DE SUBIDA Y PENDIENTES
 // ==========================================
 function switchUploadTab(tabName) {
     const tabIA = document.getElementById('uploadTabIA');
     const tabManual = document.getElementById('uploadTabManual');
+    const tabPendientes = document.getElementById('uploadTabPendientes');
+    
     const btnIA = document.getElementById('btnTabIA');
     const btnManual = document.getElementById('btnTabManual');
+    const btnPendientes = document.getElementById('btnTabPendientes');
     
+    // Apagar todas
+    [tabIA, tabManual, tabPendientes].forEach(t => t.style.display = 'none');
+    [btnIA, btnManual, btnPendientes].forEach(b => b.className = 'upload-tab-btn inactive');
+
+    // Encender la seleccionada
     if (tabName === 'IA') {
         tabIA.style.display = 'block';
-        tabManual.style.display = 'none';
         btnIA.className = 'upload-tab-btn active';
-        btnManual.className = 'upload-tab-btn inactive';
-    } else {
-        tabIA.style.display = 'none';
+    } else if (tabName === 'Manual') {
         tabManual.style.display = 'block';
-        btnIA.className = 'upload-tab-btn inactive';
         btnManual.className = 'upload-tab-btn active';
+    } else if (tabName === 'Pendientes') {
+        tabPendientes.style.display = 'block';
+        btnPendientes.className = 'upload-tab-btn active';
+        cargarBandejaPendientes(); // Cargar la bandeja al instante
+    }
+}
+
+// ==========================================
+// CLASIFICACIÓN RÁPIDA (FAST UX)
+// ==========================================
+async function cargarBandejaPendientes() {
+    const grid = document.getElementById('gridPendientesRapido');
+    const empty = document.getElementById('emptyPendientes');
+    const badge = document.getElementById('badgePendientes');
+    
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px;"><i class="fas fa-spinner fa-spin fa-2x" style="color:var(--primary);"></i><br><br>Cargando archivos...</div>';
+    empty.style.display = 'none';
+
+    try {
+        const res = await fetch(`${API_URL}/todas_evidencias?cedula=PENDIENTE`);
+        const pendientes = await res.json();
+        
+        // Actualizar la bolita roja
+        if(badge) {
+            badge.style.display = pendientes.length > 0 ? 'inline-block' : 'none';
+            badge.textContent = pendientes.length;
+        }
+        
+        if(pendientes.length === 0) {
+            grid.innerHTML = '';
+            empty.style.display = 'block';
+            return;
+        }
+        
+        grid.innerHTML = '';
+        
+        // Creamos las opciones del dropdown solo con Estudiantes
+        const opcionesAlumnos = usuarios
+            .filter(u => u.tipo == 1 && u.cedula !== '9999999990')
+            .map(u => `<option value="${u.cedula}">${u.nombre} ${u.apellido}</option>`)
+            .join('');
+        
+        pendientes.forEach(item => {
+            const url = item.Url_Archivo || item.url_archivo || '';
+            const id = item.id || item.ID;
+            const esVideo = url.match(/\.(mp4|avi|mov|webm|mkv)$/i);
+            
+            // Generar visualizador rápido en la tarjeta
+            const mediaHtml = esVideo 
+                ? `<video src="${url}#t=0.1" style="width:100%; height:160px; object-fit:cover; border-radius:8px 8px 0 0; background:#000;" controls></video>`
+                : `<img src="${url}" style="width:100%; height:160px; object-fit:cover; border-radius:8px 8px 0 0; cursor:pointer;" onclick="window.open('${url}','_blank')" onerror="this.src='Img/Logo_pestaña.webp'">`;
+
+            const card = document.createElement('div');
+            card.style.cssText = 'background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; display:flex; flex-direction:column; box-shadow:var(--shadow-card); transition:0.3s;';
+            card.onmouseover = () => card.style.transform = 'translateY(-3px)';
+            card.onmouseout = () => card.style.transform = 'none';
+            
+            card.innerHTML = `
+                ${mediaHtml}
+                <div style="padding:12px; display:flex; flex-direction:column; gap:10px; flex:1;">
+                    <select id="select-est-${id}" class="form-control" style="padding:8px; font-size:0.85rem; background:var(--input-bg);">
+                        <option value="">-- Asignar alumno --</option>
+                        ${opcionesAlumnos}
+                    </select>
+                    <div style="display:flex; gap:8px; margin-top:auto;">
+                        <button onclick="clasificarPendienteRapido(${id})" title="Confirmar Asignación" style="flex:1; background:var(--secondary); color:white; border:none; padding:10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.9rem; transition:0.2s;">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button onclick="eliminarPendienteRapido(${id})" title="Eliminar Definitivamente" style="background:var(--error); color:white; border:none; padding:10px 15px; border-radius:6px; cursor:pointer; font-size:1rem; transition:0.2s;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    } catch(e) {
+        grid.innerHTML = '<div style="grid-column:1/-1; color:var(--error); text-align:center; padding:20px;">Error al cargar la bandeja. Verifica tu conexión.</div>';
+    }
+}
+
+async function clasificarPendienteRapido(id) {
+    const select = document.getElementById(`select-est-${id}`);
+    const cedulaDestino = select.value;
+    
+    if(!cedulaDestino) {
+        return Swal.fire('Atención', 'Por favor, selecciona a un estudiante en el menú desplegable antes de asignar.', 'warning');
+    }
+    
+    try {
+        Swal.fire({title:'Asignando...', didOpen:()=>Swal.showLoading(), allowOutsideClick:false});
+        
+        const res = await fetch(`${API_URL}/reasignar_evidencias`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ ids: id.toString(), cedula_destino: cedulaDestino })
+        });
+        
+        const data = await res.json();
+        
+        if(data.mensaje) {
+            Swal.fire({title:'¡Clasificado!', text:'El archivo fue movido al perfil del estudiante.', icon:'success', timer:1500, showConfirmButton:false});
+            cargarBandejaPendientes(); // Recargar la lista inmediatamente
+        } else {
+            throw new Error(data.error || 'Error desconocido');
+        }
+    } catch(e) { 
+        Swal.fire('Error', 'No se pudo asignar. ' + e.message, 'error'); 
+    }
+}
+
+async function eliminarPendienteRapido(id) {
+    const confirmacion = await Swal.fire({
+        title: '¿Eliminar archivo?',
+        text: "Esta foto/video se borrará permanentemente de la nube.",
+        icon: 'error',
+        showCancelButton: true,
+        confirmButtonColor: '#d32f2f',
+        confirmButtonText: 'Sí, borrar',
+        cancelButtonText: 'Cancelar'
+    });
+    
+    if (!confirmacion.isConfirmed) return;
+    
+    const miCedula = localStorage.getItem('usuario_cedula');
+    
+    try {
+        Swal.fire({title:'Eliminando...', didOpen:()=>Swal.showLoading(), allowOutsideClick:false});
+        
+        const fd = new FormData(); 
+        fd.append('admin_cedula', miCedula);
+        
+        const res = await fetch(`${API_URL}/eliminar_evidencia/${id}`, { method:'DELETE', body:fd });
+        
+        if(res.ok) {
+            Swal.fire({title:'Borrado', icon:'success', timer:1500, showConfirmButton:false});
+            cargarBandejaPendientes(); // Recargar la lista
+        } else {
+            throw new Error('El servidor rechazó el borrado');
+        }
+    } catch(e) { 
+        Swal.fire('Error', 'No se pudo eliminar el archivo.', 'error'); 
     }
 }
     </script>
