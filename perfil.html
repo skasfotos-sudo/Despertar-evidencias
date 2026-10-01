@@ -2055,6 +2055,9 @@ async function cargarNotificacionesEstudiante(cedula) {
             wrap.style.opacity = '0';
             
             setTimeout(() => {
+                // Aquí usamos item.url consistentemente
+                const urlActual = item.url;
+                
                 const esPDF = urlActual.match(/\.(pdf)$/i);
                 const esOffice = urlActual.match(/\.(doc|docx|xls|xlsx|ppt|pptx)$/i);
                 const esVideo = urlActual.match(/\.(mp4|avi|mov|webm|mkv)$/i);
