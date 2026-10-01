@@ -1111,15 +1111,9 @@ body.dark-mode .swal2-textarea {
                     <span>Costo Anual: <span id="yearlyCost" class="cost-highlight">$0.00</span></span>
                 </div>
                 
-                <div style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;">
-                    <button class="btn-primary" onclick="analizarDuplicados()" style="background:var(--secondary);">
-                        <i class="fas fa-broom"></i> Analizar Duplicados
-                    </button>
-                    <button class="btn-primary" onclick="limpiarCache()" style="background:var(--text-sec);">
-                        <i class="fas fa-wind"></i> Limpiar Caché
-                    </button>
-                    <button class="btn-primary" onclick="limpiarHuerfanos()" style="background:var(--error);">
-                        <i class="fas fa-trash-alt"></i> Limpiar Huérfanos
+                <div style="margin-top:20px;">
+                    <button class="btn-primary" onclick="ejecutarMantenimiento()" style="background:var(--error); width: 100%; justify-content: center; font-size: 1.1rem; padding: 15px; box-shadow: 0 4px 15px rgba(211, 47, 47, 0.4);">
+                        <i class="fas fa-radiation-alt" style="margin-right: 10px;"></i> Ejecutar Limpieza Profunda del Sistema
                     </button>
                 </div>
             </div>
@@ -1525,7 +1519,7 @@ body.dark-mode .swal2-textarea {
                         <p>Descargar ZIP evidencias</p>
                     </div>
                 </div>
-                <div class="stat-card" style="cursor:pointer;" onclick="optimizarSistema()">
+                <div class="stat-card" style="cursor:pointer;" onclick="ejecutarMantenimiento()">
                     <div class="stat-icon bg-orange"><i class="fas fa-tools"></i></div>
                     <div class="stat-details">
                         <h3>Optimización</h3>
@@ -3338,7 +3332,6 @@ function actualizarVisor() {
             </button>
         `;
     } else {
-        // Previsualización simple (sin botones adicionales)
         panelBotones.innerHTML = '';
     }
     
@@ -4250,72 +4243,49 @@ async function enviarReasignacionMasiva() {
     // FUNCIONES DE MANTENIMIENTO (PROFESIONALES)
     // ==========================================
     
-    // Función maestra que conecta con el backend con UX mejorada
-    async function ejecutarMantenimiento(tipo) {
-        let titulo, textoProgreso, icono, colorPrincipal;
-        
-        // Personalizamos la UI dependiendo del botón que haya presionado
-        if (tipo === 'duplicados') {
-            titulo = 'Análisis de Duplicados';
-            textoProgreso = 'Escaneando archivos idénticos en la base de datos...';
-            icono = 'fa-broom';
-            colorPrincipal = 'var(--secondary)'; // Verde
-        } else if (tipo === 'cache') {
-            titulo = 'Limpieza de Caché';
-            textoProgreso = 'Reconstruyendo índices y compactando base de datos...';
-            icono = 'fa-wind';
-            colorPrincipal = 'var(--text-sec)'; // Gris oscuro
-        } else if (tipo === 'huerfanos') {
-            titulo = 'Limpieza de Huérfanos';
-            textoProgreso = 'Auditando archivos perdidos o sin asignar en la nube...';
-            icono = 'fa-trash-alt';
-            colorPrincipal = 'var(--error)'; // Rojo
-        }
-
-        // 1. Confirmación Inicial
+    async function ejecutarMantenimiento() {
+        // 1. Confirmación Inicial y Advertencia Roja
         const confirmacion = await Swal.fire({
-            title: `¿Iniciar ${titulo}?`,
-            html: `Esta operación auditará el sistema en profundidad y no se puede deshacer.<br><br>
+            title: '¿Ejecutar Limpieza Profunda?',
+            html: `Esta operación auditará el sistema completo y no se puede deshacer.<br><br>
                    <strong style="color: #d32f2f; font-size: 0.95rem; border: 1px solid #d32f2f; padding: 10px; display: inline-block; border-radius: 8px; background: rgba(211, 47, 47, 0.05);">
-                   ⚠️ ALERTA DE PÉRDIDA DE DATOS: Esta acción eliminará permanentemente TODOS los archivos de la "Bandeja de Pendientes". Si tienes archivos por clasificar, hazlo ahora.
+                   ⚠️ ALERTA DE PÉRDIDA DE DATOS: Esta acción vaciará la "Bandeja de Pendientes", eliminando sus archivos de forma definitiva. Clasifica lo que necesites antes de continuar.
                    </strong>`,
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: colorPrincipal,
-            confirmButtonText: 'Sí, ejecutar mantenimiento',
+            confirmButtonColor: 'var(--error)',
+            confirmButtonText: 'Sí, limpiar sistema',
             cancelButtonText: 'Cancelar',
             reverseButtons: true
         });
         
         if (!confirmacion.isConfirmed) return;
 
-        // 2. Pantalla de Carga Animada (Barra de Progreso Estilo Consola)
+        // 2. Pantalla de Carga Animada
         Swal.fire({
-            title: titulo,
+            title: 'Limpieza en Progreso',
             html: `
                 <div style="text-align: left; margin-top: 15px;">
                     <p style="color: var(--text-sec); font-size: 0.95rem; margin-bottom: 12px;">
-                        <i class="fas fa-cog fa-spin" style="margin-right: 8px; color: ${colorPrincipal};"></i> ${textoProgreso}
+                        <i class="fas fa-cog fa-spin" style="margin-right: 8px; color: var(--error);"></i> Ejecutando escaneo total (Base de datos y Nube)...
                     </p>
                     <div style="width: 100%; background: var(--bg-input); border-radius: 8px; height: 14px; overflow: hidden; border: 1px solid var(--border-color);">
-                        <div id="maintProgressBar" class="progress-bar-animated" style="width: 0%; height: 100%; background-color: ${colorPrincipal};"></div>
+                        <div id="maintProgressBar" class="progress-bar-animated" style="width: 0%; height: 100%; background-color: var(--error);"></div>
                     </div>
-                    <p id="maintProgressText" style="text-align: right; font-size: 0.85rem; font-weight: bold; margin-top: 8px; color: ${colorPrincipal};">0%</p>
+                    <p id="maintProgressText" style="text-align: right; font-size: 0.85rem; font-weight: bold; margin-top: 8px; color: var(--error);">0%</p>
                 </div>
             `,
             allowOutsideClick: false,
             showConfirmButton: false,
             didOpen: () => {
-                // Simulamos el progreso fluido mientras esperamos al servidor
                 const bar = document.getElementById('maintProgressBar');
                 const pText = document.getElementById('maintProgressText');
                 let progress = 0;
                 window.maintInterval = setInterval(() => {
                     if (progress < 90) {
-                        // Avanza rápido al principio, luego más lento
                         let paso = progress < 50 ? (Math.floor(Math.random() * 15) + 5) : (Math.floor(Math.random() * 5) + 1);
                         progress += paso;
-                        if(progress > 90) progress = 90; // Se detiene en 90% hasta que el servidor responda
+                        if(progress > 90) progress = 90;
                         if(bar) bar.style.width = `${progress}%`;
                         if(pText) pText.textContent = `${progress}%`;
                     }
@@ -4324,41 +4294,30 @@ async function enviarReasignacionMasiva() {
         });
 
         try {
-            // 3. Ejecutar la acción real en el servidor de Python
-            const respuesta = await fetch(`${API_URL}/optimizar_sistema?tipo=${tipo}`, { method: 'POST' });
+            // 3. LA CLAVE: Forzamos la orden "full" para que Python borre los pendientes
+            const respuesta = await fetch(`${API_URL}/optimizar_sistema?tipo=full`, { method: 'POST' });
             const resultado = await respuesta.json();
             
-            // Detener la simulación
             clearInterval(window.maintInterval);
             
             if (respuesta.ok && resultado.status === 'ok') {
-                // 4. Llenar la barra al 100% de golpe
                 const bar = document.getElementById('maintProgressBar');
                 const pText = document.getElementById('maintProgressText');
                 if(bar) bar.style.width = '100%';
                 if(pText) pText.textContent = '100% Completado';
 
-                // Esperar medio segundo para que el usuario vea el 100% antes de cambiar de pantalla
                 await new Promise(r => setTimeout(r, 600)); 
 
-                // 5. Procesar el texto de respuesta para convertirlo en un Reporte Profesional
+                // 4. Formatear el reporte como Checklist Dinámico
                 let oraciones = resultado.mensaje.split('.').filter(o => o.trim().length > 0);
-                
                 let reporteHTML = oraciones.map(oracion => {
                     let text = oracion.trim() + '.';
                     let icon = 'fa-check-circle';
-                    let colorIcon = 'var(--secondary)'; // Verde por defecto
+                    let colorIcon = 'var(--secondary)';
                     
-                    // Asignar iconos lógicos según las palabras clave de Python
-                    if(text.toLowerCase().includes('eliminaron')) { 
-                        icon = 'fa-trash-alt'; colorIcon = 'var(--error)'; 
-                    } else if(text.toLowerCase().includes('compactada')) { 
-                        icon = 'fa-database'; colorIcon = 'var(--primary)'; 
-                    } else if(text.toLowerCase().includes('limpio') || text.toLowerCase().includes('no se encontraron')) { 
-                        icon = 'fa-shield-alt'; colorIcon = 'var(--info)'; 
-                    } else if(text.toLowerCase().includes('advertencia')) { 
-                        icon = 'fa-exclamation-triangle'; colorIcon = 'var(--warning)'; 
-                    }
+                    if(text.toLowerCase().includes('eliminaron')) { icon = 'fa-trash-alt'; colorIcon = 'var(--error)'; }
+                    else if(text.toLowerCase().includes('compactada')) { icon = 'fa-database'; colorIcon = 'var(--primary)'; }
+                    else if(text.toLowerCase().includes('limpio') || text.toLowerCase().includes('no se encontraron')) { icon = 'fa-shield-alt'; colorIcon = 'var(--info)'; }
                     
                     return `<div style="padding: 10px 0; border-bottom: 1px solid var(--border-color); display:flex; align-items:flex-start; gap:10px;">
                                 <i class="fas ${icon}" style="color:${colorIcon}; margin-top:3px; font-size:1.1rem;"></i> 
@@ -4366,7 +4325,6 @@ async function enviarReasignacionMasiva() {
                             </div>`;
                 }).join('');
 
-                // Mostrar el Reporte Final
                 Swal.fire({
                     title: '¡Mantenimiento Exitoso!',
                     html: `
@@ -4377,15 +4335,22 @@ async function enviarReasignacionMasiva() {
                             <div style="margin-top: 5px;">
                                 ${reporteHTML}
                             </div>
-                        </div>
-                    `,
+                        </div>`,
                     icon: 'success',
                     confirmButtonColor: 'var(--primary)',
                     confirmButtonText: 'Entendido'
                 });
                 
-                // Refrescar el dashboard
-                setTimeout(() => actualizarDatosDashboard(), 1000);
+                // Recargar estadísticas del panel y vaciar visualmente la bandeja
+                setTimeout(() => {
+                    actualizarDatosDashboard();
+                    if (typeof cargarBandejaPendientes === 'function') {
+                        const tabPendientes = document.getElementById('uploadTabPendientes');
+                        if (tabPendientes && tabPendientes.style.display === 'block') {
+                            cargarBandejaPendientes();
+                        }
+                    }
+                }, 1000);
             } else {
                 throw new Error(resultado.error || 'Error desconocido al limpiar');
             }
@@ -4395,13 +4360,6 @@ async function enviarReasignacionMasiva() {
             Swal.fire('Error del Servidor', 'No se pudo completar: ' + error.message, 'error');
         }
     }
-
-    // --- ESTAS SON LAS QUE TE FALTABAN ---
-    // Deben estar aquí para que los botones las encuentren
-    function analizarDuplicados() { ejecutarMantenimiento('duplicados'); }
-    function limpiarCache() { ejecutarMantenimiento('cache'); }
-    function limpiarHuerfanos() { ejecutarMantenimiento('huerfanos'); }
-    
     // --- FUNCIONES PARA FOTO DE REFERENCIA ---
 function abrirModalAgregarRef() {
     // Llenar el select de usuarios
