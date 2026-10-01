@@ -4117,61 +4117,149 @@ async function enviarReasignacionMasiva() {
     }
 
 // ==========================================
-    // FUNCIONES DE MANTENIMIENTO (GLOBALES)
+    // FUNCIONES DE MANTENIMIENTO (PROFESIONALES)
     // ==========================================
     
-    // Función maestra que conecta con el backend
+    // Función maestra que conecta con el backend con UX mejorada
     async function ejecutarMantenimiento(tipo) {
-        let titulo, texto, icono;
+        let titulo, textoProgreso, icono, colorPrincipal;
         
+        // Personalizamos la UI dependiendo del botón que haya presionado
         if (tipo === 'duplicados') {
-            titulo = '¿Analizar y Borrar Duplicados?';
-            texto = 'El sistema buscará archivos idénticos y borrará las copias sobrantes.';
-            icono = 'question';
+            titulo = 'Análisis de Duplicados';
+            textoProgreso = 'Escaneando archivos idénticos en la base de datos...';
+            icono = 'fa-broom';
+            colorPrincipal = 'var(--secondary)'; // Verde
         } else if (tipo === 'cache') {
-            titulo = '¿Limpiar Caché y Compactar?';
-            texto = 'Se ejecutará VACUUM para optimizar la base de datos.';
-            icono = 'info';
+            titulo = 'Limpieza de Caché';
+            textoProgreso = 'Reconstruyendo índices y compactando base de datos...';
+            icono = 'fa-wind';
+            colorPrincipal = 'var(--text-sec)'; // Gris oscuro
         } else if (tipo === 'huerfanos') {
-            titulo = '¿Limpiar Archivos Fantasma?';
-            texto = 'Se eliminarán registros de archivos que no existen en la nube.';
-            icono = 'warning';
+            titulo = 'Limpieza de Huérfanos';
+            textoProgreso = 'Auditando archivos perdidos o sin asignar en la nube...';
+            icono = 'fa-trash-alt';
+            colorPrincipal = 'var(--error)'; // Rojo
         }
 
+        // 1. Confirmación Inicial
         const confirmacion = await Swal.fire({
-            title: titulo,
-            text: texto,
-            icon: icono,
+            title: `¿Iniciar ${titulo}?`,
+            text: "Esta operación auditará el sistema en profundidad y no se puede deshacer.",
+            icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#6A0DAD',
-            confirmButtonText: 'Sí, ejecutar',
-            cancelButtonText: 'Cancelar'
+            confirmButtonColor: colorPrincipal,
+            confirmButtonText: 'Sí, ejecutar mantenimiento',
+            cancelButtonText: 'Cancelar',
+            reverseButtons: true
         });
         
         if (!confirmacion.isConfirmed) return;
 
+        // 2. Pantalla de Carga Animada (Barra de Progreso Estilo Consola)
+        Swal.fire({
+            title: titulo,
+            html: `
+                <div style="text-align: left; margin-top: 15px;">
+                    <p style="color: var(--text-sec); font-size: 0.95rem; margin-bottom: 12px;">
+                        <i class="fas fa-cog fa-spin" style="margin-right: 8px; color: ${colorPrincipal};"></i> ${textoProgreso}
+                    </p>
+                    <div style="width: 100%; background: var(--bg-input); border-radius: 8px; height: 14px; overflow: hidden; border: 1px solid var(--border-color);">
+                        <div id="maintProgressBar" class="progress-bar-animated" style="width: 0%; height: 100%; background-color: ${colorPrincipal};"></div>
+                    </div>
+                    <p id="maintProgressText" style="text-align: right; font-size: 0.85rem; font-weight: bold; margin-top: 8px; color: ${colorPrincipal};">0%</p>
+                </div>
+            `,
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                // Simulamos el progreso fluido mientras esperamos al servidor
+                const bar = document.getElementById('maintProgressBar');
+                const pText = document.getElementById('maintProgressText');
+                let progress = 0;
+                window.maintInterval = setInterval(() => {
+                    if (progress < 90) {
+                        // Avanza rápido al principio, luego más lento
+                        let paso = progress < 50 ? (Math.floor(Math.random() * 15) + 5) : (Math.floor(Math.random() * 5) + 1);
+                        progress += paso;
+                        if(progress > 90) progress = 90; // Se detiene en 90% hasta que el servidor responda
+                        if(bar) bar.style.width = `${progress}%`;
+                        if(pText) pText.textContent = `${progress}%`;
+                    }
+                }, 600);
+            }
+        });
+
         try {
-            Swal.fire({
-                title: 'Procesando...',
-                text: 'Analizando sistema...',
-                allowOutsideClick: false,
-                didOpen: () => Swal.showLoading()
-            });
-            
-            // Enviamos el tipo en la URL
+            // 3. Ejecutar la acción real en el servidor de Python
             const respuesta = await fetch(`${API_URL}/optimizar_sistema?tipo=${tipo}`, { method: 'POST' });
             const resultado = await respuesta.json();
             
+            // Detener la simulación
+            clearInterval(window.maintInterval);
+            
             if (respuesta.ok && resultado.status === 'ok') {
-             // Esto mostrará el mensaje de MB recuperados que configuramos arriba
-              Swal.fire('Éxito', resultado.mensaje, 'success'); 
-               setTimeout(() => actualizarDatosDashboard(), 2000);
-            }else {
-                throw new Error(resultado.error || 'Error desconocido');
+                // 4. Llenar la barra al 100% de golpe
+                const bar = document.getElementById('maintProgressBar');
+                const pText = document.getElementById('maintProgressText');
+                if(bar) bar.style.width = '100%';
+                if(pText) pText.textContent = '100% Completado';
+
+                // Esperar medio segundo para que el usuario vea el 100% antes de cambiar de pantalla
+                await new Promise(r => setTimeout(r, 600)); 
+
+                // 5. Procesar el texto de respuesta para convertirlo en un Reporte Profesional
+                let oraciones = resultado.mensaje.split('.').filter(o => o.trim().length > 0);
+                
+                let reporteHTML = oraciones.map(oracion => {
+                    let text = oracion.trim() + '.';
+                    let icon = 'fa-check-circle';
+                    let colorIcon = 'var(--secondary)'; // Verde por defecto
+                    
+                    // Asignar iconos lógicos según las palabras clave de Python
+                    if(text.toLowerCase().includes('eliminaron')) { 
+                        icon = 'fa-trash-alt'; colorIcon = 'var(--error)'; 
+                    } else if(text.toLowerCase().includes('compactada')) { 
+                        icon = 'fa-database'; colorIcon = 'var(--primary)'; 
+                    } else if(text.toLowerCase().includes('limpio') || text.toLowerCase().includes('no se encontraron')) { 
+                        icon = 'fa-shield-alt'; colorIcon = 'var(--info)'; 
+                    } else if(text.toLowerCase().includes('advertencia')) { 
+                        icon = 'fa-exclamation-triangle'; colorIcon = 'var(--warning)'; 
+                    }
+                    
+                    return `<div style="padding: 10px 0; border-bottom: 1px solid var(--border-color); display:flex; align-items:flex-start; gap:10px;">
+                                <i class="fas ${icon}" style="color:${colorIcon}; margin-top:3px; font-size:1.1rem;"></i> 
+                                <span>${text}</span>
+                            </div>`;
+                }).join('');
+
+                // Mostrar el Reporte Final
+                Swal.fire({
+                    title: '¡Mantenimiento Exitoso!',
+                    html: `
+                        <div style="background: var(--bg-card); padding: 15px; border-radius: 12px; text-align: left; font-size: 0.95rem; border: 1px solid var(--border-color); box-shadow: inset 0 2px 10px rgba(0,0,0,0.02);">
+                            <strong style="color: var(--text-main); display:block; margin-bottom:10px;">
+                                <i class="fas fa-clipboard-check" style="color:var(--primary); margin-right:5px;"></i> Reporte de Ejecución:
+                            </strong>
+                            <div style="margin-top: 5px;">
+                                ${reporteHTML}
+                            </div>
+                        </div>
+                    `,
+                    icon: 'success',
+                    confirmButtonColor: 'var(--primary)',
+                    confirmButtonText: 'Entendido'
+                });
+                
+                // Refrescar el dashboard
+                setTimeout(() => actualizarDatosDashboard(), 1000);
+            } else {
+                throw new Error(resultado.error || 'Error desconocido al limpiar');
             }
         } catch (error) {
+            clearInterval(window.maintInterval);
             console.error(error);
-            Swal.fire('Error', 'No se pudo completar: ' + error.message, 'error');
+            Swal.fire('Error del Servidor', 'No se pudo completar: ' + error.message, 'error');
         }
     }
 
