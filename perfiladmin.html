@@ -594,18 +594,34 @@
             object-fit: cover; border: 3px solid var(--primary);
         }
 
-        /* Modales */
+        /* ==========================================================================
+           MODALES Y TARJETAS EMERGENTES
+           ========================================================================== */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.8); z-index: 5000; display: none; 
-            justify-content: center; align-items: center;
+            justify-content: center; align-items: center; backdrop-filter: blur(5px);
         }
-        .modal-overlay.active { display: flex; }
+        .modal-overlay.active { display: flex; animation: fadeIn 0.3s forwards; }
         .modal-card {
-            background: var(--bg-card); width: 95%; max-width: 500px;
-            border-radius: 16px; padding: 30px; position: relative;
-            max-height: 90vh; overflow-y: auto;
+            background: var(--bg-card); width: 95%; max-width: 550px;
+            border-radius: 20px; padding: 35px; position: relative;
+            max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            border-top: 5px solid var(--primary);
         }
+        
+        /* Cajas de Información dentro de Modales (Para las Solicitudes) */
+        .info-bloque {
+            background: var(--bg-input); padding: 20px; border-radius: 12px;
+            border-left: 4px solid var(--primary); margin-bottom: 20px;
+        }
+        .info-bloque p { margin-bottom: 8px; font-size: 0.95rem; color: var(--text-main); }
+        .info-bloque p:last-child { margin-bottom: 0; }
+        
+        .botones-accion {
+            display: flex; gap: 15px; margin-top: 25px; flex-wrap: wrap;
+        }
+        .botones-accion .btn-primary { flex: 1; min-width: 140px; justify-content: center; }
 
         /* Footer */
         footer {
@@ -940,6 +956,8 @@ body.dark-mode .swal2-textarea {
             background: var(--primary-soft); 
             border-left: 4px solid var(--primary); 
         }
+
+        
     </style>
 </head>
 
@@ -2552,87 +2570,184 @@ body.dark-mode .swal2-textarea {
     }
 
     function crearCardSolicitud(sol) {
-    // --- MAPEO DE SEGURIDAD PARA POSTGRESQL ---
-    // Esto extrae el valor sin importar si viene como 'Estado' o 'estado'
-    const _estado = sol.estado || sol.Estado || '';
-    const _tipo = sol.tipo || sol.Tipo || 'Solicitud';
-    const _detalle = sol.detalle || sol.Detalle || 'Sin detalles';
-    const _fecha = sol.fecha || sol.Fecha;
-    const _ci = sol.ci_solicitante || sol.CI_Solicitante;
-    const _id = sol.id || sol.ID;
-    const _email = sol.email || sol.Email;
-    const _url = sol.evidencia_reportada_url || sol.Evidencia_Reportada_Url;
-    const _resueltoPor = sol.resuelto_por || sol.Resuelto_Por || 'Admin';
-    const _respuesta = sol.respuesta || sol.Respuesta;
+        const _estado = sol.estado || sol.Estado || '';
+        const _tipo = sol.tipo || sol.Tipo || 'Solicitud';
+        const _detalle = sol.detalle || sol.Detalle || 'Sin detalles';
+        const _fecha = sol.fecha || sol.Fecha;
+        const _ci = sol.ci_solicitante || sol.CI_Solicitante;
+        const _id = sol.id || sol.ID;
+        const _email = sol.email || sol.Email;
+        const _url = sol.evidencia_reportada_url || sol.Evidencia_Reportada_Url;
+        const _resueltoPor = sol.resuelto_por || sol.Resuelto_Por || 'Admin';
+        const _respuesta = sol.respuesta || sol.Respuesta;
 
-    // Manejo de estado
-    const estado = _estado.toUpperCase();
-    const esPendiente = estado === 'PENDIENTE' || estado === '';
-    
-    // Determinar la clase del badge y el texto
-    let badgeClass, badgeText;
-    if (esPendiente) {
-        badgeClass = 'badge-pending';
-        badgeText = 'PENDIENTE';
-    } else if (estado === 'APROBADA' || estado === 'RESUELTO') {
-        badgeClass = 'badge-resolved';
-        badgeText = 'RESUELTA';
-    } else {
-        badgeClass = 'badge-rejected';
-        badgeText = 'RECHAZADA';
-    }
-    
-    // Buscar información del usuario
-    const usuario = usuarios.find(u => u.cedula === _ci);
-    const nombreUsuario = usuario ? `${usuario.nombre} ${usuario.apellido}` : _ci || 'Usuario';
-    
-    // RETORNO DE DISEÑO (Mantenido 100% original)
-    return `
-        <div class="request-card">
-            <div class="request-header">
-                <div>
-                    <h4 style="color:var(--text-main); margin-bottom:5px;">
-                        ${_tipo.replace(/_/g, ' ')} - ${nombreUsuario}
-                        <span class="solicitud-tipo ${_tipo ? 'tipo-' + _tipo.toLowerCase().split('_')[0] : 'tipo-reporte'}">
+        const estado = _estado.toUpperCase();
+        const esPendiente = estado === 'PENDIENTE' || estado === '';
+        
+        let badgeClass, badgeText;
+        if (esPendiente) { badgeClass = 'badge-pending'; badgeText = 'PENDIENTE'; } 
+        else if (estado === 'APROBADA' || estado === 'RESUELTO') { badgeClass = 'badge-resolved'; badgeText = 'RESUELTA'; } 
+        else { badgeClass = 'badge-rejected'; badgeText = 'RECHAZADA'; }
+        
+        const usuario = usuarios.find(u => u.cedula === _ci);
+        const nombreUsuario = usuario ? `${usuario.nombre} ${usuario.apellido}` : _ci || 'Usuario';
+        
+        return `
+            <div class="request-card" style="transition:0.3s; border-left:4px solid ${esPendiente ? 'var(--warning)' : 'var(--border-color)'};">
+                <div class="request-header">
+                    <div style="flex:1; min-width:250px;">
+                        <h4 style="color:var(--text-main); margin-bottom:8px; font-size:1.1rem; display:flex; align-items:center; gap:10px;">
                             ${_tipo.replace(/_/g, ' ')}
-                        </span>
-                    </h4>
-                    <p style="color:var(--text-sec); font-size:0.9rem; margin-bottom:5px;">
-                        ${_detalle}
-                    </p>
-                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                        <span class="request-badge ${badgeClass}">${badgeText}</span>
-                        <span style="color:var(--text-muted); font-size:0.8rem;">${formatearFecha(_fecha)}</span>
-                        ${_email ? `<span style="color:var(--text-muted); font-size:0.8rem;"><i class="fas fa-envelope"></i> ${_email}</span>` : ''}
+                            <span class="request-badge ${badgeClass}">${badgeText}</span>
+                        </h4>
+                        <p style="color:var(--text-sec); font-size:0.95rem; margin-bottom:10px;">
+                            <strong>De:</strong> ${nombreUsuario} <br>
+                            <strong>Mensaje:</strong> ${_detalle}
+                        </p>
+                        <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap; color:var(--text-muted); font-size:0.8rem;">
+                            <span><i class="far fa-clock"></i> ${formatearFecha(_fecha)}</span>
+                            ${_email ? `<span><i class="far fa-envelope"></i> ${_email}</span>` : ''}
+                        </div>
+                    </div>
+                    
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:10px; min-width:180px;">
+                        ${esPendiente ? `
+                            <button class="btn-primary" onclick="procesarSolicitudDesdeCard('${_tipo}',${_id})" style="background:var(--primary); padding:10px 20px; width:100%;">
+                                <i class="fas fa-reply"></i> Responder
+                            </button>
+                        ` : `
+                            <div style="font-size:0.85rem; text-align:right; color:var(--text-main); background:var(--bg-input); padding:10px; border-radius:8px; width:100%;">
+                                <strong style="color:var(--primary);">Admin ${_resueltoPor}:</strong><br>
+                                <span style="font-style:italic; color:var(--text-sec);">"${_respuesta ? _respuesta.substring(0,40) + '...' : 'Revisada'}"</span>
+                            </div>
+                        `}
                     </div>
                 </div>
-                ${esPendiente ? 
-                    `<button class="btn-primary" onclick="procesarSolicitudDesdeCard('${_tipo}', ${_id})" 
-           style="background:var(--info); padding:8px 15px;">
-    <i class="fas fa-reply"></i> Responder
- </button>` : 
-                    `<div style="font-size:0.85rem; text-align:right; color:var(--text-main);">
-                        <div><strong>Resuelto por:</strong> ${_resueltoPor}</div>
-                        ${_respuesta ? `<div style="color:var(--primary); margin-top:3px;"><em>"${_respuesta.substring(0,30)}..."</em></div>` : ''}
-                     </div>`
-                }
+                ${_url ? `
+                    <div style="margin-top:15px; border-top:1px solid var(--border-color); padding-top:15px;">
+                        <p style="color:var(--text-sec); font-size:0.9rem; margin-bottom:10px;"><strong>Evidencia en cuestión:</strong></p>
+                        <div style="display:inline-block; position:relative; cursor:pointer;" onclick="abrirPrevisualizacion('${_url}')">
+                            <img src="${_url}" class="request-preview" style="border-radius:10px; max-width:180px; box-shadow:var(--shadow-card); transition:0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='none'">
+                            <div style="position:absolute; inset:0; background:rgba(0,0,0,0.4); border-radius:10px; display:flex; align-items:center; justify-content:center; opacity:0; transition:0.3s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0'">
+                                <i class="fas fa-search-plus" style="color:white; font-size:2rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
             </div>
-            ${_url ? `
-                <div style="margin-top:10px;">
-                    <p style="color:var(--text-sec); font-size:0.9rem; margin-bottom:5px;">Evidencia relacionada:</p>
-                    <img src="${_url}" class="request-preview" 
-                         onclick="abrirPrevisualizacion('${_url}')">
+        `;
+    }
+
+    function procesarSolicitudDesdeCard(tipoRaw, solicitudId) {
+        solicitudActualId = solicitudId;
+
+        const solicitud = solicitudes.find(s => (s.id || s.ID) == solicitudId);
+        if (!solicitud) return;
+
+        const ci = solicitud.ci_solicitante || solicitud.CI_Solicitante;
+        const detalle = solicitud.detalle || solicitud.Detalle || 'Sin detalles';
+        const evidenciaUrl = solicitud.Url_Archivo || solicitud.url_archivo || solicitud.evidencia_url || solicitud.evidencia_reportada_url || solicitud.Evidencia_Reportada_Url;
+        
+        const usuario = usuarios.find(u => (u.cedula || u.CI) == ci);
+        const nombreUsuario = usuario ? `${usuario.nombre} ${usuario.apellido}` : ci;
+        const tipoLimpio = tipoRaw.replace(/_/g, ' ');
+
+        let htmlPrevisualizacion = '';
+        if (evidenciaUrl) {
+            htmlPrevisualizacion = `
+                <div style="margin-top:15px; text-align:center;">
+                    <img src="${evidenciaUrl}" style="max-width:100%; max-height:200px; border-radius:10px; box-shadow:var(--shadow-card); cursor:pointer;" onclick="window.open(this.src, '_blank')" title="Ampliar Imagen">
+                </div>`;
+        }
+
+        let html = `
+            <h3 style="color:var(--primary); margin-bottom:20px; font-size:1.5rem; text-align:center;">
+                <i class="fas fa-clipboard-check"></i> Gestión de Solicitud
+            </h3>
+            <div class="info-bloque">
+                <p><strong><i class="fas fa-user"></i> Estudiante:</strong> ${nombreUsuario}</p>
+                <p><strong><i class="fas fa-tag"></i> Asunto:</strong> ${tipoLimpio}</p>
+                <p><strong><i class="fas fa-comment-dots"></i> Mensaje:</strong> <em>"${detalle}"</em></p>
+            </div>
+        `;
+
+        if (tipoRaw === 'REPORTE_EVIDENCIA') {
+            html += `
+                <div style="border:2px dashed var(--error); padding:15px; border-radius:12px; margin-bottom:20px; background:rgba(211,47,47,0.05);">
+                    <p style="color:var(--error); font-weight:bold; margin:0; text-align:center;"><i class="fas fa-exclamation-triangle"></i> El estudiante indica que esta foto es incorrecta</p>
+                    ${htmlPrevisualizacion}
                 </div>
-            ` : ''}
-            ${!esPendiente && _respuesta ? `
-                <div style="margin-top:15px; padding:10px; background:var(--bg-input); border-radius:8px;">
-                    <strong style="color:var(--primary);">Respuesta enviada:</strong>
-                    <p style="margin-top:5px; color:var(--text-main);">${_respuesta}</p>
+                <div class="form-group">
+                    <label>Respuesta (Opcional):</label>
+                    <textarea id="mensajeAdmin" class="form-control" rows="2" placeholder="Ej: Revisado y eliminado de tu perfil."></textarea>
                 </div>
-            ` : ''}
-        </div>
-    `;
-}
+                <div class="botones-accion">
+                    <button class="btn-primary" onclick="enviarGestion(${solicitudId}, 'aprobar')" style="background:var(--error);">
+                        <i class="fas fa-trash-alt"></i> Aceptar (Borrar Foto)
+                    </button>
+                    <button class="btn-primary" onclick="enviarGestion(${solicitudId}, 'rechazar')" style="background:var(--text-sec);">
+                        <i class="fas fa-times"></i> Ignorar Reporte
+                    </button>
+                </div>
+            `;
+        } 
+        else if (tipoRaw === 'SUBIR_EVIDENCIA') {
+            html += `
+                <div style="border:2px dashed var(--secondary); padding:15px; border-radius:12px; margin-bottom:20px; background:rgba(46,139,87,0.05);">
+                    <p style="color:var(--secondary); font-weight:bold; margin:0; text-align:center;"><i class="fas fa-cloud-upload-alt"></i> Archivo propuesto para subir</p>
+                    ${htmlPrevisualizacion}
+                </div>
+                <div class="form-group">
+                    <label>Comentario al estudiante:</label>
+                    <textarea id="mensajeAdmin" class="form-control" rows="2" placeholder="Ej: Aprobada, excelente trabajo."></textarea>
+                </div>
+                <div class="botones-accion">
+                    <button class="btn-primary" onclick="enviarGestion(${solicitudId}, 'aprobar')" style="background:var(--secondary);">
+                        <i class="fas fa-check-circle"></i> Aprobar Subida
+                    </button>
+                    <button class="btn-primary" onclick="enviarGestion(${solicitudId}, 'rechazar')" style="background:var(--error);">
+                        <i class="fas fa-ban"></i> Rechazar y Borrar
+                    </button>
+                </div>
+            `;
+        }
+        else if (tipoRaw === 'RECUPERACION_CONTRASENA') {
+            html += `
+                <div style="background:rgba(2,136,209,0.1); padding:15px; border-radius:12px; margin-bottom:20px; border-left:4px solid var(--info);">
+                    <p style="font-size:0.95rem; color:var(--text-main); margin-bottom:10px;"><strong><i class="fas fa-envelope"></i> Acción de Sistema:</strong></p>
+                    <p style="font-size:0.9rem; color:var(--text-sec);">Escribe una nueva contraseña provisional. El sistema enviará un correo automáticamente al estudiante.</p>
+                </div>
+                <div class="form-group">
+                    <label style="font-weight:700;">Nueva Contraseña Provisional *</label>
+                    <input type="text" id="mensajeAdmin" class="form-control" placeholder="Ej: ClaveNueva2026" required style="font-family:monospace; font-size:1.1rem; letter-spacing:1px;">
+                </div>
+                <div class="botones-accion">
+                    <button class="btn-primary" onclick="enviarGestion(${solicitudId}, 'aprobar')" style="background:var(--info);">
+                        <i class="fas fa-paper-plane"></i> Establecer y Enviar
+                    </button>
+                    <button class="btn-primary" onclick="enviarGestion(${solicitudId}, 'rechazar')" style="background:var(--text-sec);">
+                        <i class="fas fa-times"></i> Ignorar
+                    </button>
+                </div>
+            `;
+        }
+        else { 
+            html += `
+                <div class="form-group">
+                    <label style="font-weight:700;">Redacta tu Respuesta:</label>
+                    <textarea id="mensajeAdmin" class="form-control" rows="4" placeholder="Escribe aquí tu respuesta para el estudiante..."></textarea>
+                </div>
+                <div class="botones-accion">
+                    <button class="btn-primary" onclick="enviarGestion(${solicitudId}, 'aprobar')" style="background:var(--primary); width:100%;">
+                        <i class="fas fa-reply"></i> Enviar Respuesta
+                    </button>
+                </div>
+            `;
+        }
+
+        document.getElementById('modalSolicitudContenido').innerHTML = html;
+        document.getElementById('modalResponderSolicitud').classList.add('active');
+    }
 
 // ==========================================
 // 5. GESTIÓN DE SOLICITUDES (BLOQUE UNIFICADO Y CORREGIDO)

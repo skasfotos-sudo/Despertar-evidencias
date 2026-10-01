@@ -2372,18 +2372,37 @@ async def gestionar_solicitud(
 
         elif tipo == 'RECUPERACION_CONTRASENA':
             if accion == 'APROBADA':
+                if not mensaje or len(mensaje) < 6:
+                    return JSONResponse({"status": "error", "mensaje": "La nueva contraseña debe tener al menos 6 caracteres."})
+                
+                # 1. Encriptar y actualizar la contraseña en la Base de Datos
+                nuevo_hash = get_password_hash(mensaje)
+                c.execute("UPDATE Usuarios SET Password = %s WHERE CI = %s", (nuevo_hash, ci))
+                print(f"✅ Contraseña actualizada en BD para {ci}")
+                
+                # 2. Enviar Correo al estudiante
                 asunto = "🔐 Recuperación de Acceso - U.E. Despertar"
                 cuerpo = f"""
-                <h3>Hola, hemos procesado tu solicitud.</h3>
-                <p>El administrador ha revisado tu caso.</p>
-                <p><strong>Tu contraseña/respuesta es:</strong></p>
-                <h2 style="color:#6A0DAD;">{mensaje}</h2>
-                <hr>
-                <p>Intenta ingresar nuevamente.</p>
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
+                    <div style="background-color: #6A0DAD; padding: 20px; text-align: center;">
+                        <h2 style="color: white; margin: 0;">Restablecimiento de Contraseña</h2>
+                    </div>
+                    <div style="padding: 30px; background-color: #f9f9f9; text-align: center;">
+                        <p style="font-size: 16px; color: #333;">Hola,</p>
+                        <p style="font-size: 16px; color: #333;">El administrador ha procesado tu solicitud de acceso.</p>
+                        <div style="background-color: white; padding: 15px; border-radius: 8px; border: 2px dashed #2E8B57; margin: 25px 0;">
+                            <p style="font-size: 14px; color: #666; margin-bottom: 5px;">Tu nueva contraseña temporal es:</p>
+                            <h1 style="color: #6A0DAD; font-family: monospace; letter-spacing: 2px; margin: 0;">{mensaje}</h1>
+                        </div>
+                        <p style="font-size: 14px; color: #888;">Por seguridad, te recomendamos cambiarla desde el panel una vez que inicies sesión.</p>
+                    </div>
+                </div>
                 """
                 if email_usuario and '@' in email_usuario:
-                    print(f"📧 Enviando correo a {email_usuario} con la clave: {mensaje}")
-                    background_tasks.add_task(enviar_correo_real, email_usuario, asunto, cuerpo)
+                    background_tasks.add_task(enviar_correo_real, email_usuario, asunto, cuerpo, True) # True = formato HTML
+                
+                # Limpiamos el mensaje para el registro interno (auditoría)
+                mensaje = "Contraseña restablecida y enviada por correo."
 
         # ---------------------------------------------------------
         # 3. ACTUALIZAR ESTADO DE LA SOLICITUD (SIEMPRE)
