@@ -2487,8 +2487,7 @@ body.dark-mode .swal2-textarea {
         });
     }
 }
-
-    async function eliminarUsuario(cedula) {
+async function eliminarUsuario(cedula) {
         const usuario = usuarios.find(u => u.cedula === cedula);
         if (!usuario) return;
         
