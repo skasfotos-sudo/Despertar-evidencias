@@ -2333,11 +2333,6 @@ body.dark-mode .swal2-textarea {
             const estadoTexto = esActivo ? 'Activo' : 'Inactivo';
             const claseEstado = esActivo ? 'badge-resolved' : 'badge-rejected';
 
-            // SEGURIDAD: Si es admin, no renderizamos el botón de eliminar
-            const botonEliminar = esAdmin 
-                ? '' 
-                : `<button class="action-btn btn-delete" onclick="eliminarUsuario('${u.cedula}')" title="Eliminar Usuario" style="width: 36px; height: 36px; font-size: 1rem;"><i class="fas fa-trash-alt"></i></button>`;
-
             return `
                 <tr id="user-row-${u.cedula}" style="transition: background 0.2s;">
                     <td data-label="Usuario" style="padding: 16px 25px;">
@@ -2365,7 +2360,6 @@ body.dark-mode .swal2-textarea {
                                 `<button class="action-btn btn-deactivate" onclick="cambiarEstadoUsuario('${u.cedula}', 0)" title="Desactivar" style="width: 36px; height: 36px; font-size: 1rem;"><i class="fas fa-user-slash"></i></button>` : 
                                 `<button class="action-btn btn-activate" onclick="cambiarEstadoUsuario('${u.cedula}', 1)" title="Activar" style="width: 36px; height: 36px; font-size: 1rem;"><i class="fas fa-user-check"></i></button>`
                             }
-                            ${botonEliminar}
                         </div>
                     </td>
                 </tr>
@@ -2381,60 +2375,6 @@ body.dark-mode .swal2-textarea {
             const texto = fila.textContent.toLowerCase();
             fila.style.display = texto.includes(busqueda) ? '' : 'none';
         });
-    }
-
-    async function eliminarUsuario(cedula) {
-        const usuario = usuarios.find(u => u.cedula === cedula);
-        if (!usuario) return;
-        
-        const confirmacion = await Swal.fire({
-            title: '¿Eliminar usuario?',
-            text: `Esta acción eliminará permanentemente a ${usuario.nombre} ${usuario.apellido} y todas sus evidencias.`,
-            icon: 'error',
-            showCancelButton: true,
-            confirmButtonColor: '#d32f2f',
-            cancelButtonColor: '#5f6368',
-            confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar'
-        });
-        
-        if (!confirmacion.isConfirmed) return;
-
-    // OBTENER LA CÉDULA DEL ADMIN LOGUEADO
-        const miCedula = localStorage.getItem('usuario_cedula'); 
-
-        try {
-        // CREAMOS UN FORM DATA PARA ENVIAR QUIÉN BORRA
-            const formData = new FormData();
-            formData.append('admin_cedula', miCedula); // <--- ESTO FALTABA
-
-        // Nota: Al usar body en DELETE, asegúrate que tu servidor/proxy lo permita.
-        // Si falla, cambiaremos a POST en el futuro, pero intenta así primero.
-            const respuesta = await fetch(`${API_URL}/eliminar_usuario/${cedula}`, {
-            method: 'DELETE',
-            body: formData  // <--- ENVIAMOS LOS DATOS
-            });
-            
-            if (respuesta.ok) {
-                // Eliminar del DOM inmediatamente
-                const fila = document.getElementById(`user-row-${cedula}`);
-                if (fila) {
-                    fila.remove();
-                }
-                
-                // Eliminar del array en memoria
-                const usuarioIndex = usuarios.findIndex(u => u.cedula === cedula);
-                if (usuarioIndex !== -1) {
-                    usuarios.splice(usuarioIndex, 1);
-                }
-                
-                mostrarMensaje('Usuario eliminado correctamente', 'success');
-            } else {
-                mostrarMensaje('Error al eliminar usuario', 'error');
-            }
-        } catch (error) {
-            mostrarMensaje('Error de conexión', 'error');
-        }
     }
 
     async function cambiarEstadoUsuario(cedula, nuevoEstado) {
