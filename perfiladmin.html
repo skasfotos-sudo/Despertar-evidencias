@@ -2760,16 +2760,28 @@ async function enviarGestion(id, accion) {
     // 1. Obtener ID válido
     const solicitudId = id || solicitudActualId;
     
-    // 2. Obtener mensaje
+    // 2. Obtener mensaje y limpiarlo de espacios vacíos
     const mensajeInput = document.getElementById('mensajeAdmin');
-    const mensaje = mensajeInput ? mensajeInput.value : '';
+    const mensaje = mensajeInput ? mensajeInput.value.trim() : '';
 
     if (!solicitudId) {
         Swal.fire('Error', 'No se encontró el ID de la solicitud', 'error');
         return;
     }
 
-    // 3. Confirmación si es rechazo
+    // --- REGLA DE AUDITORÍA: MENSAJE OBLIGATORIO ---
+    if (mensaje === '') {
+        Swal.fire({
+            title: 'Justificación Obligatoria',
+            text: 'Debes escribir una respuesta, comentario o motivo antes de proceder. Todas las acciones administrativas quedan registradas.',
+            icon: 'warning',
+            confirmButtonColor: '#f9a825',
+            confirmButtonText: 'Entendido'
+        });
+        return; // Cortamos la ejecución aquí, no se envía nada a Python
+    }
+
+    // 3. Confirmación si es rechazo (Acción destructiva)
     if (accion === 'rechazar') {
         const confirmacion = await Swal.fire({
             title: '¿Estás seguro?',
@@ -2777,7 +2789,7 @@ async function enviarGestion(id, accion) {
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d32f2f',
-            confirmButtonText: 'Sí, rechazar',
+            confirmButtonText: 'Sí, rechazar y borrar',
             cancelButtonText: 'Cancelar'
         });
         if (!confirmacion.isConfirmed) return;
@@ -2786,19 +2798,18 @@ async function enviarGestion(id, accion) {
     try {
         Swal.fire({ title: 'Procesando...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
 
-        // 4. PREPARAR DATOS COMO FORMULARIO (NO JSON)
-        // Esto es vital porque tu Python usa = Form(...)
+        // 4. Preparar datos para el servidor
         const formData = new FormData();
         formData.append('id_solicitud', solicitudId);
-        formData.append('accion', accion === 'aprobar' ? 'APROBADA' : 'RECHAZADA'); // Normalizamos a mayúsculas
+        formData.append('accion', accion === 'aprobar' ? 'APROBADA' : 'RECHAZADA');
         formData.append('mensaje', mensaje);
-        // Recupera el nombre real guardado al iniciar sesión, o usa 'Administrador' si no hay nada
+        
         const nombreAdmin = localStorage.getItem('usuario_nombre') || 'Administrador';
-formData.append('id_admin', nombreAdmin);  // <--- CORREGIDO
+        formData.append('id_admin', nombreAdmin); 
 
         const respuesta = await fetch(`${API_URL}/gestionar_solicitud`, {
             method: 'POST',
-            body: formData // ✅ Enviamos formData directamente
+            body: formData 
         });
 
         const data = await respuesta.json();
