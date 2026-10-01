@@ -2383,6 +2383,60 @@ body.dark-mode .swal2-textarea {
         });
     }
 
+    async function eliminarUsuario(cedula) {
+        const usuario = usuarios.find(u => u.cedula === cedula);
+        if (!usuario) return;
+        
+        const confirmacion = await Swal.fire({
+            title: '¿Eliminar usuario?',
+            text: `Esta acción eliminará permanentemente a ${usuario.nombre} ${usuario.apellido} y todas sus evidencias.`,
+            icon: 'error',
+            showCancelButton: true,
+            confirmButtonColor: '#d32f2f',
+            cancelButtonColor: '#5f6368',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        });
+        
+        if (!confirmacion.isConfirmed) return;
+
+    // OBTENER LA CÉDULA DEL ADMIN LOGUEADO
+        const miCedula = localStorage.getItem('usuario_cedula'); 
+
+        try {
+        // CREAMOS UN FORM DATA PARA ENVIAR QUIÉN BORRA
+            const formData = new FormData();
+            formData.append('admin_cedula', miCedula); // <--- ESTO FALTABA
+
+        // Nota: Al usar body en DELETE, asegúrate que tu servidor/proxy lo permita.
+        // Si falla, cambiaremos a POST en el futuro, pero intenta así primero.
+            const respuesta = await fetch(`${API_URL}/eliminar_usuario/${cedula}`, {
+            method: 'DELETE',
+            body: formData  // <--- ENVIAMOS LOS DATOS
+            });
+            
+            if (respuesta.ok) {
+                // Eliminar del DOM inmediatamente
+                const fila = document.getElementById(`user-row-${cedula}`);
+                if (fila) {
+                    fila.remove();
+                }
+                
+                // Eliminar del array en memoria
+                const usuarioIndex = usuarios.findIndex(u => u.cedula === cedula);
+                if (usuarioIndex !== -1) {
+                    usuarios.splice(usuarioIndex, 1);
+                }
+                
+                mostrarMensaje('Usuario eliminado correctamente', 'success');
+            } else {
+                mostrarMensaje('Error al eliminar usuario', 'error');
+            }
+        } catch (error) {
+            mostrarMensaje('Error de conexión', 'error');
+        }
+    }
+
     async function cambiarEstadoUsuario(cedula, nuevoEstado) {
     const usuario = usuarios.find(u => u.cedula === cedula);
     if (!usuario) return;
@@ -2487,59 +2541,8 @@ body.dark-mode .swal2-textarea {
         });
     }
 }
-async function eliminarUsuario(cedula) {
-        const usuario = usuarios.find(u => u.cedula === cedula);
-        if (!usuario) return;
-        
-        const confirmacion = await Swal.fire({
-            title: '¿Eliminar usuario?',
-            text: `Esta acción eliminará permanentemente a ${usuario.nombre} ${usuario.apellido} y todas sus evidencias.`,
-            icon: 'error',
-            showCancelButton: true,
-            confirmButtonColor: '#d32f2f',
-            cancelButtonColor: '#5f6368',
-            confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar'
-        });
-        
-        if (!confirmacion.isConfirmed) return;
 
-    // OBTENER LA CÉDULA DEL ADMIN LOGUEADO
-        const miCedula = localStorage.getItem('usuario_cedula'); 
 
-        try {
-        // CREAMOS UN FORM DATA PARA ENVIAR QUIÉN BORRA
-            const formData = new FormData();
-            formData.append('admin_cedula', miCedula); // <--- ESTO FALTABA
-
-        // Nota: Al usar body en DELETE, asegúrate que tu servidor/proxy lo permita.
-        // Si falla, cambiaremos a POST en el futuro, pero intenta así primero.
-            const respuesta = await fetch(`${API_URL}/eliminar_usuario/${cedula}`, {
-            method: 'DELETE',
-            body: formData  // <--- ENVIAMOS LOS DATOS
-            });
-            
-            if (respuesta.ok) {
-                // Eliminar del DOM inmediatamente
-                const fila = document.getElementById(`user-row-${cedula}`);
-                if (fila) {
-                    fila.remove();
-                }
-                
-                // Eliminar del array en memoria
-                const usuarioIndex = usuarios.findIndex(u => u.cedula === cedula);
-                if (usuarioIndex !== -1) {
-                    usuarios.splice(usuarioIndex, 1);
-                }
-                
-                mostrarMensaje('Usuario eliminado correctamente', 'success');
-            } else {
-                mostrarMensaje('Error al eliminar usuario', 'error');
-            }
-        } catch (error) {
-            mostrarMensaje('Error de conexión', 'error');
-        }
-    }
 
     // ==========================================
     // 4. SISTEMA DE SOLICITUDES - COMPLETAMENTE REESCRITO
