@@ -778,130 +778,91 @@ body.dark-mode .swal2-textarea {
 }
 
 /* ==========================================================================
-   TABLA DE USUARIOS - VERSIÓN MÓVIL OPTIMIZADA (DESDE CERO)
-   ========================================================================== */
-@media (max-width: 992px) {
-    /* Contenedor con scroll horizontal */
-    .table-responsive .modern-table-wrapper {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
+           TABLA DE USUARIOS Y HEADER - VERSIÓN MÓVIL (TARJETAS INTELIGENTES)
+           ========================================================================== */
+        @media (max-width: 992px) {
+            /* 1. Ajuste del Header de Usuarios para que los botones no se aplasten */
+            #panel-usuarios > div:first-child {
+                flex-direction: column;
+                align-items: flex-start !important;
+            }
+            #panel-usuarios > div:first-child > div {
+                width: 100%;
+                display: grid !important;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+            #panel-usuarios .btn-primary {
+                width: 100%;
+                justify-content: center;
+                font-size: 0.85rem;
+                padding: 10px;
+            }
 
-    /* La tabla mantiene su estructura */
-    .table-responsive .modern-table {
-        width: 100%;
-        border-collapse: collapse;
-        table-layout: fixed; /* Fija los anchos de columna */
-    }
+            /* 2. Destruir la estructura clásica de la tabla */
+            .table-responsive {
+                background: transparent;
+                border: none;
+                box-shadow: none;
+            }
+            .modern-table-wrapper {
+                max-height: none; /* Quitar el scroll vertical interno */
+                overflow: visible;
+            }
+            .modern-table thead {
+                display: none; /* Ocultar los títulos superiores */
+            }
+            .modern-table, .modern-table tbody, .modern-table tr, .modern-table td {
+                display: block;
+                width: 100%;
+            }
 
-    /* Cabecera fija con fondo morado */
-    .table-responsive .modern-table thead {
-        display: table-header-group;
-        position: sticky;
-        top: 0;
-        z-index: 20;
-        background: #6A0DAD; /* Color fijo para evitar problemas */
-    }
+            /* 3. Convertir cada fila en una Tarjeta (Card) */
+            .modern-table tr {
+                background: var(--bg-card);
+                margin-bottom: 20px;
+                border-radius: 12px;
+                border: 1px solid var(--border-color);
+                box-shadow: var(--shadow-soft);
+                overflow: hidden;
+            }
+            .modern-table td {
+                padding: 14px 20px !important;
+                text-align: right !important; /* Dato a la derecha */
+                border-bottom: 1px solid var(--border-input);
+                display: flex !important;
+                justify-content: space-between;
+                align-items: center;
+                gap: 15px;
+            }
+            
+            /* 4. Resaltar la zona de botones de acción al final de la tarjeta */
+            .modern-table td:last-child {
+                border-bottom: none;
+                background: var(--bg-input); 
+                justify-content: flex-end; 
+            }
 
-    .table-responsive .modern-table thead tr {
-        background: #6A0DAD;
-    }
+            /* 5. Inyectar el título de la columna dinámicamente a la izquierda */
+            .modern-table td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: var(--text-sec);
+                font-size: 0.8rem;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
 
-    .table-responsive .modern-table thead th {
-        background: #6A0DAD;
-        color: #fff;
-        position: sticky;
-        top: 0;
-        z-index: 20;
-        padding: 14px 18px;
-        text-align: left;
-        font-weight: 700;
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border-bottom: 2px solid #4a0072;
-        white-space: nowrap;
-    }
-
-    /* Celdas de datos */
-    .table-responsive .modern-table tbody td {
-        padding: 14px 18px;
-        border-bottom: 1px solid var(--border-color);
-        background-color: var(--bg-card);
-        font-size: 0.85rem;
-        vertical-align: middle;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    /* Eliminar cualquier pseudo-elemento que pueda aparecer (como etiquetas) */
-    .table-responsive .modern-table td::before {
-        content: none !important;
-        display: none !important;
-    }
-
-    /* --- Distribución de columnas (ajusta los min-width según necesites) --- */
-    .table-responsive .modern-table th:nth-child(1),
-    .table-responsive .modern-table td:nth-child(1) {
-        width: 28%;
-        min-width: 150px; /* Usuario */
-    }
-    .table-responsive .modern-table th:nth-child(2),
-    .table-responsive .modern-table td:nth-child(2) {
-        width: 18%;
-        min-width: 100px; /* Cédula */
-    }
-    .table-responsive .modern-table th:nth-child(3),
-    .table-responsive .modern-table td:nth-child(3) {
-        width: 15%;
-        min-width: 90px; /* Rol */
-    }
-    .table-responsive .modern-table th:nth-child(4),
-    .table-responsive .modern-table td:nth-child(4) {
-        width: 15%;
-        min-width: 85px; /* Estado */
-    }
-    .table-responsive .modern-table th:nth-child(5),
-    .table-responsive .modern-table td:nth-child(5) {
-        width: 24%;
-        min-width: 140px; /* Acciones */
-    }
-
-    /* --- Botones de acción (más compactos y con iconos) --- */
-    .table-responsive .action-btn {
-        width: 34px !important;
-        height: 34px !important;
-        padding: 0 !important;
-        font-size: 0.8rem;
-        margin-right: 6px;
-        border-radius: 6px;
-        display: inline-flex !important;
-        align-items: center;
-        justify-content: center;
-    }
-    .table-responsive .action-btn::after {
-        content: none !important; /* Oculta cualquier texto extra */
-    }
-
-    /* --- Imagen de perfil --- */
-    .table-responsive .modern-table td img {
-        width: 32px;
-        height: 32px;
-        margin-right: 10px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 2px solid var(--border-color);
-        vertical-align: middle;
-    }
-
-    /* --- Badges de estado más pequeños --- */
-    .table-responsive .request-badge {
-        font-size: 0.7rem;
-        padding: 3px 10px;
-    }
-}
-
+            /* Quitar la imagen del perfil en móvil para ahorrar espacio (opcional, o hacerla más pequeña) */
+            .modern-table td img {
+                width: 35px;
+                height: 35px;
+                margin-right: 0;
+            }
+            .modern-table td > div {
+                text-align: right;
+            }
+        }
 /* ==========================================================================
            OPTIMIZACIÓN VISOR DE DOCUMENTOS Y MEDIOS (USABILIDAD CORREGIDA)
            ========================================================================== */
@@ -1142,73 +1103,85 @@ body.dark-mode .swal2-textarea {
 
         <!-- PANEL: USUARIOS -->
         <section id="panel-usuarios" class="panel-section">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
-                <h2 style="color:var(--primary); margin:0;">Gestión de Usuarios</h2>
-                <div style="display:flex; gap:10px;">
-                    <button class="btn-primary" onclick="abrirModalAgregarRef()">
+            
+            <!-- HEADER DE SECCIÓN ESPACIOSO -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; flex-wrap:wrap; gap:15px; border-bottom: 2px solid var(--border-color); padding-bottom: 15px;">
+                <div>
+                    <h2 style="color:var(--primary); margin:0; font-size: 1.8rem;">Gestión de Usuarios</h2>
+                    <p style="color:var(--text-sec); margin:5px 0 0 0; font-size:0.95rem;">Administra perfiles, asigna roles y gestiona el acceso al sistema.</p>
+                </div>
+                <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                    <button class="btn-primary" onclick="toggleFormularioRegistro()" style="background:var(--secondary); box-shadow: 0 4px 15px rgba(46, 139, 87, 0.3);">
+                        <i class="fas fa-user-plus"></i> Nuevo Usuario
+                    </button>
+                    <button class="btn-primary" onclick="abrirModalAgregarRef()" style="background:var(--primary);">
                         <i class="fas fa-camera"></i> Agregar Foto Ref.
                     </button>
                 </div>
             </div>
 
-            <!-- FORMULARIO REGISTRO -->
-            <div class="storage-calc" style="margin-bottom:30px;">
-                <h4 style="margin-bottom:15px; color:var(--primary);">Registrar Nuevo Usuario</h4>
-                <form id="formRegistro">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Nombre *</label>
-                            <input type="text" name="nombre" class="form-control" required>
+            <!-- CONTENEDOR DESPLEGABLE DEL FORMULARIO (Oculto por defecto) -->
+            <div id="contenedorFormRegistro" style="display:none; animation: fadeIn 0.3s ease;">
+                <div class="storage-calc" style="margin-bottom:30px; border-top: 4px solid var(--secondary); background: var(--bg-card); position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
+                    <button onclick="toggleFormularioRegistro()" style="position:absolute; top:15px; right:15px; background:transparent; border:none; font-size:1.5rem; color:var(--text-muted); cursor:pointer; transition:0.2s;" onmouseover="this.style.color='var(--error)'" onmouseout="this.style.color='var(--text-muted)'">&times;</button>
+                    <h3 style="margin-bottom:20px; color:var(--text-main); font-size: 1.3rem;"><i class="fas fa-user-circle" style="color:var(--secondary); margin-right:8px;"></i> Formulario de Registro</h3>
+                    
+                    <form id="formRegistro">
+                        <div class="form-grid" style="gap: 20px;">
+                            <div class="form-group">
+                                <label>Nombre *</label>
+                                <input type="text" name="nombre" class="form-control" placeholder="Ej: Juan" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Apellido *</label>
+                                <input type="text" name="apellido" class="form-control" placeholder="Ej: Pérez" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Cédula * (10 dígitos)</label>
+                                <input type="text" name="cedula" class="form-control" pattern="\d{10}" title="10 dígitos numéricos" placeholder="Ej: 1751054253" required maxlength="10">
+                            </div>
+                            <div class="form-group">
+                                <label>Contraseña * (Mín. 6 caracteres)</label>
+                                <input type="password" name="contrasena" class="form-control" placeholder="••••••••" minlength="6" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Rol de Usuario *</label>
+                                <select name="tipo_usuario" class="form-control" style="cursor:pointer;">
+                                    <option value="1">Estudiante (Acceso Restringido)</option>
+                                    <option value="0">Administrador (Acceso Total)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Foto de Perfil * (JPG/PNG)</label>
+                                <input type="file" name="foto" class="form-control" accept="image/*" required style="padding: 9px; cursor:pointer;">
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label>Apellido *</label>
-                            <input type="text" name="apellido" class="form-control" required>
+                        <div style="display:flex; justify-content:flex-end; margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                            <button type="submit" class="btn-primary" style="background:var(--secondary); padding: 12px 30px; font-size: 1.05rem;">
+                                <i class="fas fa-save"></i> Crear Usuario
+                            </button>
                         </div>
-                        <div class="form-group">
-                            <label>Cédula * (10 dígitos)</label>
-                            <input type="text" name="cedula" class="form-control" pattern="\d{10}" 
-                                   title="10 dígitos numéricos" required maxlength="10">
-                        </div>
-                        <div class="form-group">
-                            <label>Contraseña * (Mín. 6 caracteres)</label>
-                            <input type="password" name="contrasena" class="form-control" 
-                                   minlength="6" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Rol *</label>
-                            <select name="tipo_usuario" class="form-control">
-                                <option value="1">Estudiante</option>
-                                <option value="0">Administrador</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Foto de Perfil *</label>
-                            <input type="file" name="foto" class="form-control" accept="image/*" required>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn-primary" style="margin-top:15px;">
-                        <i class="fas fa-user-plus"></i> Guardar Usuario
-                    </button>
-                </form>
+                    </form>
+                </div>
             </div>
 
-            <!-- BUSCADOR CERCANO A LA TABLA -->
-            <div style="margin-bottom:15px;">
-                <input type="text" id="searchUser" placeholder="Buscar por cédula o nombre..." 
-                       class="form-control" style="max-width:400px;" onkeyup="filterUsers()">
+            <!-- BARRA DE BÚSQUEDA ELEGANTE Y PROTAGONISTA -->
+            <div style="background: var(--bg-card); padding: 18px 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: var(--shadow-soft); border: 1px solid var(--border-color); display: flex; align-items: center; gap: 15px; transition: 0.3s;" id="searchContainer">
+                <i class="fas fa-search" style="color: var(--primary); font-size: 1.3rem;"></i>
+                <input type="text" id="searchUser" placeholder="Buscar usuario por cédula, nombre o apellido..." class="form-control" style="border: none; background: transparent; box-shadow: none; padding: 0; font-size: 1.1rem; flex: 1;" onkeyup="filterUsers()" onfocus="document.getElementById('searchContainer').style.borderColor='var(--primary)'" onblur="document.getElementById('searchContainer').style.borderColor='var(--border-color)'">
             </div>
 
-            <!-- TABLA USUARIOS MEJORADA CON RESPONSIVE -->
-            <div class="table-responsive">
-                <div class="modern-table-wrapper">
-                    <table class="modern-table">
-                        <thead>
+            <!-- TABLA USUARIOS MEJORADA (MÁS ESPACIO Y LIMPIEZA) -->
+            <div class="table-responsive" style="box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-radius: 16px; border: 1px solid var(--border-color);">
+                <div class="modern-table-wrapper" style="max-height: 65vh;">
+                    <table class="modern-table" style="width: 100%;">
+                        <thead style="position: sticky; top: 0; z-index: 10; background: var(--primary); box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
                             <tr>
-                                <th>Usuario</th>
-                                <th>Cédula</th>
-                                <th>Rol</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                                <th style="padding: 18px 25px; font-size: 0.9rem; font-weight: 600; letter-spacing: 0.5px; border-bottom: none;">Usuario</th>
+                                <th style="padding: 18px 25px; font-size: 0.9rem; font-weight: 600; letter-spacing: 0.5px; border-bottom: none;">Cédula</th>
+                                <th style="padding: 18px 25px; font-size: 0.9rem; font-weight: 600; letter-spacing: 0.5px; border-bottom: none;">Rol</th>
+                                <th style="padding: 18px 25px; font-size: 0.9rem; font-weight: 600; letter-spacing: 0.5px; border-bottom: none;">Estado</th>
+                                <th style="padding: 18px 25px; font-size: 0.9rem; font-weight: 600; letter-spacing: 0.5px; border-bottom: none; text-align: right;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="userTableBody">
@@ -1224,15 +1197,9 @@ body.dark-mode .swal2-textarea {
                     <i class="fas fa-ellipsis-v"></i> Acciones
                 </button>
                 <div class="mobile-actions-menu">
-                    <div class="mobile-action-item" onclick="navTo('dashboard')">
-                        <i class="fas fa-chart-line"></i> Dashboard
-                    </div>
-                    <div class="mobile-action-item" onclick="navTo('solicitudes')">
-                        <i class="fas fa-inbox"></i> Solicitudes
-                    </div>
-                    <div class="mobile-action-item" onclick="navTo('seguridad')">
-                        <i class="fas fa-shield-alt"></i> Seguridad
-                    </div>
+                    <div class="mobile-action-item" onclick="navTo('dashboard')"><i class="fas fa-chart-line"></i> Dashboard</div>
+                    <div class="mobile-action-item" onclick="navTo('solicitudes')"><i class="fas fa-inbox"></i> Solicitudes</div>
+                    <div class="mobile-action-item" onclick="navTo('seguridad')"><i class="fas fa-shield-alt"></i> Seguridad</div>
                 </div>
             </div>
         </section>
@@ -1621,28 +1588,43 @@ body.dark-mode .swal2-textarea {
 
     <!-- MODALES -->
     <div class="modal-overlay" id="modalAgregarRef">
-        <div class="modal-card">
+        <div class="modal-card" style="padding: 40px; border-top: 5px solid var(--primary); box-shadow: 0 20px 50px rgba(0,0,0,0.2);">
             <button onclick="cerrarModal('modalAgregarRef')" 
-                    style="position:absolute; top:15px; right:15px; border:none; background:none; 
-                           font-size:1.5rem; cursor:pointer; color:var(--text-sec);">
+                    style="position:absolute; top:20px; right:20px; border:none; background:var(--bg-input); width:35px; height:35px; border-radius:50%; font-size:1.2rem; cursor:pointer; color:var(--text-sec); transition:all 0.2s;" onmouseover="this.style.background='var(--error)'; this.style.color='white';" onmouseout="this.style.background='var(--bg-input)'; this.style.color='var(--text-sec)';">
                 &times;
             </button>
-            <h3 style="color:var(--primary); margin-bottom:15px;">
-                <i class="fas fa-camera"></i> Agregar Foto de Referencia
-            </h3>
+            
+            <div style="text-align: center; margin-bottom: 25px;">
+                <div style="width: 65px; height: 65px; background: var(--primary-soft); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 15px auto;">
+                    <i class="fas fa-camera-retro"></i>
+                </div>
+                <h3 style="color:var(--text-main); margin:0; font-size: 1.5rem; font-weight: 700;">Foto de Referencia</h3>
+                <p style="color:var(--text-sec); font-size: 0.9rem; margin-top: 5px;">Alimenta la IA con el rostro del estudiante.</p>
+            </div>
+
             <form id="formAgregarRef" onsubmit="agregarReferencia(event)">
-                <div class="form-group">
-                    <label>Seleccionar Usuario *</label>
-                    <select id="selectUsuarioRef" class="form-control" required>
-                        <option value="">-- Seleccionar --</option>
+                <div class="form-group" style="margin-bottom: 25px;">
+                    <label style="color:var(--text-main); font-weight:600; margin-bottom:8px; display:block;">1. Selecciona al Estudiante *</label>
+                    <select id="selectUsuarioRef" class="form-control" required style="padding: 14px; font-size: 1rem; border: 2px solid var(--border-color); border-radius: 10px; cursor: pointer; background-color: var(--bg-input);">
+                        <option value="">-- Buscar estudiante... --</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Foto de Referencia *</label>
-                    <input type="file" id="fotoRef" class="form-control" accept="image/*" required>
+                
+                <div class="form-group" style="margin-bottom: 35px;">
+                    <label style="color:var(--text-main); font-weight:600; margin-bottom:8px; display:block;">2. Sube la Fotografía *</label>
+                    
+                    <!-- ZONA DE CARGA PERSONALIZADA -->
+                    <label for="fotoRef" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 35px 20px; background: var(--bg-input); border: 2px dashed var(--primary-light); border-radius: 12px; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='var(--primary-soft)'" onmouseout="this.style.background='var(--bg-input)'">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color: var(--primary); margin-bottom: 15px;"></i>
+                        <span id="fotoRefName" style="color: var(--text-main); font-weight: 600; font-size: 1.05rem;">Haz clic para buscar la imagen</span>
+                        <small style="color: var(--text-sec); margin-top: 5px;">Formatos: JPG, PNG (Max 5MB)</small>
+                    </label>
+                    <!-- EL INPUT REAL ESTÁ OCULTO -->
+                    <input type="file" id="fotoRef" accept="image/*" style="display: none;" onchange="document.getElementById('fotoRefName').innerText = this.files[0] ? this.files[0].name : 'Haz clic para buscar la imagen'; document.getElementById('fotoRefName').style.color = 'var(--primary)';">
                 </div>
-                <button type="submit" class="btn-primary" style="width:100%;">
-                    <i class="fas fa-save"></i> Agregar Referencia
+
+                <button type="submit" class="btn-primary" style="width:100%; padding: 16px; font-size: 1.1rem; border-radius: 12px; box-shadow: 0 8px 20px rgba(106, 13, 173, 0.3); justify-content: center;">
+                    <i class="fas fa-upload" style="margin-right: 8px;"></i> Subir y Entrenar IA
                 </button>
             </form>
         </div>
@@ -2268,6 +2250,16 @@ body.dark-mode .swal2-textarea {
     // ==========================================
     // 3. GESTIÓN DE USUARIOS - CORREGIDA
     // ==========================================
+    function toggleFormularioRegistro() {
+        const form = document.getElementById('contenedorFormRegistro');
+        if (form.style.display === 'none') {
+            form.style.display = 'block';
+            // Hacer scroll suave hacia el formulario
+            form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+            form.style.display = 'none';
+        }
+    }
     function configurarFormularios() {
         // Formulario registro usuario
         document.getElementById('formRegistro').addEventListener('submit', async function(e) {
@@ -2329,47 +2321,57 @@ body.dark-mode .swal2-textarea {
     }
 
     function renderizarUsuarios() {
-    const tbody = document.getElementById('userTableBody');
-    if(!tbody) return;
+        const tbody = document.getElementById('userTableBody');
+        if(!tbody) return;
 
-    tbody.innerHTML = usuarios.map(u => {
-        const esAdmin = parseInt(u.tipo) === 0;
-        const rol = esAdmin ? 'Administrador' : 'Estudiante';
-        const claseRol = esAdmin ? 'tipo-contrasena' : 'tipo-subida';
-        
-        const esActivo = parseInt(u.activo) === 1;
-        const estadoTexto = esActivo ? 'Activo' : 'Inactivo';
-        const claseEstado = esActivo ? 'badge-resolved' : 'badge-rejected';
+        tbody.innerHTML = usuarios.map(u => {
+            const esAdmin = parseInt(u.tipo) === 0;
+            const rol = esAdmin ? 'Administrador' : 'Estudiante';
+            const claseRol = esAdmin ? 'tipo-contrasena' : 'tipo-subida';
+            
+            const esActivo = parseInt(u.activo) === 1;
+            const estadoTexto = esActivo ? 'Activo' : 'Inactivo';
+            const claseEstado = esActivo ? 'badge-resolved' : 'badge-rejected';
 
-        // AQUÍ ESTÁ EL ARREGLO: Agregamos data-label a cada TD
-        return `
-            <tr id="user-row-${u.cedula}">
-                <td data-label="Usuario">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <img src="${u.foto || 'Img/Logo_pestaña.webp'}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
-                        <div>
-                            <strong>${u.nombre} ${u.apellido}</strong><br>
-                            <small style="color:#888;">${u.contrasena || '***'}</small>
+            // SEGURIDAD: Si es admin, no renderizamos el botón de eliminar
+            const botonEliminar = esAdmin 
+                ? '' 
+                : `<button class="action-btn btn-delete" onclick="eliminarUsuario('${u.cedula}')" title="Eliminar Usuario" style="width: 36px; height: 36px; font-size: 1rem;"><i class="fas fa-trash-alt"></i></button>`;
+
+            return `
+                <tr id="user-row-${u.cedula}" style="transition: background 0.2s;">
+                    <td data-label="Usuario" style="padding: 16px 25px;">
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <img src="${u.foto || 'Img/Logo_pestaña.webp'}" style="width:45px; height:45px; border-radius:50%; object-fit:cover; border: 2px solid var(--border-color); box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
+                            <div>
+                                <strong style="font-size: 1.05rem; color: var(--text-main);">${u.nombre} ${u.apellido}</strong><br>
+                                <small style="color:var(--text-sec); font-family: monospace; background: var(--bg-input); padding: 3px 6px; border-radius: 4px;">${u.contrasena || '***'}</small>
+                            </div>
                         </div>
-                    </div>
-                </td>
-                <td data-label="Cédula">${u.cedula}</td>
-                <td data-label="Rol"><span class="solicitud-tipo ${claseRol}">${rol}</span></td>
-                <td data-label="Estado"><span id="user-status-${u.cedula}" class="request-badge ${claseEstado}">${estadoTexto}</span></td>
-                <td data-label="Acciones">
-                    <div style="display:flex; gap:5px; width:100%; justify-content:flex-end;">
-                        <button class="action-btn btn-view" onclick="verUsuario('${u.cedula}')" title="Ver Detalles"><i class="fas fa-eye"></i></button>
-                        ${esActivo ? 
-                            `<button class="action-btn btn-deactivate" onclick="cambiarEstadoUsuario('${u.cedula}', 0)" title="Desactivar"><i class="fas fa-user-slash"></i></button>` : 
-                            `<button class="action-btn btn-activate" onclick="cambiarEstadoUsuario('${u.cedula}', 1)" title="Activar"><i class="fas fa-user-check"></i></button>`
-                        }
-
-                    </div>
-                </td>
-            </tr>
-        `;
-    }).join('');
-}
+                    </td>
+                    <td data-label="Cédula" style="padding: 16px 25px; font-weight: 500; color: var(--text-sec); font-size: 0.95rem;">
+                        ${u.cedula}
+                    </td>
+                    <td data-label="Rol" style="padding: 16px 25px;">
+                        <span class="solicitud-tipo ${claseRol}" style="padding: 6px 12px;">${rol}</span>
+                    </td>
+                    <td data-label="Estado" style="padding: 16px 25px;">
+                        <span id="user-status-${u.cedula}" class="request-badge ${claseEstado}" style="padding: 6px 12px; font-size: 0.75rem;">${estadoTexto}</span>
+                    </td>
+                    <td data-label="Acciones" style="padding: 16px 25px;">
+                        <div style="display:flex; gap:8px; width:100%; justify-content:flex-end;">
+                            <button class="action-btn btn-view" onclick="verUsuario('${u.cedula}')" title="Ver Detalles" style="width: 36px; height: 36px; font-size: 1rem;"><i class="fas fa-eye"></i></button>
+                            ${esActivo ? 
+                                `<button class="action-btn btn-deactivate" onclick="cambiarEstadoUsuario('${u.cedula}', 0)" title="Desactivar" style="width: 36px; height: 36px; font-size: 1rem;"><i class="fas fa-user-slash"></i></button>` : 
+                                `<button class="action-btn btn-activate" onclick="cambiarEstadoUsuario('${u.cedula}', 1)" title="Activar" style="width: 36px; height: 36px; font-size: 1rem;"><i class="fas fa-user-check"></i></button>`
+                            }
+                            ${botonEliminar}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
 
     function filterUsers() {
         const busqueda = document.getElementById('searchUser').value.toLowerCase();
@@ -4364,7 +4366,7 @@ async function enviarReasignacionMasiva() {
 function abrirModalAgregarRef() {
     // Llenar el select de usuarios
     const select = document.getElementById('selectUsuarioRef');
-    select.innerHTML = '<option value="">-- Seleccionar --</option>';
+    select.innerHTML = '<option value="">-- Buscar estudiante... --</option>';
     
     // Filtramos solo estudiantes (tipo 1)
     usuarios.filter(u => u.tipo == 1).forEach(u => {
@@ -4373,6 +4375,14 @@ function abrirModalAgregarRef() {
         option.textContent = `${u.nombre} ${u.apellido} (${u.cedula})`;
         select.appendChild(option);
     });
+
+    // Resetear el formulario y el diseño del botón de carga personalizado
+    document.getElementById('formAgregarRef').reset();
+    const fotoLabel = document.getElementById('fotoRefName');
+    if (fotoLabel) {
+        fotoLabel.innerText = 'Haz clic para buscar la imagen';
+        fotoLabel.style.color = 'var(--text-main)';
+    }
 
     document.getElementById('modalAgregarRef').classList.add('active');
 }

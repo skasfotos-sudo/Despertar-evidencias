@@ -1073,32 +1073,39 @@ async def cambiar_estado_usuario(datos: EstadoUsuarioRequest):
 async def eliminar_usuario(
     cedula: str, 
     admin_cedula: str = Form(...), 
-    admin_pass: str = Form(...) # <--- 1. AQUI PEDIMOS LA CONTRASEÑA
+    admin_pass: str = Form(...) 
 ):
     conn = None
     try:  
         conn = get_db_connection()
         c = conn.cursor(cursor_factory=RealDictCursor)
         
-        # 2. Verificar credenciales del administrador
+        # 1. Verificar credenciales del administrador que solicita el borrado
         c.execute("SELECT Tipo, Password FROM Usuarios WHERE CI = %s", (admin_cedula,))
         admin = c.fetchone()
     
-        # Verificamos: Que exista, que sea Admin (0), y QUE LA CONTRASEÑA COINCIDA
-        if not admin or admin['Tipo'] != 0 or not verify_password(admin_pass, admin['Password']):
+        if not admin or admin['Tipo'] != 0 or not verify_password(admin_pass, admin.get('Password') or admin.get('password')):
             return JSONResponse({"error": "Credenciales de administrador inválidas o sin permisos"}, status_code=403)
         
-        # --- A PARTIR DE AQUI TODO SIGUE IGUAL ---
-        
-        # 3. Obtener evidencias ANTES de intentar borrarlas
-        c.execute("SELECT Url_Archivo FROM Evidencias WHERE CI_Estudiante = %s", (cedula,))
+        # 2. Obtener evidencias del estudiante ANTES de borrarlas
+        c.execute("SELECT Url_Archivo, Hash FROM Evidencias WHERE CI_Estudiante = %s", (cedula,))
         evidencias = c.fetchall()
 
-        # 4. Borrar archivos de evidencias en la nube (B2)
+        # 3. Borrado Inteligente en la nube (B2)
         if s3_client and BUCKET_NAME:
             for ev in evidencias:
                 url = ev.get('Url_Archivo') or ev.get('url_archivo')
-                if url and "backblazeb2.com" in url:
+                hash_arch = ev.get('Hash') or ev.get('hash')
+                
+                if not url or not hash_arch: continue
+
+                # SEGURIDAD: Contamos si este mismo Hash (archivo) está asignado a otros estudiantes
+                c.execute("SELECT COUNT(*) as total FROM Evidencias WHERE Hash = %s AND CI_Estudiante != %s", (hash_arch, cedula))
+                count_res = c.fetchone()
+                en_uso_por_otros = count_res['total'] if count_res else 0
+
+                # Solo borramos el archivo físico en la nube si NADIE MÁS lo tiene
+                if en_uso_por_otros == 0 and "backblazeb2.com" in url:
                     try:
                         partes = url.split(f"/file/{BUCKET_NAME}/")
                         if len(partes) > 1:
@@ -1106,16 +1113,16 @@ async def eliminar_usuario(
                     except Exception as e:
                         print(f"⚠️ No se pudo borrar archivo B2: {e}")
 
-        # 5. Borrar registros de evidencias en BD
+        # 4. Borrar registros SQL de evidencias de este estudiante (esto no afecta a los demás)
         c.execute("DELETE FROM Evidencias WHERE CI_Estudiante = %s", (cedula,))
         
-        # 6. Obtener y borrar foto de perfil (Nube)
+        # 5. Borrar la foto de perfil en la nube (solo si existe y no es la de por defecto)
         c.execute("SELECT Foto FROM Usuarios WHERE CI = %s", (cedula,))
         usuario = c.fetchone()
         
         if usuario:
             url_foto = usuario.get('Foto') or usuario.get('foto')
-            if url_foto and s3_client and BUCKET_NAME and "backblazeb2.com" in url_foto:
+            if url_foto and "backblazeb2.com" in url_foto:
                 try:
                     partes = url_foto.split(f"/file/{BUCKET_NAME}/")
                     if len(partes) > 1:
@@ -1123,16 +1130,20 @@ async def eliminar_usuario(
                 except Exception as e:
                       print(f"⚠️ No se pudo borrar foto perfil B2: {e}")
 
-        # 7. Finalmente borrar el usuario
+        # 6. Finalmente borrar el usuario de la base de datos
         c.execute("DELETE FROM Usuarios WHERE CI = %s", (cedula,))
         
         conn.commit()
-        return JSONResponse({"mensaje": "Usuario y todos sus datos eliminados correctamente"})
+        
+        registrar_auditoria("ELIMINACION_USUARIO", f"Admin (CI: {admin_cedula}) eliminó al usuario {cedula}", "Administrador")
+        return JSONResponse({"mensaje": "Usuario y sus datos exclusivos eliminados correctamente. Evidencias compartidas protegidas."})
         
     except Exception as e: 
-        print(f"❌ Error eliminando usuario completo: {e}")
+        import traceback
+        print(f"❌ Error eliminando usuario completo: {traceback.format_exc()}")
+        if conn: conn.rollback()
         return JSONResponse({"error": str(e)}, status_code=500)
-    finally: # <--- AGREGUE ESTO TAMBIEN POR SEGURIDAD
+    finally:
         if conn: conn.close()
     
 # =========================================================================
