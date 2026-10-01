@@ -927,68 +927,59 @@ body.dark-mode .swal2-textarea {
 }
 
 /* ==========================================================================
-           OPTIMIZACIÓN VISOR DE DOCUMENTOS (MÓVIL Y PC)
+           OPTIMIZACIÓN VISOR DE DOCUMENTOS Y MEDIOS (USABILIDAD CORREGIDA)
            ========================================================================== */
+        
+        /* 1. Contenedor Base: Ya no tiene tamaño fijo forzado, se adapta al contenido */
         .visor-doc-wrapper {
-            width: 90vw;
-            height: 80vh;
-            background: #ffffff;
-            border-radius: 12px;
-            /* 1. Propiedades VITALES para permitir scroll con 1 dedo en iPhone/Android */
-            overflow: auto;
-            -webkit-overflow-scrolling: touch;
-            pointer-events: auto;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .visor-doc-wrapper iframe, .visor-doc-wrapper embed {
-            width: 100%;
-            height: 100%;
-            border: none;
-            display: block;
-        }
-
-        @media (max-width: 768px) {
-            .visor-doc-wrapper {
-                width: 95vw;
-                /* 2. Reducimos la altura en celulares para que no tape los botones inferiores */
-                height: 65vh; 
-                border-radius: 8px;
-            }
-        }
-
-        /* ==========================================================================
-           OPTIMIZACIÓN VISOR DE DOCUMENTOS (MÓVIL Y PC)
-           ========================================================================== */
-        .visor-doc-wrapper {
-            width: 90vw;
-            height: 80vh;
-            background: #ffffff;
+            background: transparent; 
             border-radius: 12px;
             overflow: hidden; 
-            pointer-events: auto;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
             display: flex;
             justify-content: center;
             align-items: center;
             position: relative;
+            /* Permite que los clics pasen a través del contenedor transparente si no hay elemento debajo */
+            pointer-events: none; 
         }
 
-        .visor-doc-wrapper object, .visor-doc-wrapper iframe, .visor-doc-wrapper embed {
-            width: 100%;
-            height: 100%;
-            border: none;
-            display: block;
+        /* 2. Estilos específicos para Documentos (PDF, Word) */
+        .visor-doc-wrapper.es-documento {
+            width: 90vw;
+            height: 80vh;
+            background: #ffffff;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+            pointer-events: auto; /* Aquí los clics sí se atrapan */
+            -webkit-overflow-scrolling: touch;
         }
 
+        /* 3. Estilos específicos para la Imagen y Video REAL */
+        .lb-media-item {
+            max-width: 90vw; 
+            max-height: 85vh; 
+            border-radius: 8px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6); 
+            object-fit: contain;
+            pointer-events: auto; /* Solo la imagen/video recibe el clic */
+            transition: width 0.3s ease, height 0.3s ease; 
+        }
+
+        /* 4. Transparencia estricta para videos */
+        video.lb-media-item {
+            background-color: transparent !important;
+            outline: none !important;
+        }
+
+        /* Ajustes para móviles */
         @media (max-width: 768px) {
-            .visor-doc-wrapper {
+            .visor-doc-wrapper.es-documento {
                 width: 95vw;
-                height: 65vh; /* Evita que el documento tape los botones de Eliminar/Descargar */
+                height: 65vh; 
                 border-radius: 8px;
+            }
+            .lb-media-item {
+                max-width: 95vw; 
+                max-height: 75vh;
             }
         }
     </style>
@@ -2064,40 +2055,42 @@ async function cargarNotificacionesEstudiante(cedula) {
             wrap.style.opacity = '0';
             
             setTimeout(() => {
-                const esPDF = item.url.match(/\.(pdf)$/i);
-                const esOffice = item.url.match(/\.(doc|docx|xls|xlsx|ppt|pptx)$/i);
+                const esPDF = urlActual.match(/\.(pdf)$/i);
+                const esOffice = urlActual.match(/\.(doc|docx|xls|xlsx|ppt|pptx)$/i);
+                const esVideo = urlActual.match(/\.(mp4|avi|mov|webm|mkv)$/i);
+                const esImagen = urlActual.match(/\.(jpg|jpeg|png|gif|webp|avif)$/i);
 
+                // Escudo de clics SOLO para el recuadro blanco de los documentos
                 const escudos = `onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchmove="event.stopPropagation()"`;
 
-                if(item.tipo === 'imagen') {
-                    const img = document.createElement('img'); 
-                    img.src = item.url; 
-                    img.className = 'lb-media-item visor-doc-wrapper';
-                    img.onclick = function(e) { e.stopPropagation(); this.classList.toggle('zoomed'); };
-                    wrap.appendChild(img);
-                } else if(item.tipo === 'video') {
-                    const vid = document.createElement('video'); 
-                    vid.src = item.url; 
-                    vid.controls = true; 
-                    vid.className = 'lb-media-item visor-doc-wrapper';
-                    vid.onclick = function(e) { e.stopPropagation(); };
-                    wrap.appendChild(vid);
-                } else if (esPDF) {
-                    const visorGoogle = `https://docs.google.com/gview?url=${encodeURIComponent(item.url)}&embedded=true`;
+                if (esVideo) {
+                    // El video tiene su propio click de control, el wrapper no tiene escudos
                     wrap.innerHTML = `
-                        <div class="visor-doc-wrapper" style="width:90vw; height:80vh; background:white; border-radius:8px; overflow:hidden; pointer-events:auto;" ${escudos}>
+                        <div class="visor-doc-wrapper">
+                            <video src="${urlActual}" class="lb-media-item" controls autoplay onclick="event.stopPropagation()"></video>
+                        </div>`;
+                } else if (esImagen) {
+                    // La imagen tiene zoom, el wrapper es transparente y se deja atravesar por el clic
+                    wrap.innerHTML = `
+                        <div class="visor-doc-wrapper">
+                            <img src="${urlActual}" class="lb-media-item" onerror="this.src='Img/Logo_pestaña.webp'" onclick="event.stopPropagation(); this.classList.toggle('zoomed');">
+                        </div>`;
+                } else if (esPDF) {
+                    const visorGoogle = `https://docs.google.com/gview?url=${encodeURIComponent(urlActual)}&embedded=true`;
+                    wrap.innerHTML = `
+                        <div class="visor-doc-wrapper es-documento" ${escudos}>
                             <iframe src="${visorGoogle}" allowfullscreen style="width:100%; height:100%; border:none;"></iframe>
                         </div>`;
                 } else if (esOffice) {
-                    const visorMS = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(item.url)}`;
+                    const visorMS = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(urlActual)}`;
                     wrap.innerHTML = `
-                        <div class="visor-doc-wrapper" style="width:90vw; height:80vh; background:white; border-radius:8px; overflow:hidden; pointer-events:auto;" ${escudos}>
+                        <div class="visor-doc-wrapper es-documento" ${escudos}>
                             <iframe src="${visorMS}" allowfullscreen style="width:100%; height:100%; border:none;"></iframe>
                         </div>`;
                 } else {
-                    let nombreDoc = decodeURIComponent(item.url.split('/').pop()).replace(/^\d+_/, '');
+                    let nombreDoc = decodeURIComponent(urlActual.split('/').pop()).replace(/^\d+_/, '');
                     wrap.innerHTML = `
-                        <div class="visor-doc-wrapper" ${escudos} style="color:white; text-align:center; padding: 20px; pointer-events:auto;">
+                        <div class="visor-doc-wrapper es-documento" ${escudos} style="color:white; text-align:center; padding: 20px;">
                             <i class="fas fa-file-archive" style="font-size:5rem; margin-bottom:15px; color:var(--primary-light);"></i>
                             <h3 style="margin-bottom:10px; word-break: break-all; max-width: 80vw;">${nombreDoc}</h3>
                             <p style="color:#ccc; font-size:0.9rem;">Archivo no visualizable. Haz clic en <b>Descargar</b>.</p>
