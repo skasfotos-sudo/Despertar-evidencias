@@ -2521,7 +2521,6 @@ body.dark-mode .swal2-textarea {
         
         container.innerHTML = '';
         
-        // Separar solicitudes pendientes y resueltas
         const pendientes = solicitudes.filter(s => {
             const estado = (s.Estado || '').toUpperCase();
             return estado === 'PENDIENTE' || estado === '';
@@ -2533,10 +2532,10 @@ body.dark-mode .swal2-textarea {
         
         if (pendientes.length === 0 && resueltas.length === 0) {
             container.innerHTML = `
-                <div class="empty-state" style="display:flex;">
-                    <i class="fas fa-inbox" style="font-size:5rem; opacity:0.2; margin-bottom:25px;"></i>
-                    <h3>No hay solicitudes</h3>
-                    <p>Todas las solicitudes han sido procesadas</p>
+                <div class="empty-state" style="display:flex; padding: 60px 20px;">
+                    <i class="fas fa-check-circle" style="font-size:4rem; color:var(--secondary); opacity:0.8; margin-bottom:15px;"></i>
+                    <h3 style="color:var(--text-main);">Bandeja completamente limpia</h3>
+                    <p style="color:var(--text-sec);">No hay solicitudes pendientes en este momento.</p>
                 </div>
             `;
             return;
@@ -2545,9 +2544,11 @@ body.dark-mode .swal2-textarea {
         // Mostrar solicitudes pendientes primero
         if (pendientes.length > 0) {
             container.innerHTML += `
-                <h3 style="color:var(--primary); margin-bottom:15px; border-bottom:2px solid var(--primary); padding-bottom:10px;">
-                    <i class="fas fa-clock"></i> Solicitudes Pendientes (${pendientes.length})
-                </h3>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; border-bottom:2px solid var(--primary); padding-bottom:10px;">
+                    <h3 style="color:var(--primary); margin:0; font-size:1.2rem;">
+                        <i class="fas fa-clock"></i> Pendientes de Atención (${pendientes.length})
+                    </h3>
+                </div>
             `;
             
             pendientes.forEach(solicitud => {
@@ -2555,18 +2556,113 @@ body.dark-mode .swal2-textarea {
             });
         }
         
-        // Mostrar historial después
+        // Mostrar historial reciente (las que se borrarán en 24h)
         if (resueltas.length > 0) {
             container.innerHTML += `
-                <h3 style="color:var(--text-sec); margin:30px 0 15px 0; border-bottom:2px solid var(--border-color); padding-bottom:10px;">
-                    <i class="fas fa-history"></i> Historial de Solicitudes (${resueltas.length})
-                </h3>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin:35px 0 20px 0; border-bottom:2px solid var(--border-color); padding-bottom:10px;">
+                    <h3 style="color:var(--text-sec); margin:0; font-size:1.1rem;">
+                        <i class="fas fa-history"></i> Historial Reciente (Se auto-eliminan en 24h) (${resueltas.length})
+                    </h3>
+                </div>
             `;
             
             resueltas.slice(0, 10).forEach(solicitud => {
                 container.innerHTML += crearCardSolicitud(solicitud);
             });
         }
+    }
+
+    function crearCardSolicitud(sol) {
+        const _estado = sol.estado || sol.Estado || '';
+        const _tipo = sol.tipo || sol.Tipo || 'Solicitud';
+        const _detalle = sol.detalle || sol.Detalle || 'Sin detalles';
+        const _fecha = sol.fecha || sol.Fecha;
+        const _ci = sol.ci_solicitante || sol.CI_Solicitante;
+        const _id = sol.id || sol.ID;
+        const _email = sol.email || sol.Email;
+        const _url = sol.evidencia_reportada_url || sol.Evidencia_Reportada_Url;
+        const _resueltoPor = sol.resuelto_por || sol.Resuelto_Por || 'Admin';
+        const _respuesta = sol.respuesta || sol.Respuesta;
+
+        const estado = _estado.toUpperCase();
+        const esPendiente = estado === 'PENDIENTE' || estado === '';
+        
+        let badgeClass, badgeText, tipoColor;
+        if (esPendiente) {
+            badgeClass = 'badge-pending'; badgeText = 'PENDIENTE DE ATENCIÓN'; tipoColor = 'var(--warning)';
+        } else if (estado === 'APROBADA' || estado === 'RESUELTO') {
+            badgeClass = 'badge-resolved'; badgeText = 'APROBADA / RESUELTA'; tipoColor = 'var(--secondary)';
+        } else {
+            badgeClass = 'badge-rejected'; badgeText = 'RECHAZADA'; tipoColor = 'var(--error)';
+        }
+        
+        // Buscar foto y nombre real del estudiante
+        const usuario = usuarios.find(u => u.cedula === _ci);
+        const nombreUsuario = usuario ? `${usuario.nombre} ${usuario.apellido}` : _ci || 'Usuario Desconocido';
+        const fotoUsuario = usuario && usuario.foto ? usuario.foto : 'Img/Logo_pestaña.webp';
+        
+        return `
+            <div style="background: var(--bg-card); border-radius: 16px; padding: 25px; margin-bottom: 20px; border: 1px solid var(--border-color); box-shadow: var(--shadow-soft); transition: 0.3s; position: relative; overflow: hidden;">
+                
+                <!-- Borde lateral indicador de estado -->
+                <div style="position: absolute; top: 0; left: 0; width: 6px; height: 100%; background: ${tipoColor};"></div>
+
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px;">
+                    
+                    <!-- INFORMACIÓN DEL ESTUDIANTE Y MENSAJE -->
+                    <div style="display: flex; gap: 20px; flex: 1; min-width: 280px;">
+                        <img src="${fotoUsuario}" style="width: 55px; height: 55px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary-light); flex-shrink: 0;" onerror="this.src='Img/Logo_pestaña.webp'">
+                        
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
+                                <h4 style="color: var(--text-main); font-size: 1.15rem; margin: 0; font-weight: 700;">${nombreUsuario}</h4>
+                                <span class="request-badge ${badgeClass}" style="font-size: 0.75rem; padding: 3px 10px;">${badgeText}</span>
+                            </div>
+                            
+                            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">
+                                <span><i class="fas fa-id-card"></i> CI: ${_ci}</span> &bull; 
+                                <span><i class="fas fa-tag"></i> ${_tipo.replace(/_/g, ' ')}</span> &bull; 
+                                <span><i class="far fa-clock"></i> ${formatearFecha(_fecha)}</span>
+                            </div>
+
+                            <!-- Burbuja del Mensaje del Estudiante -->
+                            <div style="background: var(--bg-input); padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border-color); font-size: 0.95rem; color: var(--text-main); margin-top: 8px;">
+                                <strong style="color: var(--primary); font-size: 0.8rem; display: block; margin-bottom: 2px; text-transform: uppercase;">Mensaje del Estudiante:</strong>
+                                ${_detalle}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ZONA DE ACCIÓN O RESPUESTA -->
+                    <div style="min-width: 220px; flex-shrink: 0; display: flex; flex-direction: column; justify-content: center; align-items: flex-end; gap: 10px;">
+                        ${esPendiente ? `
+                            <button class="btn-primary" onclick="procesarSolicitudDesdeCard('${_tipo}',${_id})" style="background: var(--primary); padding: 12px 25px; border-radius: 12px; width: 100%; justify-content: center; box-shadow: 0 4px 12px rgba(106, 13, 173, 0.25);">
+                                <i class="fas fa-reply"></i> Responder Petición
+                            </button>
+                        ` : `
+                            <div style="background: var(--bg-input); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); width: 100%; font-size: 0.85rem;">
+                                <span style="color: var(--primary); font-weight: 600; display: block; margin-bottom: 4px;"><i class="fas fa-check-circle"></i> Gestionado por ${_resueltoPor}</span>
+                                <p style="color: var(--text-sec); margin: 0; font-style: italic;">"${_respuesta || 'Sin comentarios'}"</p>
+                            </div>
+                        `}
+                    </div>
+
+                </div>
+
+                ${_url ? `
+                    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 15px;">
+                        <span style="font-size: 0.85rem; color: var(--text-sec); font-weight: 600;">Evidencia adjunta:</span>
+                        <div style="position: relative; width: 60px; height: 60px; border-radius: 8px; overflow: hidden; cursor: pointer; border: 1px solid var(--border-color);" onclick="abrirPrevisualizacion('${_url}')">
+                            <img src="${_url}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='Img/Logo_pestaña.webp'">
+                            <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.9rem;">
+                                <i class="fas fa-search-plus"></i>
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+
+            </div>
+        `;
     }
 
     function crearCardSolicitud(sol) {

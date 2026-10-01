@@ -2053,12 +2053,21 @@ async def datos_graficos_dashboard():
 # =========================================================================
 @app.get("/obtener_solicitudes")
 def obtener_solicitudes(limit: int = 100):
+    conn = None
     try:
         conn = get_db_connection()
-        # 1. RESTAURADO: RealDictCursor es OBLIGATORIO para que el Frontend entienda los datos
         c = conn.cursor(cursor_factory=RealDictCursor)
         
-        # 2. RESTAURADO: El LEFT JOIN es vital para ver las fotos/videos en el Admin
+        # --- AUTO-LIMPIEZA DE MÁS DE 24 HORAS ---
+        # Borra solicitudes resueltas cuya fecha de resolución o fecha de creación supere 1 día
+        c.execute("""
+            DELETE FROM Solicitudes 
+            WHERE Estado != 'PENDIENTE' 
+            AND COALESCE(Fecha_Resolucion, Fecha) < (NOW() AT TIME ZONE 'America/Guayaquil' - INTERVAL '24 hours')
+        """)
+        conn.commit()
+        # ----------------------------------------
+        
         query = """
             SELECT 
                 s.*, 
@@ -2071,16 +2080,15 @@ def obtener_solicitudes(limit: int = 100):
         """
         c.execute(query, (limit,))
         solicitudes = c.fetchall()
-        conn.close()
         
-        # ✅ TU CORRECCIÓN MÁGICA (Funciona perfecto, la dejamos)
         sol_serializables = json.loads(json.dumps(solicitudes, default=str))
-        
         return JSONResponse(sol_serializables)
         
     except Exception as e:
         print(f"❌ Error obteniendo solicitudes: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
+    finally:
+        if conn: conn.close()
     
 # =========================================================================
 # 1. ENDPOINTS DE SOLICITUDES (LADO ESTUDIANTE) - ¡ESTO ES LO QUE TE FALTA!
