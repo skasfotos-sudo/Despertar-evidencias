@@ -102,41 +102,58 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 # Silenciar el "Spam" de las peticiones GET automáticas de Uvicorn
 logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
 
+import urllib.request
+import json
+import os
+
 def enviar_correo_real(destinatario: str, asunto: str, mensaje: str, html: bool = False) -> bool:
-    """Envía correos utilizando el servidor SMTP de Gmail (Gratuito, seguro y sin APIs de terceros)"""
+    """
+    Envía correos utilizando la API HTTP v3 de Brevo (Puerto 443 HTTPS).
+    Bypasea por completo el bloqueo SMTP de Railway de forma totalmente gratuita.
+    """
     try:
-        # Configuración del servidor desde las variables globales
-        servidor = SMTP_SERVER
-        puerto = SMTP_PORT
-        remitente = SMTP_EMAIL
-        password = SMTP_PASSWORD # Extraído de la variable de entorno en Railway
+        brevo_api_key = os.environ.get("BREVO_API_KEY")
         
-        if not password:
-            print("❌ No se encontró la contraseña SMTP_PASSWORD en el servidor.")
+        if not brevo_api_key:
+            print("❌ No se encontró la variable BREVO_API_KEY en el servidor.")
             return False
 
-        # Construir el mensaje de correo
-        msg = MIMEMultipart()
-        msg['From'] = f"Soporte U.E. Despertar <{remitente}>"
-        msg['To'] = destinatario
-        msg['Subject'] = asunto
+        # Endpoint oficial de Brevo v3 para envío de correos
+        url = "https://api.brevo.com/v3/smtp/email"
         
-        # Adjuntar el contenido (HTML o Texto)
-        tipo_contenido = "html" if html else "plain"
-        msg.attach(MIMEText(mensaje, tipo_contenido))
+        headers = {
+            "accept": "application/json",
+            "api-key": brevo_api_key,
+            "content-type": "application/json"
+        }
+        
+        # El remitente debe ser el correo verificado en tu cuenta de Brevo
+        remitente_email = os.environ.get("BREVO_SENDER", "skasfotos@gmail.com")
+        
+        payload = {
+            "sender": {
+                "name": "Soporte U.E. Despertar",
+                "email": remitente_email
+            },
+            "to": [
+                {"email": destinatario}
+            ],
+            "subject": asunto,
+            "htmlContent" if html else "textContent": mensaje
+        }
 
-        # Conectar al servidor de Gmail usando SSL
-        server = smtplib.SMTP_SSL(servidor, puerto)
-        server.login(remitente, password)
-        server.sendmail(remitente, destinatario, msg.as_string())
-        server.quit()
+        data = json.dumps(payload).encode('utf-8')
+        req = urllib.request.Request(url, data=data, headers=headers, method="POST")
         
-        print(f"✅ Correo enviado exitosamente a {destinatario}")
-        return True
-        
+        with urllib.request.urlopen(req) as response:
+            if response.status in [200, 201, 202]:
+                print(f"✅ Correo enviado exitosamente vía Brevo a {destinatario}")
+                return True
+                
     except Exception as e:
-        print(f"❌ Excepción crítica al enviar correo: {e}")
-        return False
+        print(f"❌ Excepción crítica al enviar correo por Brevo: {e}")
+        
+    return False
 
 # --- LÓGICA DE VOLUMEN PERSISTENTE ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -792,8 +809,8 @@ async def buscar_estudiante(cedula: str = Form(...)):
                 "galeria": [] 
             }
             
-            # 2. Buscar Evidencias (Ocultando la carpeta interna de referencias de la IA)
-            c.execute("SELECT * FROM Evidencias WHERE CI_Estudiante = %s AND Tipo_Archivo != 'referencia' ORDER BY id DESC", (cedula.strip(),))
+            # 2. Buscar Evidencias (Ocultando la carpeta interna de referencias de la IA y archivos pendientes)
+            c.execute("SELECT * FROM Evidencias WHERE CI_Estudiante = %s AND Tipo_Archivo != 'referencia' AND Estado = 1 ORDER BY id DESC", (cedula.strip(),))
             evidencias = c.fetchall()
             if evidencias:
                 datos['galeria'] = [dict(row) for row in evidencias]
@@ -2511,14 +2528,14 @@ def resumen_estudiantes():
         conn = get_db_connection()
         c = conn.cursor()
         
-        # Consulta segura
+        # Consulta segura filtrando solo evidencias aprobadas (Estado = 1)
         query = """
             SELECT 
                 u.Nombre, u.Apellido, u.CI, u.Foto,
                 COUNT(e.id) as total_evidencias,
                 COALESCE(SUM(e.Tamanio_KB), 0) as total_kb
             FROM Usuarios u
-            LEFT JOIN Evidencias e ON u.CI = e.CI_Estudiante AND e.Tipo_Archivo != 'referencia'
+            LEFT JOIN Evidencias e ON u.CI = e.CI_Estudiante AND e.Tipo_Archivo != 'referencia' AND e.Estado = 1
             WHERE u.Tipo = 1
             GROUP BY u.CI, u.Nombre, u.Apellido, u.Foto
             ORDER BY u.Apellido ASC
@@ -2541,8 +2558,8 @@ def todas_evidencias(cedula: str):
     try:
         conn = get_db_connection()
         c = conn.cursor()
-        # Buscamos por la cédula del estudiante
-        c.execute("SELECT * FROM Evidencias WHERE CI_Estudiante = %s ORDER BY id DESC", (cedula,))
+        # Buscamos por la cédula del estudiante (solo las aprobadas)
+        c.execute("SELECT * FROM Evidencias WHERE CI_Estudiante = %s AND Estado = 1 ORDER BY id DESC", (cedula,))
         evs = c.fetchall()
         conn.close()
         
