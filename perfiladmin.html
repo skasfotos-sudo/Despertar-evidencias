@@ -3700,7 +3700,7 @@ async function fijarFotoPerfil(cedula, urlFoto) {
             <tr>
                 <td data-label="Fecha" style="font-size:0.85rem; white-space:nowrap;">${formatearFecha(log.fecha)}</td>
                 <td data-label="Acción"><strong style="color:${obtenerColorAccion(log.accion)}">${log.accion}</strong></td>
-                <td data-label="Detalle" style="font-size:0.9rem;">${log.detalle}</td>
+                <td data-label="Detalle" style="font-size:0.9rem; white-space: normal; word-break: break-word; line-height: 1.5; min-width: 300px;">${log.detalle}</td>
                 <td data-label="Usuario"><span class="badge-user">${log.usuario}</span></td>
             </tr>
         `;

@@ -753,8 +753,6 @@ async def iniciar_sesion(cedula: str = Form(...), contrasena: str = Form(...)):
             rol_num = u.get('Tipo') if u.get('Tipo') is not None else u.get('tipo')
             rol_texto = "Administrador" if rol_num == 0 else "Estudiante"
             
-            registrar_auditoria("INICIO_SESION", f"Ingreso exitoso ({rol_texto})", nombre_completo)
-            
             # Datos para la página web
             datos_para_front = {
                 "id": u.get('id') or u.get('ID'),
