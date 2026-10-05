@@ -2051,6 +2051,12 @@ body.dark-mode .swal2-textarea {
             const res = await fetch(`${API_URL}/obtener_solicitudes?limit=50`);
             const todasSolicitudes = await res.json();
             
+            // --- BLOQUE DE PROTECCIÓN NUEVO ---
+            if (!Array.isArray(todasSolicitudes)) {
+                console.warn("⚠️ La respuesta del servidor no es válida (posible timeout de la BD).");
+                return; 
+            }
+            
             // Filtramos las que son PENDIENTE
             const solicitudesPendientes = todasSolicitudes.filter(s => {
                 const estado = (s.Estado || '').toUpperCase();

@@ -1360,7 +1360,6 @@ def procesar_video_largo_background(path: str, url_final: str, file_hash: str, t
 # =========================================================================
 @app.post("/subir_evidencia_ia")
 def subir_evidencia_ia(background_tasks: BackgroundTasks, archivo: UploadFile = File(...)):
-    # Usamos 'def' normal para habilitar el multihilo de FastAPI
     temp_dir = None
     conn = None
     try:
@@ -1381,11 +1380,13 @@ def subir_evidencia_ia(background_tasks: BackgroundTasks, archivo: UploadFile = 
         if not conn: return JSONResponse({"status": "error", "mensaje": "Error de BD"}, status_code=500)
         c = conn.cursor(cursor_factory=RealDictCursor)
 
-        # 1. VERIFICAR DUPLICADOS INMEDIATAMENTE
-        c.execute("SELECT Url_Archivo FROM Evidencias WHERE Hash = %s LIMIT 1", (file_hash,))
-        if c.fetchone():
-            if temp_dir and os.path.exists(temp_dir): shutil.rmtree(temp_dir)
-            return JSONResponse({"status": "exito", "mensaje": f"♻️ El archivo '{nombre_original}' ya había sido analizado y asignado previamente."})
+        # 1. NUEVA LÓGICA INTELIGENTE DE DUPLICADOS
+        c.execute("SELECT Url_Archivo, Tamanio_KB FROM Evidencias WHERE Hash = %s LIMIT 1", (file_hash,))
+        ev_existente = c.fetchone()
+        
+        url_final = ""
+        tamanio_kb = 0
+        archivo_reutilizado = False
 
         # 2. DEFINIR TIPO
         ext = os.path.splitext(nombre_limpio)[1].lower()
@@ -1393,25 +1394,33 @@ def subir_evidencia_ia(background_tasks: BackgroundTasks, archivo: UploadFile = 
         es_video = ext in ['.mp4', '.avi', '.mov', '.mkv', '.webm']
         tipo_archivo = "video" if es_video else ("imagen" if es_imagen else "documento")
 
-        # 3. SUBIR A LA NUBE S3 INMEDIATAMENTE
-        path_procesado = garantizar_limite_storage(path)
-        tamanio_kb = os.path.getsize(path_procesado) / 1024
-        timestamp = int(ahora_ecuador().timestamp())
-        nombre_nube = f"evidencias/{timestamp}_{nombre_limpio}"
-        
-        if s3_client:
-            s3_client.upload_file(path_procesado, BUCKET_NAME, nombre_nube, ExtraArgs={'ACL': 'public-read'})
-            url_final = f"https://{BUCKET_NAME}.s3.us-east-005.backblazeb2.com/{nombre_nube}"
+        if ev_existente:
+            # Si ya existe, NO subimos a S3, pero guardamos la ruta local para pasarlo por la IA
+            url_final = ev_existente.get('Url_Archivo') or ev_existente.get('url_archivo')
+            tamanio_kb = ev_existente.get('Tamanio_KB') or ev_existente.get('tamanio_kb') or 0
+            archivo_reutilizado = True
+            path_procesado = path
+            print(f"♻️ Hash detectado. Reutilizando URL para re-análisis IA: {url_final}")
         else:
-            raise HTTPException(status_code=500, detail="Sin conexión a almacenamiento S3.")
+            # 3. SUBIR A LA NUBE S3 INMEDIATAMENTE (Solo si es nuevo)
+            path_procesado = garantizar_limite_storage(path)
+            tamanio_kb = os.path.getsize(path_procesado) / 1024
+            timestamp = int(ahora_ecuador().timestamp())
+            nombre_nube = f"evidencias/{timestamp}_{nombre_limpio}"
+            
+            if s3_client:
+                s3_client.upload_file(path_procesado, BUCKET_NAME, nombre_nube, ExtraArgs={'ACL': 'public-read'})
+                url_final = f"https://{BUCKET_NAME}.s3.us-east-005.backblazeb2.com/{nombre_nube}"
+            else:
+                raise HTTPException(status_code=500, detail="Sin conexión a almacenamiento S3.")
 
         # ====================================================
-        # 4A. BIFURCACIÓN PARA VIDEOS (AL SEGUNDO PLANO)
+        # 4A. BIFURCACIÓN PARA VIDEOS
         # ====================================================
         if es_video:
             background_tasks.add_task(procesar_video_largo_background, path_procesado, url_final, file_hash, tamanio_kb, nombre_original, temp_dir)
             conn.close()
-            return JSONResponse({"status": "exito", "mensaje": "🎬 Video recibido correctamente. La IA lo está analizando en segundo plano para no congelar tu pantalla. Las asignaciones aparecerán en breve."})
+            return JSONResponse({"status": "exito", "mensaje": "🎬 Video recibido. La IA lo está analizando en segundo plano."})
         
         # ====================================================
         # 4B. BIFURCACIÓN PARA IMÁGENES (PROCESAMIENTO RÁPIDO)
@@ -1427,28 +1436,48 @@ def subir_evidencia_ia(background_tasks: BackgroundTasks, archivo: UploadFile = 
                 print(f"Error IA Imagen: {e}")
             
             asignados_nuevos = []
+            ya_asignados = []
+            
             if cedulas_detectadas:
                 for ced in cedulas_detectadas:
                     c.execute("SELECT Nombre, Apellido, Tipo FROM Usuarios WHERE CI=%s", (ced,))
                     u = c.fetchone()
                     if u and (u.get('Tipo') or u.get('tipo')) == 1:
                         nombre_completo = f"{u.get('Nombre') or u.get('nombre')} {u.get('Apellido') or u.get('apellido')}"
-                        c.execute("""
-                            INSERT INTO Evidencias (CI_Estudiante, Url_Archivo, Hash, Estado, Tipo_Archivo, Tamanio_KB, Asignado_Automaticamente) 
-                            VALUES (%s, %s, %s, 1, 'imagen', %s, 1)
-                        """, (ced, url_final, file_hash, tamanio_kb))
-                        asignados_nuevos.append(nombre_completo)
+                        
+                        # VERIFICAMOS SI ESTE ALUMNO ES NUEVO PARA ESTE ARCHIVO
+                        c.execute("SELECT id FROM Evidencias WHERE CI_Estudiante=%s AND Hash=%s", (ced, file_hash))
+                        if not c.fetchone():
+                            c.execute("""
+                                INSERT INTO Evidencias (CI_Estudiante, Url_Archivo, Hash, Estado, Tipo_Archivo, Tamanio_KB, Asignado_Automaticamente) 
+                                VALUES (%s, %s, %s, 1, 'imagen', %s, 1)
+                            """, (ced, url_final, file_hash, tamanio_kb))
+                            asignados_nuevos.append(nombre_completo)
+                        else:
+                            ya_asignados.append(nombre_completo)
                 
-                msg = f"✅ Imagen asignada correctamente a: {', '.join(asignados_nuevos)}" if asignados_nuevos else "⚠️ No se detectó a ningún alumno registrado. Guardada en Pendientes."
-                status = "exito" if asignados_nuevos else "alerta"
+                if asignados_nuevos:
+                    msg = f"✅ Imagen asignada a nuevos estudiantes: {', '.join(asignados_nuevos)}."
+                    if ya_asignados: msg += f" (Ya la tenían: {', '.join(ya_asignados)})"
+                    status = "exito"
+                elif ya_asignados:
+                    msg = f"♻️ Archivo analizado, pero todos los rostros ya tenían esta evidencia: {', '.join(ya_asignados)}."
+                    status = "exito"
+                else:
+                    msg = "⚠️ No se detectó a ningún alumno registrado. Guardada en Pendientes."
+                    status = "alerta"
             else:
-                c.execute("""
-                    INSERT INTO Evidencias (CI_Estudiante, Url_Archivo, Hash, Estado, Tipo_Archivo, Tamanio_KB, Asignado_Automaticamente) 
-                    VALUES ('PENDIENTE', %s, %s, 1, 'imagen', %s, 0)
-                """, (url_final, file_hash, tamanio_kb))
-                msg = "⚠️ Sin rostros. Guardada en 'Pendientes'."
-                status = "alerta"
-                registrar_auditoria("SUBIDA_IA_PENDIENTE", f"Archivo '{nombre_original}' enviado a Pendientes (Sin rostro/Duplicado)", "Sistema IA")
+                if not archivo_reutilizado:
+                    c.execute("""
+                        INSERT INTO Evidencias (CI_Estudiante, Url_Archivo, Hash, Estado, Tipo_Archivo, Tamanio_KB, Asignado_Automaticamente) 
+                        VALUES ('PENDIENTE', %s, %s, 1, 'imagen', %s, 0)
+                    """, (url_final, file_hash, tamanio_kb))
+                    msg = "⚠️ Sin rostros. Guardada en 'Pendientes'."
+                    status = "alerta"
+                    registrar_auditoria("SUBIDA_IA_PENDIENTE", f"Archivo '{nombre_original}' enviado a Pendientes", "Sistema IA")
+                else:
+                    msg = "⚠️ Sin rostros detectados. La imagen original se mantiene en la BD sin cambios."
+                    status = "alerta"
 
             conn.commit()
             conn.close()
@@ -1459,15 +1488,20 @@ def subir_evidencia_ia(background_tasks: BackgroundTasks, archivo: UploadFile = 
         # 4C. BIFURCACIÓN PARA DOCUMENTOS (SIN IA)
         # ====================================================
         else:
-            c.execute("""
-                INSERT INTO Evidencias (CI_Estudiante, Url_Archivo, Hash, Estado, Tipo_Archivo, Tamanio_KB, Asignado_Automaticamente) 
-                VALUES ('PENDIENTE', %s, %s, 1, %s, %s, 0)
-            """, (url_final, file_hash, tipo_archivo, tamanio_kb))
-            conn.commit()
+            if not archivo_reutilizado:
+                c.execute("""
+                    INSERT INTO Evidencias (CI_Estudiante, Url_Archivo, Hash, Estado, Tipo_Archivo, Tamanio_KB, Asignado_Automaticamente) 
+                    VALUES ('PENDIENTE', %s, %s, 1, %s, %s, 0)
+                """, (url_final, file_hash, tipo_archivo, tamanio_kb))
+                conn.commit()
+                registrar_auditoria("SUBIDA_IA_PENDIENTE", f"Archivo '{nombre_original}' enviado a Pendientes", "Sistema IA")
+                msg = "📄 Documento guardado en 'Pendientes'. Requiere asignación manual."
+            else:
+                msg = "📄 El documento ya estaba registrado en el sistema."
+                
             conn.close()
             if temp_dir and os.path.exists(temp_dir): shutil.rmtree(temp_dir)
-            registrar_auditoria("SUBIDA_IA_PENDIENTE", f"Archivo '{nombre_original}' enviado a Pendientes (Documento manual)", "Sistema IA")
-            return JSONResponse({"status": "alerta", "mensaje": "📄 Documento guardado en 'Pendientes'. Requiere asignación manual."})
+            return JSONResponse({"status": "alerta", "mensaje": msg})
 
     except Exception as e:
         if temp_dir and os.path.exists(temp_dir): shutil.rmtree(temp_dir)
@@ -2073,6 +2107,9 @@ def obtener_solicitudes(limit: int = 100):
     conn = None
     try:
         conn = get_db_connection()
+        if not conn:
+            return JSONResponse({"error": "Error de conexión a la base de datos", "status": "error"}, status_code=500)
+            
         c = conn.cursor(cursor_factory=RealDictCursor)
         
         # --- AUTO-LIMPIEZA DE MÁS DE 24 HORAS ---
