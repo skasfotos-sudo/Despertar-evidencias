@@ -2745,6 +2745,7 @@ async def cors_debug():
 class PasswordRequest(BaseModel):
     cedula: str
     nueva_contrasena: str
+    clave_maestra: Optional[str] = None # Agregamos la Clave Suprema como parámetro opcional
 
 @app.post("/cambiar_contrasena")
 async def cambiar_contrasena(datos: PasswordRequest):
@@ -2753,15 +2754,23 @@ async def cambiar_contrasena(datos: PasswordRequest):
         conn = get_db_connection()
         c = conn.cursor(cursor_factory=RealDictCursor)
         
-        c.execute("SELECT Nombre, Apellido FROM Usuarios WHERE CI = %s", (datos.cedula,))
+        c.execute("SELECT Nombre, Apellido, Tipo FROM Usuarios WHERE CI = %s", (datos.cedula,))
         u = c.fetchone()
-        nombre_usuario = f"{u['nombre']} {u['apellido']}" if u else datos.cedula
+        
+        if not u:
+            return JSONResponse({"error": "Usuario no encontrado"}, status_code=404)
+            
+        nombre_usuario = f"{u.get('Nombre') or u.get('nombre')} {u.get('Apellido') or u.get('apellido')}"
+        tipo_usuario = u.get('Tipo') if u.get('Tipo') is not None else u.get('tipo')
 
-        # --- CORRECCIÓN DE SEGURIDAD ---
-        # 1. Encriptamos la nueva contraseña antes de actualizar
+        # --- PROTECCIÓN ESTRICTA PARA ADMINS ---
+        if int(tipo_usuario) == 0:
+            if not datos.clave_maestra or datos.clave_maestra != CLAVE_SUPREMA:
+                return JSONResponse({"error": "⛔ Acceso Denegado: Se requiere la Clave Suprema para cambiar la contraseña de un Administrador."}, status_code=403)
+
+        # Encriptamos la nueva contraseña antes de actualizar
         hashed_password = get_password_hash(datos.nueva_contrasena)
 
-        # 2. Guardamos el HASH, no el texto plano
         c.execute("UPDATE Usuarios SET Password = %s WHERE CI = %s", (hashed_password, datos.cedula))
         conn.commit()
         
@@ -2773,7 +2782,7 @@ async def cambiar_contrasena(datos: PasswordRequest):
         
         return JSONResponse({"mensaje": "Contraseña actualizada correctamente"})
     except Exception as e:
-        return JSONResponse({"error": str(e)})
+        return JSONResponse({"error": str(e)}, status_code=500)
     finally:
         if conn: conn.close()
     

@@ -3938,7 +3938,7 @@ async function fijarFotoPerfil(cedula, urlFoto) {
         }
         
         const coincidencias = usuarios.filter(usuario => {
-            const nombreCompleto = `${usuario.nombre} ${usuario.apellido}`.toLowerCase();
+            const nombreCompleto = `${usuario.nombre} ${usuario.apellido} ${usuario.cedula}`.toLowerCase();
             return nombreCompleto.includes(texto.toLowerCase());
         }).slice(0, 5);
         
@@ -3947,13 +3947,19 @@ async function fijarFotoPerfil(cedula, urlFoto) {
             return;
         }
         
-        sugerencias.innerHTML = coincidencias.map(usuario => `
+        sugerencias.innerHTML = coincidencias.map(usuario => {
+            const esAdmin = parseInt(usuario.tipo) === 0;
+            const badge = esAdmin ? `<span style="background:var(--error); color:white; font-size:0.7rem; padding:3px 6px; border-radius:4px;">ADMIN</span>` : '';
+            return `
             <div onclick="seleccionarUsuarioPassword('${usuario.cedula}')" 
-                 style="padding:8px 12px; cursor:pointer; border-bottom:1px solid var(--border-color); color:var(--text-main);">
-                ${usuario.nombre} ${usuario.apellido}
-                <small style="color:var(--text-sec);">(${usuario.cedula})</small>
+                 style="padding:10px 15px; cursor:pointer; border-bottom:1px solid var(--border-color); color:var(--text-main); display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <strong style="display:block;">${usuario.nombre} ${usuario.apellido}</strong>
+                    <small style="color:var(--text-sec);">CI: ${usuario.cedula}</small>
+                </div>
+                ${badge}
             </div>
-        `).join('');
+        `}).join('');
         
         sugerencias.style.display = 'block';
     }
@@ -3964,6 +3970,7 @@ async function fijarFotoPerfil(cedula, urlFoto) {
             document.getElementById('nombrePassword').value = 
                 `${usuarioSeleccionadoPassword.nombre} ${usuarioSeleccionadoPassword.apellido}`;
             document.getElementById('suggestionsPass').style.display = 'none';
+            document.getElementById('nuevaPassword').focus(); // UX: Pasa directamente a escribir la clave
         }
     }
 
@@ -3971,59 +3978,83 @@ async function fijarFotoPerfil(cedula, urlFoto) {
         evento.preventDefault();
         
         if (!usuarioSeleccionadoPassword) {
-            mostrarMensaje('Selecciona un usuario primero', 'warning');
+            Swal.fire('Atención', 'Debes buscar y seleccionar un usuario de la lista desplegable primero.', 'warning');
             return;
         }
         
         const nuevaPassword = document.getElementById('nuevaPassword').value;
         
         if (nuevaPassword.length < 6) {
-            Swal.fire({
-                title: 'Error de validación',
-                text: 'La contraseña debe tener al menos 6 caracteres',
-                icon: 'error',
-                confirmButtonColor: '#6A0DAD'
-            });
+            Swal.fire('Error', 'La contraseña debe tener al menos 6 caracteres.', 'error');
             return;
         }
-        
-        const confirmacion = await Swal.fire({
-            title: '¿Cambiar contraseña?',
-            text: `¿Cambiar contraseña de ${usuarioSeleccionadoPassword.nombre} a: ${nuevaPassword}?`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#6A0DAD',
-            cancelButtonColor: '#5f6368',
-            confirmButtonText: 'Sí, cambiar',
-            cancelButtonText: 'Cancelar'
-        });
-        
-        if (!confirmacion.isConfirmed) return;
+
+        const esAdminObjetivo = parseInt(usuarioSeleccionadoPassword.tipo) === 0;
+        let claveMaestraIngresada = null;
+
+        // BARRERA DE SEGURIDAD PARA ADMINS
+        if (esAdminObjetivo) {
+            const { value: password } = await Swal.fire({
+                title: '🔒 SEGURIDAD SUPREMA',
+                text: `Estás intentando cambiar la contraseña de un Administrador (${usuarioSeleccionadoPassword.nombre}). Ingresa la Clave Suprema para continuar:`,
+                input: 'password',
+                inputPlaceholder: 'Clave Suprema...',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d32f2f',
+                confirmButtonText: 'Autorizar Cambio',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (!password) return; 
+            claveMaestraIngresada = password;
+        } 
+        // FLUJO NORMAL PARA ESTUDIANTES
+        else {
+            const confirmacion = await Swal.fire({
+                title: '¿Cambiar contraseña?',
+                text: `¿Estás seguro de establecer esta nueva contraseña para el estudiante ${usuarioSeleccionadoPassword.nombre}?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#6A0DAD',
+                cancelButtonColor: '#5f6368',
+                confirmButtonText: 'Sí, confirmar',
+                cancelButtonText: 'Cancelar'
+            });
+            
+            if (!confirmacion.isConfirmed) return;
+        }
         
         try {
+            Swal.fire({ title: 'Actualizando...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+
+            const payload = {
+                cedula: usuarioSeleccionadoPassword.cedula,
+                nueva_contrasena: nuevaPassword
+            };
+
+            if (claveMaestraIngresada) {
+                payload.clave_maestra = claveMaestraIngresada;
+            }
+
             const respuesta = await fetch(`${API_URL}/cambiar_contrasena`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    cedula: usuarioSeleccionadoPassword.cedula,
-                    nueva_contrasena: nuevaPassword
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
             
             const resultado = await respuesta.json();
             
-            if (resultado.mensaje) {
-                mostrarMensaje(`Contraseña cambiada para ${usuarioSeleccionadoPassword.nombre}`, 'success');
+            if (respuesta.ok && resultado.mensaje) {
+                Swal.fire('¡Éxito!', `Contraseña actualizada para ${usuarioSeleccionadoPassword.nombre}`, 'success');
                 document.getElementById('formCambiarPassword').reset();
                 usuarioSeleccionadoPassword = null;
-                await cargarDatosIniciales();
+                await cargarDatosIniciales(); // Actualiza la tabla de usuarios oculta
             } else {
-                mostrarMensaje('Error al cambiar contraseña: ' + (resultado.error || 'Desconocido'), 'error');
+                Swal.fire('Acceso Denegado', resultado.error || 'No se pudo cambiar la contraseña', 'error');
             }
         } catch (error) {
-            mostrarMensaje('Error de conexión: ' + error.message, 'error');
+            Swal.fire('Error', 'Error de conexión: ' + error.message, 'error');
         }
     }
 
