@@ -3858,16 +3858,39 @@ async function fijarFotoPerfil(cedula, urlFoto) {
         const archivos = input.files;
         if (archivos.length === 0) return;
 
-        const LIMITE_ARCHIVOS = 50;
+        // 1. Nuevos límites estrictos
+        const LIMITE_ARCHIVOS = 20;
+        const LIMITE_PESO_TOTAL_MB = 200;
+        let pesoTotalBytes = 0;
+
+        for (let i = 0; i < archivos.length; i++) {
+            pesoTotalBytes += archivos[i].size;
+        }
+
+        const pesoTotalMB = (pesoTotalBytes / (1024 * 1024)).toFixed(2);
+
+        // 2. Filtro de cantidad
         if (archivos.length > LIMITE_ARCHIVOS) {
             Swal.fire({
                 title: '⚠️ Demasiados archivos',
-                html: `Estás intentando subir <b>${archivos.length}</b> archivos.<br>El límite seguro es de <b>${LIMITE_ARCHIVOS}</b> por tanda.<br>`,
+                html: `Estás intentando subir <b>${archivos.length}</b> archivos.<br>El límite seguro para no colapsar el sistema es de <b>${LIMITE_ARCHIVOS}</b> por lote.<br>`,
                 icon: 'warning',
-                confirmButtonColor: '#6A0DAD'
+                confirmButtonColor: '#d32f2f'
             });
             if (input.tagName === 'INPUT') input.value = '';
             return; 
+        }
+
+        // 3. Filtro de peso de viabilidad
+        if (pesoTotalMB > LIMITE_PESO_TOTAL_MB) {
+            Swal.fire({
+                title: '⚠️ Lote muy pesado',
+                html: `El peso total seleccionado es de <b>${pesoTotalMB} MB</b>.<br>El servidor solo admite hasta <b>${LIMITE_PESO_TOTAL_MB} MB</b> por cada envío para garantizar la estabilidad.<br>Sube los archivos pesados en grupos más pequeños.`,
+                icon: 'error',
+                confirmButtonColor: '#d32f2f'
+            });
+            if (input.tagName === 'INPUT') input.value = '';
+            return;
         }
         
         const log = document.getElementById('uploadLog');
