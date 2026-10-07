@@ -770,7 +770,8 @@ async def iniciar_sesion(cedula: str = Form(...), contrasena: str = Form(...)):
         
         
         else:
-             # Contraseña incorrecta
+          # Contraseña incorrecta
+          registrar_auditoria("LOGIN_FALLIDO", f"Intento fallido con cédula/ID: {cedula.strip()}", "Sistema")
           return JSONResponse({"autenticado": False, "mensaje": "Cédula o contraseña incorrectos."})
     except Exception as e:
         print(f"❌ Error login: {e}")
@@ -793,6 +794,12 @@ async def buscar_estudiante(cedula: str = Form(...)):
         u = c.fetchone()
         
         if u:
+            # --- NUEVO BLOQUEO DE SEGURIDAD ESTRICTO ---
+            estado_activo = u.get('Activo') if u.get('Activo') is not None else u.get('activo')
+            if int(estado_activo) == 0:
+                return JSONResponse({"status": "error", "mensaje": "Cuenta desactivada. Acceso denegado."})
+            # -------------------------------------------
+
             # Construir respuesta con todos los datos necesarios
             datos = {
                 "id": u.get('id') or u.get('ID'),
@@ -2677,7 +2684,9 @@ async def eliminar_evidencia(id: int, admin_cedula: str = Form(...)): # 1. Pedir
                     c.execute("UPDATE Usuarios SET Foto = '' WHERE CI = %s", (ci_estudiante,))
 
         conn.commit()
+        registrar_auditoria("EVIDENCIA_ELIMINADA", f"Admin eliminó el archivo ID {id}", admin_cedula)
         return JSONResponse({"mensaje": "Evidencia eliminada correctamente"})
+
         
     except Exception as e:
         print(f"❌ Error CRÍTICO eliminando evidencia {id}: {e}")
