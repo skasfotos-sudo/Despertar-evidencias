@@ -1444,62 +1444,85 @@ body.dark-mode .swal2-textarea {
 
         <!-- PANEL: SEGURIDAD Y LOGS -->
         <section id="panel-seguridad" class="panel-section">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
-                <h2 style="color:var(--primary); margin:0;">Seguridad y Registro de Actividad</h2>
-                <div style="display:flex; gap:10px;">
-                    <input type="text" id="searchLogs" placeholder="Buscar en logs..." 
-                           class="form-control" style="width:200px;" onkeyup="filtrarLogs()">
-                    <button onclick="cargarLogs()" class="btn-primary" style="font-size:0.9rem;">
-                        <i class="fas fa-sync"></i> Actualizar
+            
+            <!-- HEADER DE SECCIÓN -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; flex-wrap:wrap; gap:15px; border-bottom: 2px solid var(--border-color); padding-bottom: 15px;">
+                <div>
+                    <h2 style="color:var(--primary); margin:0; font-size: 1.8rem;">Seguridad y Auditoría</h2>
+                    <p style="color:var(--text-sec); margin:5px 0 0 0; font-size:0.95rem;">Gestiona accesos, genera respaldos y monitorea la actividad del sistema.</p>
+                </div>
+                <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                    <button class="btn-primary" onclick="navTo('mantenimiento')" style="background:var(--warning); color:#333; box-shadow: 0 4px 15px rgba(249, 168, 37, 0.2);">
+                        <i class="fas fa-tools"></i> Optimización
+                    </button>
+                    <button id="btnActualizarLogs" onclick="cargarLogs(true)" class="btn-primary" style="background:var(--primary); box-shadow: 0 4px 15px rgba(106, 13, 173, 0.2);">
+                        <i class="fas fa-sync"></i> Actualizar Logs
                     </button>
                 </div>
             </div>
             
-            <!-- CAMBIAR CONTRASEÑA -->
-            <div class="storage-calc" style="margin-bottom:30px;">
-                <h4 style="color:var(--primary); margin-bottom:15px;">
-                    <i class="fas fa-key"></i> Cambiar Contraseña de Usuario
-                </h4>
-                <form id="formCambiarPassword" onsubmit="cambiarPassword(event)">
-                    <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:end;">
-                        <div style="flex:1; min-width:250px; position:relative;">
-                            <label class="form-group" style="display:block;">
-                                <div style="margin-bottom:8px; font-weight:600; font-size:0.9rem; color:var(--text-main);">
-                                    Nombre del Estudiante *</div>
-                                <input type="text" id="nombrePassword" class="form-control" 
-                                       placeholder="Buscar por nombre" 
-                                       onkeyup="sugerirUsuariosPassword(this.value)">
-                            </label>
-                            <div id="suggestionsPass" style="display:none; position:absolute; 
-                                 background:var(--bg-card); border:1px solid var(--border-color); 
-                                 max-height:150px; overflow-y:auto; width:100%; z-index:100; 
-                                 border-radius:8px; margin-top:5px;"></div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; margin-bottom: 30px;">
+                
+                <!-- TARJETA 1: CAMBIAR CONTRASEÑA -->
+                <div style="background: var(--bg-card); border-radius: 16px; padding: 25px; box-shadow: var(--shadow-soft); border: 1px solid var(--border-color); border-top: 4px solid var(--warning);">
+                    <h4 style="color:var(--text-main); margin-bottom:20px; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 35px; height: 35px; background: rgba(249, 168, 37, 0.15); color: var(--warning); border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-key"></i></div>
+                        Forzar Cambio de Contraseña
+                    </h4>
+                    <form id="formCambiarPassword" onsubmit="cambiarPassword(event)">
+                        <div style="display:flex; flex-direction:column; gap:15px;">
+                            <div style="position:relative;">
+                                <label style="margin-bottom:8px; font-weight:600; font-size:0.9rem; color:var(--text-main); display:block;">Estudiante *</label>
+                                <input type="text" id="nombrePassword" class="form-control" placeholder="Buscar por nombre..." onkeyup="sugerirUsuariosPassword(this.value)">
+                                <div id="suggestionsPass" style="display:none; position:absolute; background:var(--bg-card); border:1px solid var(--border-color); max-height:150px; overflow-y:auto; width:100%; z-index:100; border-radius:8px; margin-top:5px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);"></div>
+                            </div>
+                            <div>
+                                <label style="margin-bottom:8px; font-weight:600; font-size:0.9rem; color:var(--text-main); display:block;">Nueva Clave *</label>
+                                <input type="password" id="nuevaPassword" class="form-control" minlength="6" required>
+                            </div>
+                            <button type="submit" class="btn-primary" style="background:var(--warning); color:#333; justify-content:center; margin-top:5px; width: 100%;">
+                                <i class="fas fa-save"></i> Guardar Cambios
+                            </button>
                         </div>
-                        <div style="flex:1; min-width:250px;">
-                            <label class="form-group" style="display:block;">
-                                <div style="margin-bottom:8px; font-weight:600; font-size:0.9rem; color:var(--text-main);">
-                                    Nueva Contraseña *</div>
-                                <input type="password" id="nuevaPassword" class="form-control" 
-                                       minlength="6" required>
-                            </label>
-                        </div>
-                        <button type="submit" class="btn-primary" style="background:var(--warning); color:#333;">
-                            <i class="fas fa-key"></i> Cambiar Contraseña
+                    </form>
+                </div>
+
+                <!-- TARJETA 2: RESPALDOS -->
+                <div style="background: var(--bg-card); border-radius: 16px; padding: 25px; box-shadow: var(--shadow-soft); border: 1px solid var(--border-color); border-top: 4px solid var(--info);">
+                    <h4 style="color:var(--text-main); margin-bottom:15px; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 35px; height: 35px; background: rgba(2, 136, 209, 0.15); color: var(--info); border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-shield-alt"></i></div>
+                        Copias de Seguridad (Backups)
+                    </h4>
+                    <p style="color:var(--text-sec); font-size:0.9rem; margin-bottom:25px; line-height: 1.5;">
+                        Genera respaldos manuales de la base de datos y archivos multimedia antes de realizar limpiezas profundas o eliminar usuarios.
+                    </p>
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <button class="btn-primary" onclick="descargarBackup('db')" style="background:transparent; color:var(--primary); border: 2px solid var(--primary); justify-content:center; transition: 0.3s;" onmouseover="this.style.background='var(--primary)'; this.style.color='white'" onmouseout="this.style.background='transparent'; this.style.color='var(--primary)'">
+                            <i class="fas fa-database"></i> Respaldar Base de Datos (SQL)
+                        </button>
+                        <button class="btn-primary" onclick="descargarBackup('media')" style="background:transparent; color:var(--info); border: 2px solid var(--info); justify-content:center; transition: 0.3s;" onmouseover="this.style.background='var(--info)'; this.style.color='white'" onmouseout="this.style.background='transparent'; this.style.color='var(--info)'">
+                            <i class="fas fa-file-archive"></i> Respaldar Multimedia (ZIP)
                         </button>
                     </div>
-                </form>
+                </div>
             </div>
 
-            <!-- LOGS DE ACTIVIDAD -->
-            <div class="table-responsive">
-                <div class="modern-table-wrapper">
-                    <table class="modern-table">
-                        <thead>
+            <!-- BUSCADOR DE LOGS ELEGANTE -->
+            <div style="background: var(--bg-card); padding: 18px 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: var(--shadow-soft); border: 1px solid var(--border-color); display: flex; align-items: center; gap: 15px; transition: 0.3s;" id="searchLogsContainer">
+                <i class="fas fa-search" style="color: var(--primary); font-size: 1.3rem;"></i>
+                <input type="text" id="searchLogs" placeholder="Rastrear eventos, cédulas o acciones específicas..." class="form-control" style="border: none; background: transparent; box-shadow: none; padding: 0; font-size: 1.1rem; flex: 1;" onkeyup="filtrarLogs()" onfocus="document.getElementById('searchLogsContainer').style.borderColor='var(--primary)'" onblur="document.getElementById('searchLogsContainer').style.borderColor='var(--border-color)'">
+            </div>
+
+            <!-- TABLA DE LOGS DE ACTIVIDAD -->
+            <div class="table-responsive" style="box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-radius: 16px; border: 1px solid var(--border-color);">
+                <div class="modern-table-wrapper" style="max-height: 55vh;">
+                    <table class="modern-table" style="width: 100%;">
+                        <thead style="position: sticky; top: 0; z-index: 10; background: var(--primary); box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
                             <tr>
-                                <th>Fecha (EC)</th>
-                                <th>Acción</th>
-                                <th>Detalle</th>
-                                <th>Usuario</th>
+                                <th style="padding: 18px 25px; font-size: 0.9rem; font-weight: 600; letter-spacing: 0.5px; border-bottom: none;">Fecha (EC)</th>
+                                <th style="padding: 18px 25px; font-size: 0.9rem; font-weight: 600; letter-spacing: 0.5px; border-bottom: none;">Acción</th>
+                                <th style="padding: 18px 25px; font-size: 0.9rem; font-weight: 600; letter-spacing: 0.5px; border-bottom: none;">Detalle</th>
+                                <th style="padding: 18px 25px; font-size: 0.9rem; font-weight: 600; letter-spacing: 0.5px; border-bottom: none;">Usuario</th>
                             </tr>
                         </thead>
                         <tbody id="logsTableBody">
@@ -1512,28 +1535,14 @@ body.dark-mode .swal2-textarea {
 
         <!-- PANEL: MANTENIMIENTO -->
         <section id="panel-mantenimiento" class="panel-section">
-            <h2 style="color:var(--primary); margin-bottom:20px;">Respaldos y Mantenimiento</h2>
+            <h2 style="color:var(--primary); margin-bottom:20px;">Mantenimiento y Costos</h2>
             
-            <div class="dashboard-grid" style="margin-bottom:30px;">
-                <div class="stat-card" style="cursor:pointer;" onclick="descargarBackup('db')">
-                    <div class="stat-icon bg-green"><i class="fas fa-database"></i></div>
+            <div class="dashboard-grid" style="margin-bottom:30px; grid-template-columns: 1fr;">
+                <div class="stat-card" style="cursor:pointer; background:rgba(211, 47, 47, 0.05); border-color:rgba(211, 47, 47, 0.2);" onclick="ejecutarMantenimiento()">
+                    <div class="stat-icon bg-orange" style="background:var(--error);"><i class="fas fa-radiation-alt"></i></div>
                     <div class="stat-details">
-                        <h3>Base de Datos</h3>
-                        <p>Descargar SQL completo</p>
-                    </div>
-                </div>
-                <div class="stat-card" style="cursor:pointer;" onclick="descargarBackup('media')">
-                    <div class="stat-icon bg-blue"><i class="fas fa-photo-video"></i></div>
-                    <div class="stat-details">
-                        <h3>Multimedia</h3>
-                        <p>Descargar ZIP evidencias</p>
-                    </div>
-                </div>
-                <div class="stat-card" style="cursor:pointer;" onclick="ejecutarMantenimiento()">
-                    <div class="stat-icon bg-orange"><i class="fas fa-tools"></i></div>
-                    <div class="stat-details">
-                        <h3>Optimización</h3>
-                        <p>Limpiar y optimizar</p>
+                        <h3 style="color:var(--error);">Optimización de Servidor</h3>
+                        <p>Limpia cachés, archivos huérfanos y compacta la base de datos.</p>
                     </div>
                 </div>
             </div>
@@ -3685,16 +3694,47 @@ async function fijarFotoPerfil(cedula, urlFoto) {
     // ==========================================
     // 8. FUNCIONES DE SEGURIDAD Y LOGS
     // ==========================================
-    async function cargarLogs() {
+    async function cargarLogs(esClickManual = false) {
+        let btn = null;
+        let iconoOriginal = '';
+        
+        // Efecto de carga visual SOLO si el usuario presionó el botón
+        if (esClickManual) {
+            btn = document.getElementById('btnActualizarLogs');
+            if (btn) {
+                const icono = btn.querySelector('i');
+                if (icono) {
+                    iconoOriginal = icono.className;
+                    icono.className = 'fas fa-spinner fa-spin'; // Gira el icono
+                }
+                btn.disabled = true; // Evita clics dobles
+            }
+        }
+
         try {
-            
             const tiempo = new Date().getTime();
             const respuesta = await fetch(`${API_URL}/obtener_logs?t=${tiempo}`);            
             if (!respuesta.ok) throw new Error("Error al obtener logs");
+            
             logs = await respuesta.json();
             renderizarLogs();            
+            
+            // Notificación de éxito SOLO para el usuario
+            if (esClickManual) {
+                mostrarMensaje('Auditoría actualizada correctamente', 'success');
+            }
         } catch (error) {
             console.error('Error cargando logs:', error);
+            if (esClickManual) {
+                mostrarMensaje('Error al conectar con el servidor', 'error');
+            }
+        } finally {
+            // Restaurar el botón a la normalidad
+            if (btn) {
+                const icono = btn.querySelector('i');
+                if (icono && iconoOriginal) icono.className = iconoOriginal;
+                btn.disabled = false;
+            }
         }
     }
 
