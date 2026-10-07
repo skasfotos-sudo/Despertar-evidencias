@@ -908,7 +908,44 @@
             color: var(--primary);
             text-decoration: underline;
         }
+
+
+        .bottom-nav-mobile { display: none; }
+        @media (max-width: 992px) {
+            .menu-toggle { display: none !important; }
+            body { padding-bottom: 75px !important; }
+            
+            .bottom-nav-mobile {
+                display: flex !important; position: fixed; bottom: 0; left: 0; width: 100%;
+                background: var(--bg-header); border-top: 1px solid var(--border-color);
+                box-shadow: 0 -4px 20px rgba(0,0,0,0.08); z-index: 4000;
+                justify-content: space-around; align-items: center; padding: 10px 5px;
+                padding-bottom: calc(10px + env(safe-area-inset-bottom)); backdrop-filter: blur(15px);
+            }
+            .bn-item {
+                background: transparent; border: none; color: var(--text-sec);
+                display: flex; flex-direction: column; align-items: center; gap: 4px;
+                font-size: 0.65rem; font-weight: 600; text-decoration: none; cursor: pointer; width: 25%; transition: 0.3s;
+            }
+            .bn-item i { font-size: 1.3rem; transition: transform 0.3s; }
+            .bn-item.active { color: var(--primary); }
+            .bn-item.active i { transform: translateY(-2px) scale(1.15); }
+        }
     </style>
+    <nav class="bottom-nav-mobile">
+        <a href="index.html" class="bn-item">
+            <i class="fas fa-home"></i><span>Inicio</span>
+        </a>
+        <a href="biblioteca.html" class="bn-item active">
+            <i class="fas fa-sign-in-alt"></i><span>Login</span>
+        </a>
+        <a href="SKASNU.html" class="bn-item">
+            <i class="fas fa-globe-americas"></i><span>ONU</span>
+        </a>
+        <button class="bn-item" onclick="document.getElementById('modalSoporte').classList.add('active');">
+            <i class="fas fa-headset"></i><span>Soporte</span>
+        </button>
+    </nav>
 </head>
 <body class="login-page">
 

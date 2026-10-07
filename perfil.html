@@ -982,7 +982,47 @@ body.dark-mode .swal2-textarea {
                 max-height: 75vh;
             }
         }
+
+        .bottom-nav-mobile { display: none; }
+        @media (max-width: 992px) {
+            .menu-toggle { display: none !important; }
+            body { padding-bottom: 75px !important; }
+            .floating-bar.active { transform: translateY(-70px) !important; border-radius: 20px !important; }
+            
+            .bottom-nav-mobile {
+                display: flex !important; position: fixed; bottom: 0; left: 0; width: 100%;
+                background: var(--bg-header); border-top: 1px solid var(--border-color);
+                box-shadow: 0 -4px 20px rgba(0,0,0,0.08); z-index: 4000;
+                justify-content: space-around; align-items: center; padding: 10px 5px;
+                padding-bottom: calc(10px + env(safe-area-inset-bottom)); backdrop-filter: blur(15px);
+            }
+            .bn-item {
+                background: transparent; border: none; color: var(--text-sec);
+                display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+                font-size: 0.65rem; font-weight: 600; cursor: pointer; width: 25%; transition: 0.3s;
+                -webkit-tap-highlight-color: transparent; /* Evita el parpadeo azul en Android */
+            }
+            .bn-item i { font-size: 1.3rem; transition: transform 0.3s; display: block; }
+            .bn-item span { display: block; width: 100%; text-align: center; }
+            .bn-item.active { color: var(--primary); }
+            .bn-item.active i { transform: translateY(-2px) scale(1.15); }
+            .bn-item.danger { color: var(--error); }
+        }
     </style>
+    <nav class="bottom-nav-mobile">
+        <button class="bn-item active" onclick="location.reload()">
+            <i class="fas fa-id-card"></i><span>Mi Perfil</span>
+        </button>
+        <button class="bn-item" onclick="abrirHistorial()">
+            <i class="fas fa-history"></i><span>Historial</span>
+        </button>
+        <button class="bn-item" onclick="document.getElementById('modalContactHub').classList.add('active');">
+            <i class="fas fa-headset"></i><span>Soporte</span>
+        </button>
+        <button class="bn-item danger" onclick="cerrarSesion()">
+            <i class="fas fa-power-off"></i><span>Salir</span>
+        </button>
+    </nav>
 </head>
 
 <body class="profile-page">
@@ -1018,9 +1058,6 @@ body.dark-mode .swal2-textarea {
                 <i class="fas fa-sign-out-alt"></i> <span>Salir</span>
             </button>
 
-            <button class="menu-toggle" id="menuToggle">
-                <i class="fas fa-bars"></i>
-            </button>
         </div>
     </header>
 
@@ -1274,16 +1311,14 @@ function handleSwipe() {
 }
 
     // 5. INICIALIZACIÓN
+    // 5. INICIALIZACIÓN
     document.addEventListener('DOMContentLoaded', () => {
         try {
-            // Asegúrate que estas funciones existan en tu archivo o estén importadas
             if(typeof initTheme === 'function') initTheme();
             if(typeof verificarAuth === 'function') verificarAuth();
-            if(typeof toggleMenu === 'function') {
-                document.getElementById('menuToggle').onclick = toggleMenu;
-                document.getElementById('closeMenu').onclick = toggleMenu;
-                document.getElementById('overlayMenu').onclick = toggleMenu;
-            }
+            
+            // Eliminamos las referencias a menuToggle, closeMenu y overlayMenu que causaban el error
+            
             if(typeof handleScroll === 'function') window.addEventListener('scroll', handleScroll);
             if(typeof setupLightboxNavigation === 'function') setupLightboxNavigation(); 
             
@@ -2177,7 +2212,7 @@ async function cargarNotificacionesEstudiante(cedula) {
         }
 
     }
-        function toggleMenu() { document.getElementById('sideMenu').classList.toggle('active'); document.getElementById('overlayMenu').classList.toggle('active'); }
+
         function cerrarSesion() { localStorage.clear(); window.location.href = 'index.html'; }
         
         function cerrarModal(id) { document.getElementById(id).classList.remove('active'); }

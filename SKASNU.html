@@ -1046,7 +1046,7 @@ footer {
     .header-actions { gap: 8px; }
     .logo-container img { height: 40px; }
     .btn-icon-header { width: 38px; height: 38px; font-size: 1rem; }
-    .menu-toggle { width: 40px; height: 40px; font-size: 1.5rem; }
+    .menu-toggle { display: none !important; }
 
     .hero {
         padding: 100px 15px 60px;
@@ -1084,7 +1084,148 @@ footer {
     .cd .u span { font-size: 0.55rem; }
     .chip { font-size: 0.85rem; padding: 13px 14px; }
 }
+
+    .bottom-nav-mobile { display: none; }
+    @media (max-width: 992px) {
+        body { padding-bottom: 75px !important; }
+        
+        .bottom-nav-mobile {
+            display: flex !important; position: fixed; bottom: 0; left: 0; width: 100%;
+            background: var(--bg-header); border-top: 1px solid var(--border-color);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.08); z-index: 4000;
+            align-items: center; padding: 10px 5px;
+            padding-bottom: calc(10px + env(safe-area-inset-bottom)); backdrop-filter: blur(15px);
+            
+            /* --- MAGIA DEL SCROLL HORIZONTAL --- */
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none; /* Oculta la barra en Firefox */
+        }
+        
+        /* Oculta la barra en Chrome/Safari */
+        .bottom-nav-mobile::-webkit-scrollbar { display: none; }
+
+        .bn-item {
+            background: transparent; border: none; color: var(--text-sec);
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            font-size: 0.65rem; font-weight: 600; text-decoration: none; cursor: pointer; 
+            
+            /* --- AJUSTES PARA EL SLIDER --- */
+            flex: 0 0 22%; /* Cada botón ocupa 22% de la pantalla (entran 4 y medio a la vez) */
+            min-width: 70px;
+            transition: 0.3s;
+        }
+        .bn-item i { font-size: 1.3rem; transition: transform 0.3s; }
+        .bn-item.active { color: var(--primary); }
+        .bn-item.active i { transform: translateY(-2px) scale(1.15); }
+    }
+
+    .bottom-nav-mobile { display: none; }
+    @media (max-width: 992px) {
+        body { padding-bottom: 75px !important; }
+        
+        .bottom-nav-mobile {
+            display: flex !important; position: fixed; bottom: 0; left: 0; width: 100%;
+            background: var(--bg-header); border-top: 1px solid var(--border-color);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.08); z-index: 4000;
+            align-items: center; padding: 10px 5px;
+            padding-bottom: calc(10px + env(safe-area-inset-bottom)); backdrop-filter: blur(15px);
+            
+            /* --- MAGIA DEL SCROLL HORIZONTAL --- */
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none; /* Oculta la barra en Firefox */
+        }
+        
+        /* Oculta la barra en Chrome/Safari */
+        .bottom-nav-mobile::-webkit-scrollbar { display: none; }
+
+        .bn-item {
+            background: transparent; border: none; color: var(--text-sec);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+            font-size: 0.65rem; font-weight: 600; text-decoration: none; cursor: pointer; 
+            
+            /* --- AJUSTES PARA EL SLIDER --- */
+            flex: 0 0 25%; /* Cada botón ocupa 25% de la pantalla (entran 4 exactos) */
+            min-width: 80px;
+            transition: 0.3s;
+        }
+        .bn-item i { font-size: 1.3rem; transition: transform 0.3s; display: block; }
+        .bn-item span { display: block; width: 100%; text-align: center; }
+        .bn-item.active { color: var(--primary); }
+        .bn-item.active i { transform: translateY(-2px) scale(1.15); }
+    }
 </style>
+
+<nav class="bottom-nav-mobile" id="bottomNavSkasnu">
+    <!-- Botón Volver al Inicio (Página Principal) -->
+    <a href="index.html" class="bn-item">
+        <i class="fas fa-home"></i><span>Inicio</span>
+    </a>
+    
+    <!-- Secciones del SKASNU -->
+    <a href="#edicion" class="bn-item active" onclick="activeNavSKASNU(this)">
+        <i class="fas fa-university"></i><span data-i18n="nav-about">El Modelo</span>
+    </a>
+    <a href="#comites" class="bn-item" onclick="activeNavSKASNU(this)">
+        <i class="fas fa-users"></i><span data-i18n="nav-committees">Comités</span>
+    </a>
+    <a href="#distintos" class="bn-item" onclick="activeNavSKASNU(this)">
+        <i class="fas fa-medal"></i><span data-i18n="nav-distinctions">Virtudes</span>
+    </a>
+    <a href="#campus" class="bn-item" onclick="activeNavSKASNU(this)">
+        <i class="far fa-calendar-alt"></i><span data-i18n="nav-schedule">Cronograma</span>
+    </a>
+    <a href="#inscripcion" class="bn-item" onclick="activeNavSKASNU(this)">
+        <i class="fas fa-pen-fancy"></i><span data-i18n="nav-enrollment">Inscripción</span>
+    </a>
+</nav>
+
+<script>
+    // Función para cambiar el estado activo del menú y centrar el botón clickeado
+    function activeNavSKASNU(elemento) {
+        document.querySelectorAll('.bn-item').forEach(el => el.classList.remove('active'));
+        if(elemento) {
+            elemento.classList.add('active');
+            
+            // Auto-scroll del menú inferior para centrar el botón tocado
+            const nav = document.getElementById('bottomNavSkasnu');
+            const navWidth = nav.offsetWidth;
+            const elLeft = elemento.offsetLeft;
+            const elWidth = elemento.offsetWidth;
+            nav.scrollTo({
+                left: elLeft - (navWidth / 2) + (elWidth / 2),
+                behavior: 'smooth'
+            });
+        }
+    }
+
+    // Ya no inicializamos eventos de hamburguesa porque lo borramos
+    document.addEventListener('DOMContentLoaded', () => {
+        // Desplazamiento suave para los enlaces del menú inferior
+        document.querySelectorAll('.bn-item[href^="#"]').forEach(a => {
+            a.addEventListener('click', function(e) {
+                const href = this.getAttribute('href');
+                if (href && href.length > 1) {
+                    e.preventDefault();
+                    const target = document.querySelector(href);
+                    if (target) {
+                        const offset = 80; // Altura de la cabecera
+                        const top = target.getBoundingClientRect().top + window.pageYOffset - offset;
+                        window.scrollTo({ top: top, behavior: 'smooth' });
+                    }
+                }
+            });
+        });
+        
+        // Refrescar traducciones
+        if(typeof applyTranslations === 'function') {
+            applyTranslations();
+        }
+    });
+</script>
 </head>
 
 <body class="skasnu-page">
@@ -1113,31 +1254,8 @@ footer {
         <button onclick="toggleTheme()" class="btn-icon-header" id="themeBtn" aria-label="Cambiar tema">
             <i class="fas fa-moon"></i>
         </button>
-        <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">
-            <i class="fas fa-bars"></i>
-        </button>
     </div>
 </header>
-
-<!-- ================= SIDEBAR ================= -->
-<div class="overlay-bg" id="overlayMenu"></div>
-<div class="side-menu" id="sideMenu">
-    <div class="side-menu-header">
-        <h3 data-i18n="menu-title"><i class="fas fa-bars"></i> Menú</h3>
-        <button class="close-menu" id="closeMenu" title="Cerrar">&times;</button>
-    </div>
-    <ul class="menu-list">
-        <li><button class="menu-btn" onclick="window.location.href='index.html'" data-i18n="menu-home"><i class="fas fa-home"></i> Inicio</button></li>
-        <li><button class="menu-btn" onclick="window.location.href='biblioteca.html'" data-i18n="menu-login"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</button></li>
-        <li><button class="menu-btn" onclick="window.open('https://uepdespertar.edu.ec/nosotros/', '_blank')" data-i18n="menu-about"><i class="fas fa-school"></i> Sobre el Colegio</button></li>
-        <li><button class="menu-btn active" onclick="location.reload()" data-i18n="menu-mun"><i class="fas fa-globe-americas"></i> Modelo ONU SKASNU</button></li>
-        <li style="margin-top:auto; border-top:1px solid var(--border-color); padding-top:20px;">
-            <button class="menu-btn" onclick="abrirSoporte()" data-i18n="menu-support">
-                <i class="fas fa-headset"></i> Soporte Técnico
-            </button>
-        </li>
-    </ul>
-</div>
 
 <!-- ================= HERO ================= -->
 <section class="hero">
@@ -1610,15 +1728,14 @@ footer {
 // =============================================================
 document.addEventListener('DOMContentLoaded', () => {
     try {
-        initTheme();
-        document.getElementById('menuToggle').onclick = toggleMenu;
-        document.getElementById('closeMenu').onclick = toggleMenu;
-        document.getElementById('overlayMenu').onclick = toggleMenu;
-        initCountdown();
-        initFilters();
+        if(typeof initTheme === 'function') initTheme();
         
-        // Llamada a la internacionalización al cargar la página
-        initLanguage();
+        // Eliminadas las funciones del menú lateral obsoleto
+        
+        if(typeof initCountdown === 'function') initCountdown();
+        if(typeof initFilters === 'function') initFilters();
+        if(typeof initLanguage === 'function') initLanguage();
+        
     } catch (error) {
         console.error("Error init:", error);
     }
@@ -1655,13 +1772,6 @@ function initTheme() {
     });
 }
 
-// =============================================================
-// MENÚ LATERAL Y SOPORTE
-// =============================================================
-function toggleMenu() {
-    document.getElementById('sideMenu').classList.toggle('active');
-    document.getElementById('overlayMenu').classList.toggle('active');
-}
 
 function abrirSoporte() {
     toggleMenu();

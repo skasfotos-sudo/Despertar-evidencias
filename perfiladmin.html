@@ -982,8 +982,98 @@ body.dark-mode .swal2-textarea {
             border-left: 4px solid var(--primary); 
         }
 
-        
+        .bottom-nav-mobile { display: none; }
+        @media (max-width: 992px) {
+            .menu-toggle { display: none !important; }
+            body { padding-bottom: 75px !important; }
+            .floating-bar.active { transform: translateY(-70px) !important; border-radius: 20px !important; }
+            
+            .bottom-nav-mobile {
+                display: flex !important; position: fixed; bottom: 0; left: 0; width: 100%;
+                background: var(--bg-header); border-top: 1px solid var(--border-color);
+                box-shadow: 0 -4px 20px rgba(0,0,0,0.08); z-index: 4000;
+                align-items: center; 
+                /* Se agregó padding-right de 15px para separar el último botón (Salir) del borde */
+                padding: 10px 15px 10px 5px; 
+                padding-bottom: calc(10px + env(safe-area-inset-bottom)); backdrop-filter: blur(15px);
+                
+                overflow-x: auto;
+                scroll-behavior: smooth;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none; 
+                -ms-overflow-style: none; /* Oculta en Edge antiguo */
+            }
+            
+            /* Oculta la barra en iOS, Safari y Chrome móvil forzadamente */
+            .bottom-nav-mobile::-webkit-scrollbar { 
+                display: none; 
+                width: 0; 
+                height: 0; 
+            }
+
+            .bn-item {
+                background: transparent; border: none; color: var(--text-sec);
+                display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+                font-size: 0.65rem; font-weight: 600; cursor: pointer; 
+                
+                flex: 0 0 22%; 
+                min-width: 75px;
+                transition: 0.3s;
+                /* El tap-highlight previene parpadeos azules al tocar en Android */
+                -webkit-tap-highlight-color: transparent; 
+            }
+            .bn-item i { font-size: 1.3rem; transition: transform 0.3s; display: block; }
+            .bn-item span { display: block; width: 100%; text-align: center; }
+            .bn-item.active { color: var(--primary); }
+            .bn-item.active i { transform: translateY(-2px) scale(1.15); }
+        }
     </style>
+    <nav class="bottom-nav-mobile" id="bottomNavAdmin">
+        <button class="bn-item active" onclick="navTo('dashboard'); activeNavAdmin(this)">
+            <i class="fas fa-chart-line"></i><span>Resumen</span>
+        </button>
+        <button class="bn-item" onclick="navTo('usuarios'); activeNavAdmin(this)">
+            <i class="fas fa-users-cog"></i><span>Usuarios</span>
+        </button>
+        <button class="bn-item" onclick="navTo('upload'); activeNavAdmin(this)">
+            <i class="fas fa-cloud-upload-alt"></i><span>Subir</span>
+        </button>
+        <button class="bn-item" onclick="navTo('evidencias'); activeNavAdmin(this)">
+            <i class="fas fa-folder-open"></i><span>Galería</span>
+        </button>
+        <button class="bn-item" onclick="navTo('solicitudes'); activeNavAdmin(this)">
+            <i class="fas fa-inbox"></i><span>Solicitudes</span>
+        </button>
+        <button class="bn-item" onclick="navTo('seguridad'); activeNavAdmin(this)">
+            <i class="fas fa-shield-alt"></i><span>Seguridad</span>
+        </button>
+        <button class="bn-item" onclick="navTo('mantenimiento'); activeNavAdmin(this)">
+            <i class="fas fa-server"></i><span>Mant.</span>
+        </button>
+        <!-- Botón Salir en rojo para prevenir accidentes -->
+        <button class="bn-item" onclick="cerrarSesion()" style="color: var(--error);">
+            <i class="fas fa-sign-out-alt"></i><span>Salir</span>
+        </button>
+    </nav>
+    <script>
+        // Función para cambiar el estado activo del menú y centrar el botón clickeado
+        function activeNavAdmin(elemento) {
+            document.querySelectorAll('.bn-item').forEach(el => el.classList.remove('active'));
+            if(elemento) {
+                elemento.classList.add('active');
+                
+                // Auto-scroll del menú inferior para centrar el botón tocado
+                const nav = document.getElementById('bottomNavAdmin');
+                const navWidth = nav.offsetWidth;
+                const elLeft = elemento.offsetLeft;
+                const elWidth = elemento.offsetWidth;
+                nav.scrollTo({
+                    left: elLeft - (navWidth / 2) + (elWidth / 2),
+                    behavior: 'smooth'
+                });
+            }
+        }
+    </script>
 </head>
 
 <body>
@@ -1018,9 +1108,6 @@ body.dark-mode .swal2-textarea {
                 <i class="fas fa-sign-out-alt"></i> <span>Salir</span>
             </button>
 
-            <button class="menu-toggle" id="menuToggle">
-                <i class="fas fa-bars"></i>
-            </button>
         </div>
     </header>
 
