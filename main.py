@@ -3258,20 +3258,15 @@ async def recuperar_evidencias_nube(background_tasks: BackgroundTasks):
     background_tasks.add_task(tarea_rescate)
     return JSONResponse({"mensaje": "🚑 Rescate iniciado. Revisa los logs en 2 minutos."})
 
+
 class ReasignarRequest(BaseModel):
     ids: str
     cedula_destino: str
-
-
-    # --- AGREGA ESTE NUEVO ENDPOINT PARA RECUPERAR TUS DATOS ---
 
 @app.post("/reasignar_evidencias")
 async def reasignar_evidencias(datos: ReasignarRequest):
     """
     V2.0 - Reasignación Multi-Destino adaptada para PostgreSQL:
-    - Permite enviar una lista de cédulas destino (separadas por comas).
-    - Al primer destino le MUEVE el archivo.
-    - A los siguientes destinos les crea una COPIA (Clon) en la base de datos.
     """
     try:
         if not datos.ids or not datos.cedula_destino:
@@ -3284,22 +3279,18 @@ async def reasignar_evidencias(datos: ReasignarRequest):
              return JSONResponse({"error": "Selección inválida"})
 
         conn = get_db_connection()
-        # 1. CORRECCIÓN: Usamos RealDictCursor para poder extraer los datos sin error
         c = conn.cursor(cursor_factory=RealDictCursor)
         
         movidos = 0
         clonados = 0
         
-        # 2. CORRECCIÓN: Separar 'execute' y 'fetchall' en dos líneas (Regla estricta de PostgreSQL)
         tupla_ids = tuple(ids_evidencias)
         placeholders = ','.join(['%s'] * len(tupla_ids))
         
         c.execute(f"SELECT * FROM Evidencias WHERE id IN ({placeholders})", tupla_ids)
         evidencias_originales = c.fetchall()
 
-        # 3. PROCESAR CADA EVIDENCIA
         for ev in evidencias_originales:
-            # Extraemos los datos previniendo las diferencias de mayúsculas/minúsculas de la BD
             ev_id = ev.get('id') or ev.get('ID')
             url = ev.get('Url_Archivo') or ev.get('url_archivo')
             hash_arch = ev.get('Hash') or ev.get('hash')
@@ -3307,12 +3298,10 @@ async def reasignar_evidencias(datos: ReasignarRequest):
             tipo = ev.get('Tipo_Archivo') or ev.get('tipo_archivo')
             peso = ev.get('Tamanio_KB') or ev.get('tamanio_kb')
 
-            # A) Mover al PRIMER estudiante de la lista (UPDATE)
             primer_destino = cedulas_destino[0]
             c.execute("UPDATE Evidencias SET CI_Estudiante = %s, Asignado_Automaticamente = 0 WHERE id = %s", (primer_destino, ev_id))
             movidos += 1
             
-            # B) Clonar para el RESTO de estudiantes de la lista (INSERT)
             if len(cedulas_destino) > 1:
                 for otro_destino in cedulas_destino[1:]:
                     c.execute("""
@@ -3342,21 +3331,18 @@ async def reparar_admin():
         conn = get_db_connection()
         c = conn.cursor()
         
-        # Encriptamos la contraseña por defecto
         pass_admin_hash = get_password_hash('admin123')
         
         c.execute("SELECT * FROM Usuarios WHERE CI = '9999999999'")
         user = c.fetchone()
         
         if not user:
-            # Crear de cero con contraseña encriptada
             c.execute("""
                 INSERT INTO Usuarios (Nombre, Apellido, CI, Password, Tipo, Activo) 
                 VALUES ('Admin', 'Sistema', '9999999999', %s, 0, 1)
             """, (pass_admin_hash,))
             mensaje = "Usuario Admin no existía. CREADO exitosamente."
         else:
-            # Actualizar existente y resetear clave a admin123 (encriptada)
             c.execute("""
                 UPDATE Usuarios 
                 SET Tipo = 0, Activo = 1, Password = %s 
@@ -3371,19 +3357,17 @@ async def reparar_admin():
     except Exception as e:
         return JSONResponse({"error": str(e)})
 
-    # --- ENDPOINT PARA ACTUALIZAR LA TABLA USUARIOS (EJECUTAR UNA VEZ) ---
 @app.get("/actualizar_tabla_usuarios")
 async def actualizar_tabla_usuarios():
     try:
         conn = get_db_connection()
         c = conn.cursor()
         
-        # Agregamos TEMA a la lista de columnas nuevas
         comandos = [
             "ALTER TABLE Usuarios ADD COLUMN IF NOT EXISTS Email TEXT;",
             "ALTER TABLE Usuarios ADD COLUMN IF NOT EXISTS Telefono TEXT;",
             "ALTER TABLE Usuarios ADD COLUMN IF NOT EXISTS Fecha_Registro TIMESTAMP DEFAULT NOW();",
-            "ALTER TABLE Usuarios ADD COLUMN IF NOT EXISTS Tema INTEGER DEFAULT 0;" # <--- ESTO ES LO NUEVO
+            "ALTER TABLE Usuarios ADD COLUMN IF NOT EXISTS Tema INTEGER DEFAULT 0;"
         ]
         
         for cmd in comandos:
@@ -3395,14 +3379,11 @@ async def actualizar_tabla_usuarios():
     except Exception as e:
         return {"error": str(e)}
 
-        # --- PEGAR ESTO JUSTO DEBAJO DE 'actualizar_tabla_usuarios' ---
-
 @app.get("/actualizar_tabla_solicitudes")
 async def actualizar_tabla_solicitudes():
     try:
         conn = get_db_connection()
         c = conn.cursor()
-        # Creamos la columna Fecha_Visto si no existe
         c.execute("ALTER TABLE Solicitudes ADD COLUMN IF NOT EXISTS Fecha_Visto TIMESTAMP NULL;")
         conn.commit()
         conn.close()
@@ -3412,103 +3393,64 @@ async def actualizar_tabla_solicitudes():
 
 @app.get("/migrar_seguridad")
 async def migrar_seguridad():
-    """
-    Encripta todas las contraseñas que están en texto plano.
-    Ejecutar una sola vez.
-    """
+    """Encripta todas las contraseñas que están en texto plano."""
     try:
         conn = get_db_connection()
         c = conn.cursor(cursor_factory=RealDictCursor)
-        
-        # 1. Obtener todos los usuarios
         c.execute("SELECT CI, Password FROM Usuarios")
         usuarios = c.fetchall()
-        
         actualizados = 0
         
         for u in usuarios:
-            cedula = u['ci'] # O u['CI'] dependiendo de tu base de datos
-            password_actual = u['password'] # O u['Password']
+            cedula = u['ci'] 
+            password_actual = u['password'] 
             
-            # 2. Verificar si ya está encriptada (Los hash de bcrypt empiezan con $2b$)
             if password_actual and not password_actual.startswith("$2b$"):
-                # Si no empieza con $2b$, es texto plano. ¡A encriptar!
                 nuevo_hash = get_password_hash(password_actual)
-                
-                # Guardamos la versión segura
                 c.execute("UPDATE Usuarios SET Password = %s WHERE CI = %s", (nuevo_hash, cedula))
                 actualizados += 1
         
         conn.commit()
         conn.close()
-        
-        return JSONResponse({
-            "status": "ok", 
-            "mensaje": f"Se han encriptado {actualizados} contraseñas antiguas exitosamente."
-        })
-        
+        return JSONResponse({"status": "ok", "mensaje": f"Se han encriptado {actualizados} contraseñas antiguas exitosamente."})
     except Exception as e:
         return JSONResponse({"error": str(e)})
 
-        # --- Endpoint para que el estudiante borre una solicitud ya leída ---
 @app.delete("/confirmar_lectura_solicitud/{id_solicitud}")
 async def confirmar_lectura(id_solicitud: int):
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
-        # Borramos la solicitud permanentemente
         cursor.execute("DELETE FROM solicitudes WHERE id = %s", (id_solicitud,))
         conn.commit()
-        
         cursor.close()
         conn.close()
         return {"status": "ok", "mensaje": "Solicitud eliminada para ahorrar espacio."}
     except Exception as e:
         return JSONResponse(status_code=500, content={"status": "error", "mensaje": str(e)})
     
-    # --- NUEVO: Limpieza masiva cuando el estudiante marca "Leído" ---
 @app.post("/limpiar_notificaciones_resueltas")
 async def limpiar_notificaciones_resueltas(cedula: str = Form(...)):
-    """
-    Borra de la BD todas las solicitudes que ya no son PENDIENTES.
-    Esto libera espacio en Supabase garantizando que el usuario ya las vio.
-    """
     try:
         conn = get_db_connection()
         c = conn.cursor()
-        
-        # Borramos solo las que están APROBADA o RECHAZADA (Dejamos las PENDIENTES)
-        c.execute("""
-            DELETE FROM Solicitudes 
-            WHERE CI_Solicitante = %s AND Estado != 'PENDIENTE'
-        """, (cedula,))
-        
+        c.execute("DELETE FROM Solicitudes WHERE CI_Solicitante = %s AND Estado != 'PENDIENTE'", (cedula,))
         filas_borradas = c.rowcount
         conn.commit()
         conn.close()
-        
         return {"status": "ok", "mensaje": f"Se eliminaron {filas_borradas} notificaciones antiguas."}
     except Exception as e:
         return JSONResponse(status_code=500, content={"status": "error", "mensaje": str(e)})
-    
+
 @app.post("/agregar_foto_referencia")
 async def agregar_foto_referencia(
     cedula: str = Form(...),
     foto: UploadFile = File(...)
 ):
-    """
-    Agrega o actualiza la foto de referencia de un usuario.
-    - Sube la foto a Backblaze B2 (S3) con ACL pública.
-    - Actualiza la columna 'Foto' en la tabla Usuarios.
-    - Indexa el rostro en AWS Rekognition (si es estudiante).
-    """
     temp_dir = None
     conn = None
     try:
         import re
-        
-        # 1. Validar usuario
         conn = get_db_connection()
         if not conn:
             raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
@@ -3518,46 +3460,31 @@ async def agregar_foto_referencia(
         if not usuario:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-        # 2. Guardar archivo temporal con nombre sanitizado
         nombre_limpio = re.sub(r'[^\w\.\-]', '_', foto.filename)
         temp_dir = tempfile.mkdtemp()
         path = os.path.join(temp_dir, nombre_limpio)
         with open(path, "wb") as f:
             shutil.copyfileobj(foto.file, f)
-        print(f"📸 Foto guardada temporalmente: {path}")
-
-        # 3. Subir a Backblaze B2 (S3) - ¡OBLIGATORIO!
+        
         if not s3_client:
             raise HTTPException(status_code=500, detail="Almacenamiento en nube no disponible.")
         
         timestamp = int(ahora_ecuador().timestamp())
         nombre_nube = f"perfiles/{cedula}_{timestamp}_{nombre_limpio}"
-        s3_client.upload_file(
-            path,
-            BUCKET_NAME,
-            nombre_nube,
-            ExtraArgs={'ACL': 'public-read'}  # 🔑 ¡Esto es lo que hace que sea pública!
-        )
+        s3_client.upload_file(path, BUCKET_NAME, nombre_nube, ExtraArgs={'ACL': 'public-read'})
         url_foto = f"https://{BUCKET_NAME}.s3.us-east-005.backblazeb2.com/{nombre_nube}"
-        print(f"✅ Foto subida a S3: {url_foto}")
-
-        # 4. Actualizar foto principal y guardar en el historial (Carpeta IA)
-        c.execute("UPDATE Usuarios SET Foto = %s WHERE CI = %s", (url_foto, cedula))
         
-        # Calculamos peso y hash para registrarla como evidencia
+        c.execute("UPDATE Usuarios SET Foto = %s WHERE CI = %s", (url_foto, cedula))
         file_hash = calcular_hash(path)
         tamanio_kb = os.path.getsize(path) / 1024
         
-        # Insertamos con el tipo especial 'referencia'
         c.execute("""
             INSERT INTO Evidencias (CI_Estudiante, Url_Archivo, Hash, Estado, Tipo_Archivo, Tamanio_KB, Asignado_Automaticamente)
             VALUES (%s, %s, %s, 1, 'referencia', %s, 0)
         """, (cedula, url_foto, file_hash, tamanio_kb))
         
         conn.commit()
-        print(f"✅ Foto actualizada y guardada en historial de referencias para {cedula}")
 
-        # 5. Indexar rostro en AWS Rekognition (si es estudiante)
         if rekog and usuario.get('Tipo') == 1:
             try:
                 with open(path, 'rb') as image_file:
@@ -3569,49 +3496,27 @@ async def agregar_foto_referencia(
                     MaxFaces=1,
                     QualityFilter='AUTO'
                 )
-                print(f"✅ Rostro indexado en AWS para {cedula}")
             except Exception as e_rek:
                 print(f"⚠️ Error indexando rostro en AWS: {e_rek}")
-                # No detenemos la operación, solo advertimos
 
-        # 6. Limpiar y responder
-        if temp_dir and os.path.exists(temp_dir):
-            shutil.rmtree(temp_dir)
+        registrar_auditoria("AGREGAR_FOTO_REF", f"Admin actualizó foto de referencia de {cedula}", "Administrador")
 
-        registrar_auditoria(
-            "AGREGAR_FOTO_REF",
-            f"Admin actualizó foto de referencia de {cedula}",
-            "Administrador"
-        )
-
-        return JSONResponse({
-            "status": "ok",
-            "mensaje": "Foto de referencia actualizada correctamente.",
-            "url": url_foto
-        })
+        return JSONResponse({"status": "ok", "mensaje": "Foto de referencia actualizada correctamente.", "url": url_foto})
 
     except HTTPException as http_exc:
-        if temp_dir and os.path.exists(temp_dir):
-            shutil.rmtree(temp_dir)
         raise http_exc
     except Exception as e:
-        if temp_dir and os.path.exists(temp_dir):
-            shutil.rmtree(temp_dir)
-        print(f"❌ Error en agregar_foto_referencia: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        if conn:
-            conn.close()
-        if temp_dir and os.path.exists(temp_dir):
-            shutil.rmtree(temp_dir)
+        if conn: conn.close()
+        if temp_dir and os.path.exists(temp_dir): shutil.rmtree(temp_dir)
 
 if __name__ == "__main__":
     import uvicorn
     import os
     
-    # 1. Atrapamos el puerto dinámico de Railway, si no hay, usamos 8080
     puerto_railway = int(os.environ.get("PORT", 8080))
     
     print("=" * 60)
@@ -3619,5 +3524,4 @@ if __name__ == "__main__":
     print("=" * 60)
     print(f"🌍 Servidor forzado en Host: 0.0.0.0 | Puerto: {puerto_railway}")
     
-    # 2. Obligamos a Uvicorn a respetar nuestra configuración silenciando el spam de red
     uvicorn.run("main:app", host="0.0.0.0", port=puerto_railway, access_log=False)
