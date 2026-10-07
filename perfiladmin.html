@@ -1533,43 +1533,154 @@ body.dark-mode .swal2-textarea {
             </div>
         </section>
 
-        <!-- PANEL: MANTENIMIENTO -->
+        <!-- PANEL: MANTENIMIENTO Y DIAGNÓSTICO -->
         <section id="panel-mantenimiento" class="panel-section">
-            <h2 style="color:var(--primary); margin-bottom:20px;">Mantenimiento y Costos</h2>
             
-            <div class="dashboard-grid" style="margin-bottom:30px; grid-template-columns: 1fr;">
-                <div class="stat-card" style="cursor:pointer; background:rgba(211, 47, 47, 0.05); border-color:rgba(211, 47, 47, 0.2);" onclick="ejecutarMantenimiento()">
-                    <div class="stat-icon bg-orange" style="background:var(--error);"><i class="fas fa-radiation-alt"></i></div>
-                    <div class="stat-details">
-                        <h3 style="color:var(--error);">Optimización de Servidor</h3>
-                        <p>Limpia cachés, archivos huérfanos y compacta la base de datos.</p>
+            <!-- HEADER DE SECCIÓN -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding-bottom: 10px;">
+                <div>
+                    <h2 style="color:var(--primary); margin:0; font-size: 1.8rem;">Mantenimiento y Diagnóstico</h2>
+                    <p style="color:var(--text-sec); margin:5px 0 0 0; font-size:0.95rem;">Panel de control avanzado para la salud del sistema y resolución de anomalías.</p>
+                </div>
+            </div>
+
+            <!-- SEPARADOR 1 -->
+            <div style="display: flex; align-items: center; gap: 15px; margin: 30px 0 25px 0;">
+                <div style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1rem; box-shadow: 0 4px 10px rgba(106,13,173,0.3);">1</div>
+                <h3 style="color: var(--text-main); font-size: 1.3rem; margin: 0; font-weight: 600;">Monitoreo y Limpieza</h3>
+                <div style="flex: 1; height: 2px; background: var(--border-color); opacity: 0.5;"></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; margin-bottom: 20px;">
+                
+                <!-- Acción Crítica: Optimización -->
+                <div style="background: var(--bg-card); border-radius: 16px; padding: 25px; box-shadow: var(--shadow-card); border: 1px solid var(--error); position: relative; overflow: hidden; display: flex; flex-direction: column;">
+                    <div style="position: absolute; top: 0; right: 0; background: var(--error); color: white; padding: 5px 15px; border-bottom-left-radius: 12px; font-size: 0.75rem; font-weight: bold; letter-spacing: 1px;"><i class="fas fa-exclamation-triangle"></i> ACCIÓN CRÍTICA</div>
+                    
+                    <h4 style="color:var(--error); margin-bottom:15px; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                        <div style="width: 40px; height: 40px; background: rgba(211, 47, 47, 0.15); color: var(--error); border-radius: 10px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-server"></i></div>
+                        Optimización de Servidor
+                    </h4>
+                    <p style="color:var(--text-sec); font-size:0.95rem; margin-bottom:20px; line-height: 1.5; flex: 1;">
+                        Ejecuta esta rutina para liberar RAM, borrar archivos fantasma en la nube y compactar la Base de Datos. <strong>Recomendado: 1 vez al mes.</strong>
+                    </p>
+                    <button class="btn-primary" onclick="ejecutarMantenimiento()" style="background:var(--error); width: 100%; justify-content: center; font-size: 1.05rem; padding: 14px; box-shadow: 0 4px 15px rgba(211, 47, 47, 0.3); transition: 0.3s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='none'">
+                        <i class="fas fa-broom" style="margin-right: 8px;"></i> Iniciar Purga del Sistema
+                    </button>
+                </div>
+
+                <!-- Estimación de Costos AWS -->
+                <div style="background: var(--bg-card); border-radius: 16px; padding: 25px; box-shadow: var(--shadow-card); border: 1px solid var(--border-color); border-top: 4px solid var(--primary); display: flex; flex-direction: column;">
+                    <h4 style="font-size:1.2rem; margin-bottom:10px; color:var(--text-main); display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 40px; height: 40px; background: var(--primary-soft); color: var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-robot"></i></div>
+                        Auditoría de Costos (AWS)
+                    </h4>
+                    <p style="font-size:0.9rem; color:var(--text-sec); margin-bottom:20px;">
+                        Control en tiempo real del gasto de Inteligencia Artificial ($1.00 por cada 1000 rostros procesados).
+                    </p>
+                    <div style="margin-top: auto; background: var(--input-bg); padding: 15px; border-radius: 10px; border: 1px solid var(--border-color);">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                            <span style="color: var(--text-sec); font-size: 0.95rem;">Llamadas a la API:</span>
+                            <strong id="rekognitionCount" style="color: var(--text-main);">0</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                            <span style="color: var(--text-sec); font-size: 0.95rem;">Costo de IA:</span>
+                            <strong id="rekognitionCost" style="color: var(--info); font-size: 1.1rem;">$0.00</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; padding-top: 5px; align-items: center;">
+                            <span style="color: var(--text-main); font-weight: 600;">Gasto Total Estimado:</span>
+                            <strong id="totalCost" style="color:var(--error); font-size: 1.3rem;">$0.00</strong>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ESTIMACIÓN DE COSTOS AWS PRECISA -->
-            <div class="storage-calc">
-                <h3 style="font-size:1.1rem; margin-bottom:10px; color:var(--primary);">
-                    <i class="fas fa-robot"></i> Estimación Costos AWS Rekognition (Precisa)
-                </h3>
-                <p style="font-size:0.9rem; color:var(--text-sec); margin-bottom:15px;">
-                    Precio: $1.00 por 1000 imágenes analizadas. Basado en uso real del mes actual.
-                </p>
-                <div style="margin:15px 0;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                        <span>Imágenes procesadas este mes:</span>
-                        <strong id="rekognitionCount">0</strong>
+            <!-- SEPARADOR 2 -->
+            <div style="display: flex; align-items: center; gap: 15px; margin: 50px 0 25px 0;">
+                <div style="background: var(--warning); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1rem; box-shadow: 0 4px 10px rgba(249,168,37,0.3);">2</div>
+                <h3 style="color: var(--text-main); font-size: 1.3rem; margin: 0; font-weight: 600;">Manual de Resolución de Problemas</h3>
+                <div style="flex: 1; height: 2px; background: var(--border-color); opacity: 0.5;"></div>
+            </div>
+
+            <!-- MANUAL LIST-VIEW -->
+            <div style="display: flex; flex-direction: column; gap: 20px; margin-bottom: 40px;">
+                
+                <!-- Problema 1 -->
+                <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; box-shadow: var(--shadow-card); display: flex; gap: 25px; align-items: flex-start; flex-wrap: wrap;">
+                    <div style="width: 80px; height: 80px; background: rgba(249, 168, 37, 0.1); border-radius: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid rgba(249, 168, 37, 0.2);">
+                        <i class="fas fa-tachometer-alt" style="font-size: 2.5rem; color: var(--warning);"></i>
                     </div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                        <span>Costo estimado AWS:</span>
-                        <strong id="rekognitionCost" class="cost-highlight">$0.00</strong>
-                    </div>
-                    <div style="display:flex; justify-content:space-between;">
-                        <span>Total mensual (Storage + IA):</span>
-                        <strong id="totalCost" class="cost-highlight" style="color:var(--error);">$0.00</strong>
+                    <div style="flex: 1; min-width: 250px;">
+                        <h4 style="font-size: 1.2rem; color: var(--text-main); margin-bottom: 8px;">Saturación de Memoria y Latencia</h4>
+                        <p style="color: var(--text-sec); font-size: 0.95rem; line-height: 1.6; margin-bottom: 15px;">
+                            <strong>Síntoma:</strong> El panel tarda mucho en cargar las listas de usuarios o se congela. Esto ocurre porque el servidor gratuito ha acumulado "archivos basura" tras la eliminación de evidencias o registros temporales que asfixian la RAM.
+                        </p>
+                        <div style="background: var(--input-bg); border-left: 4px solid var(--warning); padding: 15px 20px; border-radius: 8px;">
+                            <span style="color: var(--warning); font-weight: 700; display: block; margin-bottom: 5px;"><i class="fas fa-wrench"></i> Procedimiento de Corrección:</span>
+                            <span style="font-size: 0.95rem; color: var(--text-main);">Ejecuta la <strong>Purga del Sistema</strong> (Botón rojo en la sección superior). Esto forzará un reinicio del recolector de basura (VACUUM) de PostgreSQL y restaurará la velocidad normal.</span>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Problema 2 -->
+                <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; box-shadow: var(--shadow-card); display: flex; gap: 25px; align-items: flex-start; flex-wrap: wrap;">
+                    <div style="width: 80px; height: 80px; background: rgba(2, 136, 209, 0.1); border-radius: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid rgba(2, 136, 209, 0.2);">
+                        <i class="fas fa-user-astronaut" style="font-size: 2.5rem; color: var(--info);"></i>
+                    </div>
+                    <div style="flex: 1; min-width: 250px;">
+                        <h4 style="font-size: 1.2rem; color: var(--text-main); margin-bottom: 8px;">Anomalías en el Reconocimiento Facial (IA)</h4>
+                        <p style="color: var(--text-sec); font-size: 0.95rem; line-height: 1.6; margin-bottom: 15px;">
+                            <strong>Síntoma:</strong> Las fotos subidas se envían directamente a la "Bandeja de Pendientes" sin asignar al alumno. Esto sucede cuando la foto de referencia inicial es borrosa, o el estudiante cambió drásticamente su aspecto físico.
+                        </p>
+                        <div style="background: var(--input-bg); border-left: 4px solid var(--info); padding: 15px 20px; border-radius: 8px;">
+                            <span style="color: var(--info); font-weight: 700; display: block; margin-bottom: 5px;"><i class="fas fa-wrench"></i> Procedimiento de Corrección:</span>
+                            <span style="font-size: 0.95rem; color: var(--text-main);">Dirígete a la pestaña <b>Usuarios</b>, presiona el botón morado <strong>"Agregar Foto Ref."</strong> y sube una fotografía del rostro del alumno nítida, iluminada y actual para re-entrenar al algoritmo.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Problema 3 -->
+                <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; box-shadow: var(--shadow-card); display: flex; gap: 25px; align-items: flex-start; flex-wrap: wrap;">
+                    <div style="width: 80px; height: 80px; background: rgba(46, 139, 87, 0.1); border-radius: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid rgba(46, 139, 87, 0.2);">
+                        <i class="fas fa-cloud-download-alt" style="font-size: 2.5rem; color: var(--secondary);"></i>
+                    </div>
+                    <div style="flex: 1; min-width: 250px;">
+                        <h4 style="font-size: 1.2rem; color: var(--text-main); margin-bottom: 8px;">Timeouts y Cuellos de Botella en la Red</h4>
+                        <p style="color: var(--text-sec); font-size: 0.95rem; line-height: 1.6; margin-bottom: 15px;">
+                            <strong>Síntoma:</strong> Aparecen errores "500" o "Failed to fetch" de color rojo en la consola durante una subida masiva. El navegador corta la conexión con el servidor porque el archivo es demasiado grande.
+                        </p>
+                        <div style="background: var(--input-bg); border-left: 4px solid var(--secondary); padding: 15px 20px; border-radius: 8px;">
+                            <span style="color: var(--secondary); font-weight: 700; display: block; margin-bottom: 5px;"><i class="fas fa-wrench"></i> Procedimiento de Corrección:</span>
+                            <span style="font-size: 0.95rem; color: var(--text-main);">Respeta los límites del servidor: Nunca subas más de <strong>20 archivos o 200MB por lote</strong>. Para procesar videos que superen ese límite, utiliza exclusivamente la pestaña de <b>"Asignación Manual"</b>.</span>
+                        </div>
+                    </div>
+                </div>
+
             </div>
+
+            <!-- SEPARADOR 3 -->
+            <div style="display: flex; align-items: center; gap: 15px; margin: 50px 0 25px 0;">
+                <div style="background: #0B0D0E; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">3</div>
+                <h3 style="color: var(--text-main); font-size: 1.3rem; margin: 0; font-weight: 600;">Soporte de Infraestructura Crítica</h3>
+                <div style="flex: 1; height: 2px; background: var(--border-color); opacity: 0.5;"></div>
+            </div>
+
+            <!-- SOPORTE RAILWAY -->
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 30px; border-radius: 16px; display: flex; align-items: center; gap: 25px; flex-wrap: wrap; box-shadow: var(--shadow-card);">
+                <div style="width: 70px; height: 70px; background: var(--input-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 2px solid var(--border-color);">
+                    <i class="fas fa-hdd" style="color: var(--text-sec); font-size: 2rem;"></i>
+                </div>
+                <div style="flex: 1; min-width: 250px;">
+                    <h4 style="color: var(--text-main); margin-bottom: 8px; font-size: 1.15rem;">Acceso al Entorno de Producción</h4>
+                    <p style="color: var(--text-sec); font-size: 0.9rem; margin: 0; line-height: 1.6;">
+                        En caso de "Error SSL de Supabase" masivo, caída global del sistema o necesidad de revisar variables de entorno, el Administrador Root deberá forzar el reinicio del contenedor principal.
+                    </p>
+                </div>
+                <a href="https://railway.app/" target="_blank" class="btn-primary" style="background: #0B0D0E; color: white; text-decoration: none; padding: 14px 30px; box-shadow: 0 6px 15px rgba(0,0,0,0.25); transition: 0.3s; font-size: 1.05rem;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='none'">
+                    <i class="fas fa-server"></i> Consola Railway
+                </a>
+            </div>
+            
         </section>
 
     </main>
