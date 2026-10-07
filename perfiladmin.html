@@ -2378,8 +2378,13 @@ body.dark-mode .swal2-textarea {
                         <span id="user-status-${u.cedula}" class="request-badge ${claseEstado}" style="padding: 6px 12px; font-size: 0.75rem;">${estadoTexto}</span>
                     </td>
                     <td data-label="Acciones" style="padding: 16px 25px;">
-                        <div style="display:flex; gap:8px; width:100%; justify-content:flex-end;">
+                        <div style="display:flex; gap:8px; width:100%; justify-content:flex-end; flex-wrap: wrap;">
                             <button class="action-btn btn-view" onclick="verUsuario('${u.cedula}')" title="Ver Detalles" style="width: 36px; height: 36px; font-size: 1rem;"><i class="fas fa-eye"></i></button>
+                            
+                            <button class="action-btn" onclick="irACambiarClave('${u.cedula}')" title="Cambiar Contraseña" style="background: rgba(249, 168, 37, 0.15); color: #f9a825; width: 36px; height: 36px; font-size: 1rem;"><i class="fas fa-key"></i></button>
+                            
+                            <button class="action-btn btn-edit" onclick="irAGaleria('${u.cedula}')" title="Ver Galería" style="width: 36px; height: 36px; font-size: 1rem;"><i class="fas fa-images"></i></button>
+                            
                             ${esActivo ? 
                                 `<button class="action-btn btn-deactivate" onclick="cambiarEstadoUsuario('${u.cedula}', 0)" title="Desactivar" style="width: 36px; height: 36px; font-size: 1rem;"><i class="fas fa-user-slash"></i></button>` : 
                                 `<button class="action-btn btn-activate" onclick="cambiarEstadoUsuario('${u.cedula}', 1)" title="Activar" style="width: 36px; height: 36px; font-size: 1rem;"><i class="fas fa-user-check"></i></button>`
@@ -4950,6 +4955,85 @@ async function eliminarPendienteRapido(id) {
         Swal.fire('Error', 'No se pudo eliminar el archivo.', 'error'); 
     }
 }
+
+// --- NUEVAS FUNCIONES DE ATAJO PARA LA TABLA DE USUARIOS ---
+
+    function irACambiarClave(cedula) {
+        navTo('seguridad'); // Salta a la pestaña
+        seleccionarUsuarioPassword(cedula); // Pre-selecciona al usuario
+        
+        // Hace scroll suave hasta el formulario
+        setTimeout(() => {
+            document.getElementById('formCambiarPassword').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+    }
+
+    function irAGaleria(cedula) {
+        // Busca al estudiante en la lista de evidencias
+        const estudiante = evidencias.find(e => e.cedula === cedula);
+        if (estudiante) {
+            verEvidenciasEstudiante(estudiante); // Carga su galería
+        } else {
+            // Si es admin o no tiene galería creada
+            Swal.fire('Aviso', 'Este usuario es un administrador o aún no tiene una galería inicializada en el sistema.', 'info');
+        }
+    }
+
+    async function eliminarUsuarioUI(cedula) {
+        const usuario = usuarios.find(u => u.cedula === cedula);
+        if (!usuario) return;
+
+        // Evitar que el admin se borre a sí mismo por error
+        const miCedula = localStorage.getItem('usuario_cedula');
+        if (cedula === miCedula) {
+            Swal.fire('Acción denegada', 'No puedes eliminar tu propia cuenta de administrador en uso.', 'error');
+            return;
+        }
+
+        const confirmacion = await Swal.fire({
+            title: '¿Eliminar a ' + usuario.nombre + '?',
+            text: "Esto borrará su cuenta, fotos de perfil y registros permanentemente. Sus evidencias compartidas no se borrarán si otros alumnos las tienen asignadas.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d32f2f',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (!confirmacion.isConfirmed) return;
+
+        // Medida de seguridad exigida por tu backend
+        const { value: adminPass } = await Swal.fire({
+            title: 'Verificación de Seguridad',
+            text: 'Ingresa TU contraseña de administrador para autorizar el borrado:',
+            input: 'password',
+            inputPlaceholder: 'Tu contraseña...',
+            showCancelButton: true,
+            confirmButtonColor: '#d32f2f'
+        });
+
+        if (!adminPass) return;
+
+        try {
+            Swal.fire({title:'Eliminando...', didOpen:()=>Swal.showLoading()});
+            
+            const fd = new FormData();
+            fd.append('admin_cedula', miCedula);
+            fd.append('admin_pass', adminPass);
+
+            const res = await fetch(`${API_URL}/eliminar_usuario/${cedula}`, { method: 'DELETE', body: fd });
+            const data = await res.json();
+
+            if (res.ok) {
+                Swal.fire('Eliminado', data.mensaje || 'Usuario eliminado correctamente', 'success');
+                cargarDatosIniciales(); // Recarga la tabla
+            } else {
+                Swal.fire('Error', data.error || 'Contraseña incorrecta o sin permisos', 'error');
+            }
+        } catch (e) {
+            Swal.fire('Error', 'Problema de conexión con el servidor', 'error');
+        }
+    }
     </script>
 </body>
 </html>
