@@ -1282,9 +1282,27 @@
     // --- LÓGICA DE RECUPERACIÓN ---
     document.getElementById('formRecuperar').addEventListener('submit', async function(e) {
         e.preventDefault();
+        
+        // 1. VALIDACIÓN ESTRICTA DEL CORREO
+        const emailInput = this.querySelector('input[name="email"]').value.trim().toLowerCase();
+        
+        // Expresión regular que obliga a tener @ y terminar en .com, .ec, .net, etc.
+        const emailValido = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/.test(emailInput);
+        
+        if (!emailValido) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Correo Inválido',
+                text: 'Por favor, ingresa una dirección de correo real (ejemplo@gmail.com).',
+                confirmButtonColor: '#f9a825',
+                target: document.getElementById('modalRecuperar') // <--- FUERZA LA ALERTA DENTRO DEL MODAL
+            });
+            return;
+        }
+
         const btn = document.getElementById('btnEnviarRecup');
         const originalText = btn.innerHTML;
-        btn.innerText = "Enviando..."; 
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...'; 
         btn.disabled = true;
 
         const datos = new FormData(this);
@@ -1295,27 +1313,35 @@
             const data = await res.json();
             
             if (data.status === 'ok') {
-                // Éxito con SweetAlert
-                Swal.fire({
+                // Éxito con SweetAlert (Forzado al frente)
+                await Swal.fire({
                     icon: 'success',
                     title: '¡Solicitud Enviada!',
                     text: 'El administrador te enviará la contraseña a tu correo pronto.',
-                    confirmButtonColor: '#6A0DAD'
+                    confirmButtonColor: '#6A0DAD',
+                    target: document.getElementById('modalRecuperar') // <--- EVITA QUE QUEDE OCULTO
                 });
                 cerrarRecuperar();
                 this.reset();
             } else {
-                // Error con SweetAlert
+                // Error con SweetAlert (Forzado al frente)
                 Swal.fire({
                     icon: 'error',
-                    title: 'Error',
-                    text: data.mensaje,
-                    confirmButtonColor: '#d33'
+                    title: 'Error de Solicitud',
+                    text: data.mensaje || 'La cédula ingresada no existe en el sistema.',
+                    confirmButtonColor: '#d33',
+                    target: document.getElementById('modalRecuperar') // <--- EVITA QUE QUEDE OCULTO
                 });
             }
         } catch (error) {
             console.error(error);
-            alert("Error de conexión. Intenta más tarde.");
+            Swal.fire({
+                icon: 'error',
+                title: 'Problema de Conexión',
+                text: 'No se pudo contactar al servidor. Intenta más tarde.',
+                confirmButtonColor: '#d33',
+                target: document.getElementById('modalRecuperar') 
+            });
         } finally {
             btn.innerHTML = originalText; 
             btn.disabled = false;
