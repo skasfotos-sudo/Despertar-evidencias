@@ -1110,6 +1110,41 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
+
+        // =========================================================
+    // 0. ESCUDO GLOBAL ANTI-PÁNICO (INTERCEPTOR DE RED)
+    // =========================================================
+    const fetchOriginal = window.fetch;
+    window.fetch = async function(...args) {
+        try {
+            return await fetchOriginal(...args);
+        } catch (error) {
+            // Interceptamos el fallo de red del navegador y lo traducimos a humano
+            if (error.name === 'TypeError' && (error.message.includes('Failed to fetch') || error.message.includes('NetworkError'))) {
+                throw new Error("Problemas de red o conexión. Revisa tu conexión a internet e inténtalo de nuevo.");
+            }
+            throw error; // Dejamos pasar otros errores normales de programación
+        }
+    };
+
+    // Detectar desconexión en tiempo real (Si el usuario apaga el WiFi o pierde señal)
+    window.addEventListener('offline', () => {
+        if(typeof mostrarMensaje === 'function') {
+            mostrarMensaje('Sin conexión a internet. El sistema está offline.', 'warning');
+        } else if (typeof Swal !== 'undefined') {
+            Swal.fire({ title: 'Sin Conexión', text: 'Revisa tu red WiFi o datos móviles.', icon: 'warning', toast: true, position: 'bottom-end', showConfirmButton: false, timer: 4000 });
+        }
+    });
+
+    // Detectar reconexión en tiempo real
+    window.addEventListener('online', () => {
+        if(typeof mostrarMensaje === 'function') {
+            mostrarMensaje('Conexión a internet restablecida.', 'success');
+        } else if (typeof Swal !== 'undefined') {
+            Swal.fire({ title: 'Conexión Restablecida', icon: 'success', toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000 });
+        }
+    });
+    
     // --- URL DEL SERVIDOR (CORREGIDA PARA PRODUCCIÓN) ---
     const API_URL = "https://despertar-evidencias-production-0c7c.up.railway.app";
 
