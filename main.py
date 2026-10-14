@@ -637,7 +637,28 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"] # Esto permite al frontend leer detalles del error si los hay
 )
+
+from fastapi.responses import JSONResponse
+from fastapi import Request
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    import traceback
+    error_msg = str(exc)
+    
+    # Imprimir el error en consola para debugging interno
+    print(f"❌ Error Global no capturado: {error_msg}")
+    traceback.print_exc()
+    
+    return JSONResponse(
+        status_code=500,
+        content={
+            "status": "error",
+            "mensaje": "Error interno del servidor o problemas de red. Por favor, inténtelo de nuevo más tarde."
+        }
+    )
 
 @app.on_event("startup")
 async def startup_event():
