@@ -1111,6 +1111,94 @@ async def cambiar_estado_usuario(datos: EstadoUsuarioRequest):
     finally:
         if conn: conn.close()
 
+class EditarUsuarioRequest(BaseModel):
+    cedula_original: str
+    nombre: str
+    apellido: str
+    nueva_cedula: str
+    tipo: int
+    clave_maestra: str
+
+class EditarUsuarioRequest(BaseModel):
+    cedula_original: str
+    nombre: str
+    apellido: str
+    nueva_cedula: str
+    tipo: int
+    clave_maestra: str
+
+@app.post("/editar_usuario")
+async def editar_usuario(datos: EditarUsuarioRequest):
+    """Edita los datos de un usuario tras verificar la Clave Suprema"""
+    conn = None
+    try:
+        # Validar la clave maestra
+        if datos.clave_maestra != CLAVE_SUPREMA:
+            return JSONResponse(
+                content={"error": "⛔ Acceso Denegado: Clave Suprema incorrecta."},
+                status_code=403
+            )
+
+        conn = get_db_connection()
+        c = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Verificar si la nueva cédula ya existe (solo si se está cambiando)
+        if datos.cedula_original != datos.nueva_cedula:
+            c.execute("SELECT CI FROM Usuarios WHERE CI = %s", (datos.nueva_cedula,))
+            if c.fetchone():
+                return JSONResponse(
+                    content={"error": "La nueva cédula ya está registrada para otro usuario."},
+                    status_code=409
+                )
+
+        # Iniciar transacción
+        # Al actualizar la cédula, actualizamos también en las tablas relacionadas
+        
+        # 1. Actualizar evidencias y solicitudes asociadas si la cédula cambia
+        if datos.cedula_original != datos.nueva_cedula:
+            c.execute("UPDATE Evidencias SET CI_Estudiante = %s WHERE CI_Estudiante = %s", 
+                     (datos.nueva_cedula, datos.cedula_original))
+            
+            c.execute("UPDATE Solicitudes SET CI_Solicitante = %s WHERE CI_Solicitante = %s", 
+                     (datos.nueva_cedula, datos.cedula_original))
+
+        # 2. Actualizar el usuario
+        c.execute("""
+            UPDATE Usuarios 
+            SET Nombre = %s, 
+                Apellido = %s, 
+                CI = %s, 
+                Tipo = %s
+            WHERE CI = %s
+        """, (
+            datos.nombre, 
+            datos.apellido, 
+            datos.nueva_cedula, 
+            datos.tipo, 
+            datos.cedula_original
+        ))
+
+        # 3. Registrar auditoría
+        detalle = f"Editó usuario {datos.cedula_original} -> {datos.nueva_cedula} ({datos.nombre} {datos.apellido})"
+        fecha_str = ahora_ecuador().strftime("%Y-%m-%d %H:%M:%S")
+        c.execute("""
+            INSERT INTO Auditoria (Accion, Detalle, Usuario, Fecha) 
+            VALUES (%s, %s, %s, %s)
+        """, ("EDICION_USUARIO", detalle, "Administrador", fecha_str))
+
+        conn.commit()
+        
+        return JSONResponse({
+            "status": "ok", 
+            "mensaje": "Usuario actualizado correctamente"
+        })
+        
+    except Exception as e:
+        if conn: conn.rollback()
+        print(f"❌ Error editando usuario: {e}")
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+    finally:
+        if conn: conn.close()
 
 @app.delete("/eliminar_usuario/{cedula}")
 async def eliminar_usuario(
