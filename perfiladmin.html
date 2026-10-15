@@ -3838,12 +3838,13 @@ function configurarEventosTeclado() {
     const lbContent = document.getElementById('lightbox');
     
     lbContent.addEventListener('touchstart', e => { 
-        if(e.target.closest('.visor-doc-wrapper') || e.target.closest('.lb-media-item')) return;
+        // Permitimos deslizar sobre la foto, EXCEPTO si es un PDF (.es-documento) o si la foto tiene zoom (.zoomed)
+        if(e.target.closest('.es-documento') || e.target.classList.contains('zoomed')) return;
         touchStartX = e.changedTouches[0].screenX; 
     }, {passive: true});
 
     lbContent.addEventListener('touchend', e => { 
-        if(e.target.closest('.visor-doc-wrapper') || e.target.closest('.lb-media-item')) return;
+        if(e.target.closest('.es-documento') || e.target.classList.contains('zoomed')) return;
         touchEndX = e.changedTouches[0].screenX; 
         handleSwipe(); 
     }, {passive: true});
