@@ -2661,7 +2661,7 @@ def listar_usuarios():
         c.execute("""
         SELECT ID, Nombre, Apellido, CI, Tipo, Foto, Activo, Email, Telefono 
         FROM Usuarios 
-        ORDER BY Apellido ASC, Nombre ASC
+        ORDER BY Nombre ASC, Apellido ASC
     """)
         usuarios = c.fetchall()
         conn.close()
@@ -2689,7 +2689,7 @@ def resumen_estudiantes():
             LEFT JOIN Evidencias e ON u.CI = e.CI_Estudiante AND e.Tipo_Archivo != 'referencia' AND e.Estado = 1
             WHERE u.Tipo = 1
             GROUP BY u.CI, u.Nombre, u.Apellido, u.Foto
-            ORDER BY u.Apellido ASC
+            ORDER BY u.Nombre ASC, u.Apellido ASC
         """
         c.execute(query)
         data = c.fetchall()
