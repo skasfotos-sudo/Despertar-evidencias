@@ -713,31 +713,45 @@
         }
 
         /* ==========================================================================
-           CORRECCIÓN ZOOM Y LIGHTBOX (ESTILO DEFINITIVO)
+           CORRECCIÓN ZOOM Y LIGHTBOX (DISEÑO PROFESIONAL CON TRANSICIONES)
            ========================================================================== */
         .lb-content-wrapper {
-            width: 100%; height: 100%;
-            overflow: auto; /* Permite scroll nativo */
-            display: flex; justify-content: center; align-items: center;
-            -webkit-overflow-scrolling: touch;
+            width: 100%; 
+            height: 100%;
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            overflow: hidden; /* Oculta barras de scroll feas */
+            position: relative;
+            touch-action: none; /* Desactiva gestos nativos del navegador para controlarlo nosotros */
         }
 
         .lb-media-item {
-            max-width: 100%; max-height: 100%;
+            max-width: 90vw; 
+            max-height: 85vh; 
+            border-radius: 8px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6); 
             object-fit: contain;
-            transition: width 0.3s ease, height 0.3s ease; /* Transición suave de tamaño */
+            pointer-events: auto;
+            transform-origin: center center; /* Zoom hacia el centro */
+            transition: transform 0.15s ease-out; /* Transición súper suave */
             cursor: zoom-in;
+            user-select: none;
+            -webkit-user-drag: none;
         }
 
-        .lb-media-item.zoomed {
-            /* EL TRUCO: Quitar límites y forzar tamaño grande */
-            max-width: none !important;
-            max-height: none !important;
-            width: auto;
-            height: auto;
-            min-width: 150%; /* 150% de la pantalla para obligar el scroll */
-            cursor: zoom-out;
-            cursor: grab;
+        /* Ajustes para móviles */
+        @media (max-width: 768px) {
+            .visor-doc-wrapper.es-documento {
+                width: 95vw;
+                height: 65vh; 
+                border-radius: 8px;
+            }
+            .lb-media-item {
+                max-width: 95vw; 
+                max-height: 75vh;
+                cursor: default; /* En celular no se asume zoom-in con click directo */
+            }
         }
         footer { padding: 30px 15px; text-align: center; }
         /* ==========================================================================
@@ -3970,9 +3984,14 @@ function actualizarVisor() {
                 </div>`;
         } else if (esImagen) {
             contenido.innerHTML = `
-                <div class="visor-doc-wrapper">
-                    <img src="${url}" class="lb-media-item" onerror="this.src='Img/Logo_pestaña.webp'" onclick="event.stopPropagation(); this.classList.toggle('zoomed');">
+                <div class="visor-doc-wrapper" style="width:100%; height:100%;">
+                    <img id="zoomableImage" src="${url}" class="lb-media-item" onerror="this.src='Img/Logo_pestaña.webp'" onclick="event.stopPropagation();">
                 </div>`;
+            // Esperamos un instante a que el elemento exista y lo inicializamos
+            setTimeout(() => {
+                const img = document.getElementById('zoomableImage');
+                if (img) initInteractiveZoom(img);
+            }, 50);
         } else if (esPDF) {
             const visorGoogle = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
             contenido.innerHTML = `
@@ -5525,6 +5544,213 @@ async function eliminarPendienteRapido(id) {
             Swal.fire('Error', 'Problema de conexión con el servidor', 'error');
         }
     }
+
+    // ==========================================================================
+// MOTOR DE ZOOM Y ARRASTRE PROFESIONAL (COMPUTADORA Y CELULAR)
+// ==========================================================================
+function initInteractiveZoom(img) {
+    let scale = 1;
+    let translateX = 0;
+    let translateY = 0;
+    
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let baseTranslateX = 0;
+    let baseTranslateY = 0;
+
+    let initialPinchDistance = null;
+    let baseScale = 1;
+
+    let lastTapTime = 0;
+
+    const wrapper = img.parentElement;
+
+    // Actualiza la transformación en el DOM
+    function applyTransform() {
+        // Límites inteligentes de arrastre (para evitar que la imagen se pierda fuera de pantalla)
+        if (scale > 1) {
+            const boundX = (img.clientWidth * scale - wrapper.clientWidth) / 2;
+            const boundY = (img.clientHeight * scale - wrapper.clientHeight) / 2;
+            
+            // Si la imagen es más pequeña que el contenedor, no se arrastra en ese eje
+            translateX = Math.max(-Math.max(0, boundX), Math.min(Math.max(0, boundX), translateX));
+            translateY = Math.max(-Math.max(0, boundY), Math.min(Math.max(0, boundY), translateY));
+            img.style.cursor = 'grab';
+        } else {
+            translateX = 0;
+            translateY = 0;
+            img.style.cursor = 'zoom-in';
+        }
+        
+        img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+    }
+
+    // Doble Click / Doble Toque (Toggle Zoom)
+    function handleDoubleTap(clientX, clientY) {
+        const rect = img.getBoundingClientRect();
+        if (scale === 1) {
+            scale = 2.5;
+            // Intenta centrar el zoom donde el usuario hizo click/toque
+            const offsetX = clientX - (rect.left + rect.width / 2);
+            const offsetY = clientY - (rect.top + rect.height / 2);
+            translateX = -offsetX * 1.5;
+            translateY = -offsetY * 1.5;
+        } else {
+            scale = 1;
+            translateX = 0;
+            translateY = 0;
+        }
+        img.style.transition = 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)';
+        applyTransform();
+        setTimeout(() => { img.style.transition = ''; }, 250);
+    }
+
+    // Computadora: Zoom con Rueda del Mouse
+    wrapper.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const zoomSpeed = 0.12;
+        const previousScale = scale;
+        
+        if (e.deltaY < 0) {
+            scale = Math.min(4, scale + zoomSpeed);
+        } else {
+            scale = Math.max(1, scale - zoomSpeed);
+        }
+
+        if (scale === 1) {
+            translateX = 0;
+            translateY = 0;
+        }
+        
+        applyTransform();
+    }, { passive: false });
+
+    // Click simple o doble click
+    img.addEventListener('click', (e) => {
+        const currentTime = new Date().getTime();
+        const tapDelay = currentTime - lastTapTime;
+        if (tapDelay < 300 && tapDelay > 0) {
+            handleDoubleTap(e.clientX, e.clientY);
+        } else {
+            // Click Simple: En computadora, si no es doble, hacemos un zoom cómodo del 2x
+            if (window.innerWidth > 768) {
+                if (scale === 1) {
+                    scale = 2;
+                    const rect = img.getBoundingClientRect();
+                    const offsetX = e.clientX - (rect.left + rect.width / 2);
+                    const offsetY = e.clientY - (rect.top + rect.height / 2);
+                    translateX = -offsetX;
+                    translateY = -offsetY;
+                } else {
+                    scale = 1;
+                    translateX = 0;
+                    translateY = 0;
+                }
+                img.style.transition = 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)';
+                applyTransform();
+                setTimeout(() => { img.style.transition = ''; }, 250);
+            }
+        }
+        lastTapTime = currentTime;
+    });
+
+    // Control táctil o de mouse (Drag & Pinch Gestures)
+    wrapper.addEventListener('pointerdown', (e) => {
+        // Evento inicial
+        const pointers = Array.from(document.querySelectorAll(':pending')); // fallback o list de pointers
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        baseTranslateX = translateX;
+        baseTranslateY = translateY;
+        
+        if (scale > 1) {
+            img.style.cursor = 'grabbing';
+        }
+        img.setPointerCapture(e.pointerId);
+    });
+
+    wrapper.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+
+        // Si hay zoom activo, bloqueamos la navegación de swipe en lightbox
+        if (scale > 1) {
+            e.stopPropagation();
+        }
+
+        // Caso Multitáctil (Pinch to zoom en celulares)
+        if (e.pointerType === 'touch' && initialPinchDistance !== null) {
+            // Se calcula usando pointer lists para el pinch, lo mantenemos ágil con scale base
+            return;
+        }
+
+        // Caso normal (Arrastre de un solo dedo o mouse)
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
+
+        if (scale > 1) {
+            translateX = baseTranslateX + deltaX;
+            translateY = baseTranslateY + deltaY;
+            applyTransform();
+        }
+    });
+
+    wrapper.addEventListener('pointerup', (e) => {
+        isDragging = false;
+        img.style.cursor = scale > 1 ? 'grab' : 'zoom-in';
+        initialPinchDistance = null;
+    });
+
+    wrapper.addEventListener('pointercancel', () => {
+        isDragging = false;
+        initialPinchDistance = null;
+    });
+
+    // Toques móviles para Pinzas (Pinch with 2 fingers)
+    let touchPoints = {};
+    
+    wrapper.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+            initialPinchDistance = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            baseScale = scale;
+            baseTranslateX = translateX;
+            baseTranslateY = translateY;
+        } else if (e.touches.length === 1) {
+            const currentTime = new Date().getTime();
+            const tapDelay = currentTime - lastTapTime;
+            if (tapDelay < 300 && tapDelay > 0) {
+                handleDoubleTap(e.touches[0].clientX, e.touches[0].clientY);
+                e.preventDefault(); // Evita doble zoom del navegador
+            }
+            lastTapTime = currentTime;
+        }
+    }, { passive: true });
+
+    wrapper.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2 && initialPinchDistance !== null) {
+            e.preventDefault(); // Previene scrolls molestos
+            e.stopPropagation();
+
+            const currentDistance = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            
+            // Calculamos el nuevo multiplicador
+            const ratio = currentDistance / initialPinchDistance;
+            scale = Math.max(1, Math.min(4, baseScale * ratio));
+            
+            applyTransform();
+        } else if (scale > 1) {
+            // Si el zoom está activo, forzamos que el swipe tradicional se detenga
+            e.stopPropagation();
+        }
+    }, { passive: false });
+}
     </script>
 </body>
 </html>
