@@ -2180,26 +2180,31 @@ async function cargarNotificacionesEstudiante(cedula) {
         }
 
         function cancelarSeleccion() {
-            appState.modoSeleccion = false;
-            appState.seleccionados = [];
-            
-            const barra = document.getElementById('floatingBar');
-            const btn = document.getElementById('btnSelectMode');
-            const btnGlobo = document.getElementById('floatingSelectBtn');
-            
-            if(barra) barra.classList.remove('active');
-            if(btn) {
-                btn.innerHTML = '<i class="fas fa-check-square"></i> Seleccionar';
-                btn.style.background = ''; 
-            }
-            if(btnGlobo) btnGlobo.classList.remove('hidden');
-            
-            const counter = document.getElementById('countSelection');
-            if(counter) counter.textContent = '0';
-            
-            renderGrid();
-            window.dispatchEvent(new Event('scroll'));
-        }
+    modoSeleccion = false;
+    evidenciasSeleccionadas = [];
+    
+    const barra = document.getElementById('floatingBar');
+    const btn = document.getElementById('btnSelectMode');
+    const btnGlobo = document.getElementById('floatingSelectBtn');
+    
+    if(barra) barra.classList.remove('active');
+    if(btn) {
+        btn.innerHTML = '<i class="fas fa-check-square"></i> Seleccionar';
+        btn.style.background = ''; 
+    }
+    if(btnGlobo) btnGlobo.classList.remove('hidden');
+    
+    const counter = document.getElementById('countSelection');
+    if(counter) counter.textContent = '0';
+    
+    // Limpieza segura de tarjetas si existen
+    document.querySelectorAll('.evidence-card').forEach(card => {
+        card.classList.remove('selection-mode-active');
+        card.classList.remove('selected');
+    });
+    
+    window.dispatchEvent(new Event('scroll'));
+}
 
         // =========================================================================
         // 5. LIGHTBOX (VISOR)
@@ -2663,36 +2668,35 @@ function initInteractiveZoom(img) {
 // ==========================================
     // SENSOR DE SCROLL PARA EL GLOBO DE SELECCIÓN
     // ==========================================
-    window.addEventListener('scroll', () => {
-        const btnOriginal = document.getElementById('btnSelectMode');
-        const btnGlobo = document.getElementById('floatingSelectBtn');
-        const panelEstudiante = document.getElementById('panel-evidencias-estudiante');
-        
-        // Si los botones no existen o no estamos viendo la galería del estudiante, no hacemos nada
-        if (!btnOriginal || !btnGlobo || !panelEstudiante.classList.contains('active')) {
-            if(btnGlobo) btnGlobo.classList.remove('visible');
-            return;
-        }
+    // ==========================================
+// SENSOR DE SCROLL PARA EL GLOBO DE SELECCIÓN (BLINDADO)
+// ==========================================
+window.addEventListener('scroll', () => {
+    const btnOriginal = document.getElementById('btnSelectMode');
+    const btnGlobo = document.getElementById('floatingSelectBtn');
+    
+    // Si no existen los botones en esta vista, salimos de forma segura sin romper la consola
+    if (!btnOriginal || !btnGlobo) return;
 
-        // Medir dónde está el botón original
-        const rect = btnOriginal.getBoundingClientRect();
-        
-        // Si el modo selección YA ESTÁ ACTIVO, ocultamos el globo (porque ya salió la barra negra)
-        if (modoSeleccion) {
-            btnGlobo.classList.add('hidden');
-            btnGlobo.classList.remove('visible');
-        } 
-        // Si bajamos la pantalla y el botón original desaparece por arriba del header (aprox 80px)
-        else if (rect.bottom < 80) {
-            btnGlobo.classList.remove('hidden');
-            btnGlobo.classList.add('visible');
-        } 
-        // Si volvemos a subir y vemos el botón original, ocultamos el globo
-        else {
-            btnGlobo.classList.remove('visible');
-            btnGlobo.classList.remove('hidden'); // Reseteamos el hidden forzado
-        }
-    });
+    // Medir dónde está el botón original de la toolbar
+    const rect = btnOriginal.getBoundingClientRect();
+    
+    // Si el modo selección ya está activo, aseguramos que el globo esté oculto
+    if (typeof modoSeleccion !== 'undefined' && modoSeleccion) {
+        btnGlobo.classList.add('hidden');
+        btnGlobo.classList.remove('visible');
+    } 
+    // Si bajamos la pantalla y el botón original desaparece por arriba
+    else if (rect.bottom < 80) {
+        btnGlobo.classList.remove('hidden');
+        btnGlobo.classList.add('visible');
+    } 
+    // Si volvemos a subir y se ve el botón original
+    else {
+        btnGlobo.classList.remove('visible');
+        btnGlobo.classList.remove('hidden');
+    }
+});
     </script>
 </body>
 </html>
