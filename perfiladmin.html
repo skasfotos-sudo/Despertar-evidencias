@@ -5546,7 +5546,7 @@ async function eliminarPendienteRapido(id) {
     }
 
     // ==========================================================================
-// MOTOR DE ZOOM Y ARRASTRE PROFESIONAL (COMPUTADORA Y CELULAR) V2.0
+// MOTOR DE ZOOM Y ARRASTRE PROFESIONAL (COMPUTADORA Y CELULAR) V2.1
 // ==========================================================================
 function initInteractiveZoom(img) {
     let scale = 1;
@@ -5565,10 +5565,9 @@ function initInteractiveZoom(img) {
 
     const wrapper = img.parentElement;
 
-    // Actualiza el tamaño y la posición
+    // Aplica transformación y ajusta límites dinámicos
     function applyTransform() {
         if (scale > 1) {
-            // Límite generoso: permite explorar las esquinas sin que la imagen se pierda del todo
             const limitX = (img.clientWidth * scale) / 1.5;
             const limitY = (img.clientHeight * scale) / 1.5;
             
@@ -5576,22 +5575,19 @@ function initInteractiveZoom(img) {
             translateY = Math.max(-limitY, Math.min(limitY, translateY));
             img.style.cursor = isDragging ? 'grabbing' : 'grab';
         } else {
-            scale = 1; // Evita que se haga más pequeña que su tamaño normal
+            scale = 1;
             translateX = 0;
             translateY = 0;
             img.style.cursor = 'zoom-in';
         }
-        
-        // Aplica el hardware acceleration para mayor fluidez en móviles (translate3d)
         img.style.transform = `translate3d(${translateX}px, ${translateY}px, 0) scale(${scale})`;
     }
 
-    // Doble Toque / Click para Zoom Inteligente
+    // Toggle de Zoom en doble clic / toque
     function handleDoubleTap(clientX, clientY) {
         if (scale === 1) {
-            scale = 2.5; // Nivel de zoom ideal
+            scale = 2.5;
             const rect = img.getBoundingClientRect();
-            // Centra el zoom justo donde el usuario tocó
             const offsetX = clientX - (rect.left + rect.width / 2);
             const offsetY = clientY - (rect.top + rect.height / 2);
             translateX = -offsetX * 1.5;
@@ -5604,14 +5600,13 @@ function initInteractiveZoom(img) {
         setTimeout(() => { img.style.transition = ''; }, 250);
     }
 
-    // --- RUEDA DEL MOUSE (PC) ---
+    // --- PC: Eventos Rueda y Arrastre (Mouse) ---
     wrapper.addEventListener('wheel', (e) => {
         e.preventDefault();
         scale += e.deltaY < 0 ? 0.15 : -0.15;
         applyTransform();
     }, { passive: false });
 
-    // --- ARRASTRE CON MOUSE (PC) ---
     wrapper.addEventListener('pointerdown', (e) => {
         if (e.pointerType === 'mouse' && e.button !== 0) return;
         isDragging = true;
@@ -5635,25 +5630,40 @@ function initInteractiveZoom(img) {
     wrapper.addEventListener('pointerup', () => { isDragging = false; applyTransform(); });
     wrapper.addEventListener('pointercancel', () => { isDragging = false; applyTransform(); });
 
-    // --- GESTOS TÁCTILES EXCLUSIVOS (MÓVIL) ---
+    // --- CLICK EN PC ---
+    img.addEventListener('click', (e) => {
+        if (window.innerWidth > 768 && e.pointerType === 'mouse') {
+            const currentTime = new Date().getTime();
+            if (currentTime - lastTapTime > 300) {
+                handleDoubleTap(e.clientX, e.clientY);
+            }
+            lastTapTime = currentTime;
+        }
+    });
+
+    // --- MÓVIL: EVENTOS TÁCTILES PUROS (CORRECCIÓN DE CONFLICTOS) ---
     wrapper.addEventListener('touchstart', (e) => {
+        // Bloqueo explícito de propagación si ya estamos ampliados
+        if (scale > 1) {
+            e.stopPropagation();
+        }
+
         if (e.touches.length === 2) {
-            // Inicia Pinza (Zoom con 2 dedos)
+            // Inicia gesto pinza
             initialPinchDistance = Math.hypot(
                 e.touches[0].clientX - e.touches[1].clientX,
                 e.touches[0].clientY - e.touches[1].clientY
             );
             baseScale = scale;
         } else if (e.touches.length === 1) {
-            // Doble toque (Double Tap)
+            // Doble toque o arrastre
             const currentTime = new Date().getTime();
             if (currentTime - lastTapTime < 300 && currentTime - lastTapTime > 0) {
                 handleDoubleTap(e.touches[0].clientX, e.touches[0].clientY);
-                e.preventDefault(); // Evita acciones nativas del navegador
+                e.preventDefault();
             }
             lastTapTime = currentTime;
 
-            // Inicia Arrastre Táctil (Pan con 1 dedo)
             isDragging = true;
             startX = e.touches[0].clientX;
             startY = e.touches[0].clientY;
@@ -5663,10 +5673,14 @@ function initInteractiveZoom(img) {
     }, { passive: false });
 
     wrapper.addEventListener('touchmove', (e) => {
+        // DETIENE EL SWIPE EXTERNO DEL LIGHTBOX SIEMPRE QUE ESTEMOS EN ZOOM
+        if (scale > 1) {
+            e.stopPropagation();
+            e.preventDefault(); // Previene scroll de navegador
+        }
+
         if (e.touches.length === 2 && initialPinchDistance !== null) {
-            // Ejecuta Pinza
-            e.preventDefault();
-            e.stopPropagation(); // Evita cambiar a la siguiente foto
+            // Ampliando/reduciendo con pinza
             const currentDistance = Math.hypot(
                 e.touches[0].clientX - e.touches[1].clientX,
                 e.touches[0].clientY - e.touches[1].clientY
@@ -5674,10 +5688,7 @@ function initInteractiveZoom(img) {
             scale = baseScale * (currentDistance / initialPinchDistance);
             applyTransform();
         } else if (e.touches.length === 1 && scale > 1) {
-            // Ejecuta Arrastre Táctil si hay Zoom
-            e.preventDefault(); // Evita el scroll nativo de la pantalla
-            e.stopPropagation(); // Evita el "swipe" a otra foto de la galería
-            
+            // Arrastrando la foto ampliada con 1 dedo
             translateX = baseTranslateX + (e.touches[0].clientX - startX);
             translateY = baseTranslateY + (e.touches[0].clientY - startY);
             applyTransform();
@@ -5685,21 +5696,12 @@ function initInteractiveZoom(img) {
     }, { passive: false });
 
     wrapper.addEventListener('touchend', (e) => {
+        if (scale > 1) {
+            e.stopPropagation(); // Bloquea un último intento de swipe al soltar
+        }
         if (e.touches.length < 2) initialPinchDistance = null;
         if (e.touches.length === 0) isDragging = false;
-        applyTransform(); // Recalcula límites al soltar el dedo
-    });
-
-    // --- CLICK SIMPLE EN PC ---
-    img.addEventListener('click', (e) => {
-        if (window.innerWidth > 768 && e.pointerType === 'mouse') {
-            const currentTime = new Date().getTime();
-            // Retraso ligero para no confundir con doble click
-            if (currentTime - lastTapTime > 300) {
-                handleDoubleTap(e.clientX, e.clientY);
-            }
-            lastTapTime = currentTime;
-        }
+        applyTransform(); 
     });
 }
     </script>
