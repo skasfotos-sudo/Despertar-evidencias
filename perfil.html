@@ -1028,6 +1028,45 @@ body.dark-mode .swal2-textarea {
             .bn-item.active i { transform: translateY(-2px) scale(1.15); }
             .bn-item.danger { color: var(--error); }
         }
+
+        /* ==========================================================================
+           BOTÓN FLOTANTE DE SELECCIÓN RÁPIDA (FAB)
+           ========================================================================== */
+        .fab-selection {
+            position: fixed; 
+            bottom: 40px; 
+            right: 40px;
+            width: 60px; 
+            height: 60px; 
+            background: var(--primary); 
+            color: white;
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            font-size: 1.5rem; 
+            box-shadow: 0 10px 25px rgba(106, 13, 173, 0.4);
+            cursor: pointer; 
+            z-index: 3000; 
+            transform: translateY(150px) scale(0.5); 
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); 
+            border: 2px solid white;
+        }
+        .fab-selection.visible { transform: translateY(0) scale(1); opacity: 1; }
+        .fab-selection:hover { transform: translateY(-5px) scale(1.1); background: var(--primary-dark); }
+        .fab-selection.hidden { transform: translateY(150px) scale(0.5); opacity: 0; pointer-events: none; }
+
+        /* En celulares, lo subimos para que no choque con el Menú Inferior */
+        @media (max-width: 992px) {
+            .fab-selection {
+                bottom: 95px; 
+                right: 20px;
+                width: 55px; 
+                height: 55px; 
+                font-size: 1.3rem;
+            }
+        }
     </style>
     <nav class="bottom-nav-mobile">
         <button class="bn-item active" onclick="location.reload()">
@@ -1135,6 +1174,11 @@ body.dark-mode .swal2-textarea {
     </div>
 
     <button id="floatingSelectBtn" class="fab-selection" onclick="toggleModoSeleccion()" title="Modo Selección">
+        <i class="fas fa-check-square"></i>
+    </button>
+
+    <!-- BOTÓN GLOBO PARA ACTIVAR SELECCIÓN MIENTRAS HACE SCROLL -->
+    <button id="floatingSelectBtn" class="fab-selection" onclick="toggleModoSeleccion()" title="Activar Selección Múltiple">
         <i class="fas fa-check-square"></i>
     </button>
 
@@ -2053,39 +2097,43 @@ async function cargarNotificacionesEstudiante(cedula) {
         function handleTouchEnd() { clearTimeout(pressTimer); isPressing = false; }
         function handleTouchMove() { clearTimeout(pressTimer); isPressing = false; }
 
-        function toggleModoSeleccion(force = null) {
-            appState.modoSeleccion = force !== null ? force : !appState.modoSeleccion;
-            const bar = document.getElementById('floatingBar');
-            const btn = document.getElementById('btnSelectMode');
-            const fab = document.getElementById('floatingSelectBtn');
-            const container = document.getElementById('galleryContainer');
-
-            if(appState.modoSeleccion) {
-                bar.classList.add('active');
-                if(btn) { btn.classList.add('active'); btn.innerHTML = '<i class="fas fa-times"></i> Cancelar'; }
-                fab.classList.add('hidden');
-                container.classList.add('selection-mode-active');
-            } else {
-                cancelarSeleccion();
-            }
+        function toggleModoSeleccion() {
+        modoSeleccion = !modoSeleccion;
+        const barra = document.getElementById('floatingBar');
+        const btn = document.getElementById('btnSelectMode');
+        const btnGlobo = document.getElementById('floatingSelectBtn'); // NUEVO
+        
+        if (modoSeleccion) {
+            barra.classList.add('active');
+            btn.innerHTML = '<i class="fas fa-times"></i> Cancelar';
+            btn.style.background = 'var(--text-sec)';
+            if(btnGlobo) btnGlobo.classList.add('hidden'); // Ocultar globo si se activa la selección
+        } else {
+            cancelarSeleccion(); 
         }
+        renderizarEvidenciasEstudiante();
+    }
 
         function cancelarSeleccion() {
-            appState.modoSeleccion = false; appState.seleccionados = [];
-            document.getElementById('floatingBar').classList.remove('active');
-            const btn = document.getElementById('btnSelectMode');
-            if(btn) { btn.classList.remove('active'); btn.innerHTML = '<i class="fas fa-check-square"></i> Seleccionar'; }
-            
-            document.querySelectorAll('.evidence-card.selected').forEach(e => e.classList.remove('selected'));
-            document.getElementById('countSelection').textContent = '0';
-            
-            const container = document.getElementById('galleryContainer');
-            if(container) container.classList.remove('selection-mode-active');
-            
-            const fab = document.getElementById('floatingSelectBtn');
-            if(fab) fab.classList.remove('hidden');
-            handleScroll();
+        modoSeleccion = false;
+        evidenciasSeleccionadas = [];
+        
+        const barra = document.getElementById('floatingBar');
+        const btn = document.getElementById('btnSelectMode');
+        const btnGlobo = document.getElementById('floatingSelectBtn'); // NUEVO
+        
+        if(barra) barra.classList.remove('active');
+        if(btn) {
+            btn.innerHTML = '<i class="fas fa-check-square"></i> Seleccionar';
+            btn.style.background = ''; 
         }
+        if(btnGlobo) btnGlobo.classList.remove('hidden'); // Volver a habilitar el globo
+        
+        renderizarEvidenciasEstudiante();
+        
+        // Forzamos un evento de scroll para que el sensor decida si el globo debe mostrarse o no
+        window.dispatchEvent(new Event('scroll'));
+    }
 
         // =========================================================================
         // 5. LIGHTBOX (VISOR)
@@ -2544,6 +2592,41 @@ function initInteractiveZoom(img) {
         applyTransform(); 
     });
 }
+
+
+// ==========================================
+    // SENSOR DE SCROLL PARA EL GLOBO DE SELECCIÓN
+    // ==========================================
+    window.addEventListener('scroll', () => {
+        const btnOriginal = document.getElementById('btnSelectMode');
+        const btnGlobo = document.getElementById('floatingSelectBtn');
+        const panelEstudiante = document.getElementById('panel-evidencias-estudiante');
+        
+        // Si los botones no existen o no estamos viendo la galería del estudiante, no hacemos nada
+        if (!btnOriginal || !btnGlobo || !panelEstudiante.classList.contains('active')) {
+            if(btnGlobo) btnGlobo.classList.remove('visible');
+            return;
+        }
+
+        // Medir dónde está el botón original
+        const rect = btnOriginal.getBoundingClientRect();
+        
+        // Si el modo selección YA ESTÁ ACTIVO, ocultamos el globo (porque ya salió la barra negra)
+        if (modoSeleccion) {
+            btnGlobo.classList.add('hidden');
+            btnGlobo.classList.remove('visible');
+        } 
+        // Si bajamos la pantalla y el botón original desaparece por arriba del header (aprox 80px)
+        else if (rect.bottom < 80) {
+            btnGlobo.classList.remove('hidden');
+            btnGlobo.classList.add('visible');
+        } 
+        // Si volvemos a subir y vemos el botón original, ocultamos el globo
+        else {
+            btnGlobo.classList.remove('visible');
+            btnGlobo.classList.remove('hidden'); // Reseteamos el hidden forzado
+        }
+    });
     </script>
 </body>
 </html>

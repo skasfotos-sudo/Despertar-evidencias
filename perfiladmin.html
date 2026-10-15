@@ -1054,6 +1054,41 @@ body.dark-mode .swal2-textarea {
             .bn-item.active { color: var(--primary); }
             .bn-item.active i { transform: translateY(-2px) scale(1.15); }
         }
+
+        /* ==========================================================================
+           BOTÓN FLOTANTE DE SELECCIÓN RÁPIDA (FAB)
+           ========================================================================== */
+        .fab-selection {
+            position: fixed; 
+            bottom: 40px; 
+            right: 40px;
+            width: 60px; 
+            height: 60px; 
+            background: var(--primary); 
+            color: white;
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            font-size: 1.5rem; 
+            box-shadow: 0 10px 25px rgba(106, 13, 173, 0.4);
+            cursor: pointer; 
+            z-index: 3000; 
+            transform: translateY(150px) scale(0.5); 
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); 
+            border: 2px solid white;
+        }
+        .fab-selection.visible { transform: translateY(0) scale(1); opacity: 1; }
+        .fab-selection:hover { transform: translateY(-5px) scale(1.1); background: var(--primary-dark); }
+        .fab-selection.hidden { transform: translateY(150px) scale(0.5); opacity: 0; pointer-events: none; }
+
+        /* Ocultamos el globo en móviles, obligando a usar mantener presionado */
+        @media (max-width: 992px) {
+            .fab-selection {
+                display: none !important;
+            }
+        }
     </style>
     <nav class="bottom-nav-mobile" id="bottomNavAdmin">
         <button class="bn-item active" onclick="navTo('dashboard'); activeNavAdmin(this)">
@@ -1799,6 +1834,11 @@ body.dark-mode .swal2-textarea {
 
     </main>
 
+<!-- BOTÓN GLOBO PARA ACTIVAR SELECCIÓN MIENTRAS HACE SCROLL -->
+    <button id="floatingSelectBtn" class="fab-selection" onclick="toggleModoSeleccion()" title="Activar Selección Múltiple">
+        <i class="fas fa-check-square"></i>
+    </button>
+
     <!-- BARRA FLOTANTE PARA SELECCIÓN MÚLTIPLE - COMPACTA MÓVIL -->
     <div id="floatingBar" class="floating-bar">
         <div class="fb-info">
@@ -2044,42 +2084,71 @@ body.dark-mode .swal2-textarea {
 // ==========================================
     // 0. VARIABLES Y FUNCIONES PARA GESTOS (FALTABA ESTO)
     // ==========================================
+    // ==========================================
+    // 0. VARIABLES Y FUNCIONES PARA GESTOS (OPTIMIZADO)
+    // ==========================================
     let pressTimer;
-    let isPressing = false;
+    let touchStartXLightbox = 0;
+    let touchEndXLightbox = 0;
 
     function handleTouchStart(e, id) {
-        // Si ya estamos en modo selección, ignoramos el long-press
+        // Si ya estamos en modo selección, ignoramos el long-press para no interferir con clicks normales
         if (modoSeleccion) return; 
-
-        isPressing = true;
         
-        // Esperar 600ms para considerar que es un "toque mantenido"
+        // Limpiamos cualquier temporizador previo por seguridad
+        clearTimeout(pressTimer);
+        
+        // Guardamos las coordenadas iniciales por si hay un micro-movimiento
+        const startTouch = e.touches[0];
+        const startX = startTouch.clientX;
+        const startY = startTouch.clientY;
+
+        // Iniciar temporizador (600ms) para detectar el "mantener presionado"
         pressTimer = setTimeout(() => {
-            if (isPressing) {
-                if (navigator.vibrate) navigator.vibrate(50); // Vibrar
-                
-                // Activar el modo selección visualmente
-                toggleModoSeleccion(); 
-                
-                // Marcar la carta que se está tocando
-                const card = e.target.closest('.evidence-card');
-                if (card) {
-                    toggleSeleccionEvidencia(id, card);
-                }
+            // Vibramos si el navegador lo permite para feedback táctil
+            if (navigator.vibrate) navigator.vibrate(50); 
+            
+            // 1. Activar el modo selección
+            toggleModoSeleccion(); 
+            
+            // 2. Marcar LA tarjeta exacta que originó el toque
+            const card = e.target.closest('.evidence-card');
+            if (card) {
+                toggleSeleccionEvidencia(id, card);
             }
         }, 600);
+
+        // Agregamos un listener *temporal* al documento para cancelar si el dedo se mueve (scroll)
+        const cancelTouch = (moveEvent) => {
+            // Tolerancia de 15 píxeles para los dedos "temblorosos"
+            if (moveEvent.type === 'touchmove') {
+                const moveTouch = moveEvent.touches[0];
+                if (Math.abs(moveTouch.clientX - startX) > 15 || Math.abs(moveTouch.clientY - startY) > 15) {
+                    clearTimeout(pressTimer);
+                    document.removeEventListener('touchmove', cancelTouch);
+                    document.removeEventListener('touchend', cancelTouch);
+                }
+            } else {
+                // Si levantó el dedo (touchend), cancelamos de inmediato
+                clearTimeout(pressTimer);
+                document.removeEventListener('touchmove', cancelTouch);
+                document.removeEventListener('touchend', cancelTouch);
+            }
+        };
+
+        document.addEventListener('touchmove', cancelTouch, { passive: true });
+        document.addEventListener('touchend', cancelTouch, { passive: true });
     }
 
-    function handleTouchEnd() {
-        // Si suelta el dedo antes de 600ms, cancelamos (es un click normal)
-        clearTimeout(pressTimer);
-        isPressing = false;
-    }
+    // Estas funciones quedan vacías ya que la lógica se maneja dinámicamente arriba
+    function handleTouchEnd() {}
+    function handleTouchMove() {}
 
-    function handleTouchMove() {
-        // Si mueve el dedo, cancelamos (es un scroll, no una selección)
-        clearTimeout(pressTimer);
-        isPressing = false;
+    // --- FUNCION SWIPE PARA LIGHTBOX ---
+    function handleSwipe() {
+        const SWIPE_THRESHOLD = 50;
+        if (touchEndXLightbox < touchStartXLightbox - SWIPE_THRESHOLD) imagenSiguiente();
+        if (touchEndXLightbox > touchStartXLightbox + SWIPE_THRESHOLD) imagenAnterior();
     }
     // --- FUNCION SWIPE PARA LIGHTBOX ---
     function handleSwipe() {
@@ -3852,14 +3921,13 @@ function configurarEventosTeclado() {
     const lbContent = document.getElementById('lightbox');
     
     lbContent.addEventListener('touchstart', e => { 
-        // Permitimos deslizar sobre la foto, EXCEPTO si es un PDF (.es-documento) o si la foto tiene zoom (.zoomed)
         if(e.target.closest('.es-documento') || e.target.classList.contains('zoomed')) return;
-        touchStartX = e.changedTouches[0].screenX; 
+        touchStartXLightbox = e.changedTouches[0].screenX; 
     }, {passive: true});
 
     lbContent.addEventListener('touchend', e => { 
         if(e.target.closest('.es-documento') || e.target.classList.contains('zoomed')) return;
-        touchEndX = e.changedTouches[0].screenX; 
+        touchEndXLightbox = e.changedTouches[0].screenX; 
         handleSwipe(); 
     }, {passive: true});
 }
@@ -4657,15 +4725,24 @@ async function fijarFotoPerfil(cedula, urlFoto) {
         modoSeleccion = !modoSeleccion;
         const barra = document.getElementById('floatingBar');
         const btn = document.getElementById('btnSelectMode');
+        const btnGlobo = document.getElementById('floatingSelectBtn'); 
         
         if (modoSeleccion) {
-            barra.classList.add('active');
-            btn.innerHTML = '<i class="fas fa-times"></i> Cancelar';
-            btn.style.background = 'var(--text-sec)';
+            if(barra) barra.classList.add('active');
+            if(btn) {
+                btn.innerHTML = '<i class="fas fa-times"></i> Cancelar';
+                btn.style.background = 'var(--text-sec)';
+            }
+            if(btnGlobo) btnGlobo.classList.add('hidden'); 
+            
+            // SOLUCIÓN AL CONGELAMIENTO: 
+            // Enciende las casillas sin borrar y repintar la galería.
+            document.querySelectorAll('.evidence-card').forEach(card => {
+                card.classList.add('selection-mode-active');
+            });
         } else {
             cancelarSeleccion(); 
         }
-        renderizarEvidenciasEstudiante();
     }
 
     function toggleSeleccionEvidencia(id, elemento) {
@@ -4686,20 +4763,32 @@ async function fijarFotoPerfil(cedula, urlFoto) {
         if(contador) contador.textContent = evidenciasSeleccionadas.length;
     }
 
-    function cancelarSeleccion() {
+        function cancelarSeleccion() {
         modoSeleccion = false;
         evidenciasSeleccionadas = [];
         
         const barra = document.getElementById('floatingBar');
         const btn = document.getElementById('btnSelectMode');
+        const btnGlobo = document.getElementById('floatingSelectBtn');
         
         if(barra) barra.classList.remove('active');
         if(btn) {
             btn.innerHTML = '<i class="fas fa-check-square"></i> Seleccionar';
             btn.style.background = ''; 
         }
+        if(btnGlobo) btnGlobo.classList.remove('hidden'); 
         
-        renderizarEvidenciasEstudiante();
+        // SOLUCIÓN AL CONGELAMIENTO: 
+        // Apaga las casillas de selección visualmente.
+        document.querySelectorAll('.evidence-card').forEach(card => {
+            card.classList.remove('selection-mode-active');
+            card.classList.remove('selected');
+        });
+        
+        const counter = document.getElementById('countSelection');
+        if(counter) counter.textContent = '0';
+        
+        window.dispatchEvent(new Event('scroll'));
     }
 
     async function descargarSeleccionadas() {
@@ -5641,34 +5730,42 @@ function initInteractiveZoom(img) {
         }
     });
 
-    // --- MÓVIL: EVENTOS TÁCTILES PUROS (CORRECCIÓN DE CONFLICTOS) ---
-    wrapper.addEventListener('touchstart', (e) => {
-        // Bloqueo explícito de propagación si ya estamos ampliados
+    // --- MÓVIL: EVENTOS TÁCTILES PUROS BLINDADOS ---
+    img.addEventListener('touchstart', (e) => {
+        // Bloqueo explícito SOLO si la imagen ya tiene zoom
         if (scale > 1) {
-            e.stopPropagation();
+            e.stopPropagation(); 
         }
 
         if (e.touches.length === 2) {
-            // Inicia gesto pinza
+            // Es un gesto de pinza: detenemos la propagación para que la tarjeta no lo confunda con un long-press
+            e.stopPropagation();
             initialPinchDistance = Math.hypot(
                 e.touches[0].clientX - e.touches[1].clientX,
                 e.touches[0].clientY - e.touches[1].clientY
             );
             baseScale = scale;
         } else if (e.touches.length === 1) {
-            // Doble toque o arrastre
             const currentTime = new Date().getTime();
+            
+            // Si detectamos un doble toque, detenemos la propagación
             if (currentTime - lastTapTime < 300 && currentTime - lastTapTime > 0) {
+                e.stopPropagation();
                 handleDoubleTap(e.touches[0].clientX, e.touches[0].clientY);
                 e.preventDefault();
             }
             lastTapTime = currentTime;
 
-            isDragging = true;
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-            baseTranslateX = translateX;
-            baseTranslateY = translateY;
+            // Preparamos el arrastre si es necesario, pero NO detenemos la propagación aquí 
+            // a menos que ya estemos en zoom. Así permitimos que el contenedor detecte el long-press.
+            if(scale > 1){
+                 e.stopPropagation();
+                 isDragging = true;
+                 startX = e.touches[0].clientX;
+                 startY = e.touches[0].clientY;
+                 baseTranslateX = translateX;
+                 baseTranslateY = translateY;
+            }
         }
     }, { passive: false });
 
@@ -5704,6 +5801,41 @@ function initInteractiveZoom(img) {
         applyTransform(); 
     });
 }
+
+// ==========================================
+    // SENSOR DE SCROLL PARA EL GLOBO DE SELECCIÓN
+    // ==========================================
+    window.addEventListener('scroll', () => {
+        const btnOriginal = document.getElementById('btnSelectMode');
+        const btnGlobo = document.getElementById('floatingSelectBtn');
+        const panelEstudiante = document.getElementById('panel-evidencias-estudiante');
+        
+        // Si los botones no existen o no estamos viendo la galería del estudiante, no hacemos nada
+        if (!btnOriginal || !btnGlobo || !panelEstudiante.classList.contains('active')) {
+            if(btnGlobo) btnGlobo.classList.remove('visible');
+            return;
+        }
+
+        // Medir dónde está el botón original
+        const rect = btnOriginal.getBoundingClientRect();
+        
+        // Si el modo selección YA ESTÁ ACTIVO, ocultamos el globo (porque ya salió la barra negra)
+        if (modoSeleccion) {
+            btnGlobo.classList.add('hidden');
+            btnGlobo.classList.remove('visible');
+        } 
+        // Si bajamos la pantalla y el botón original desaparece por arriba del header (aprox 80px)
+        else if (rect.bottom < 80) {
+            btnGlobo.classList.remove('hidden');
+            btnGlobo.classList.add('visible');
+        } 
+        // Si volvemos a subir y vemos el botón original, ocultamos el globo
+        else {
+            btnGlobo.classList.remove('visible');
+            btnGlobo.classList.remove('hidden'); // Reseteamos el hidden forzado
+        }
+    });
+
     </script>
 </body>
 </html>
