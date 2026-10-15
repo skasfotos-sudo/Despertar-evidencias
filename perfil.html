@@ -832,12 +832,12 @@
             }
 
             /* --- LIGHTBOX (VISOR) --- */
-            .lb-nav-btn { display: none; } /* Ocultar flechas, usar Swipe */
+            .lb-nav-btn { display: none !important; } /* Oculta flechas en móvil, fuerza Swipe */
             .lb-close-fixed { top: 15px; right: 15px; padding: 8px 15px; font-size: 0.9rem; background: rgba(0,0,0,0.6); }
             
             /* Importante para el zoom: */
             .lb-content-wrapper { width: 100%; height: 100%; }
-            .lb-media-item { max-width: 100%; max-height: 80vh; } 
+            .lb-media-item { max-width: 100%; max-height: 80vh; }
 
             .lb-actions-panel { flex-direction: column; width: 90%; gap: 12px; margin-bottom: 20px; }
             .btn-lb-action, .btn-lb-report { width: 100%; justify-content: center; }
@@ -2143,11 +2143,16 @@ async function cargarNotificacionesEstudiante(cedula) {
                             <video src="${urlActual}" class="lb-media-item" controls autoplay onclick="event.stopPropagation()"></video>
                         </div>`;
                 } else if (esImagen) {
-                    // La imagen tiene zoom, el wrapper es transparente y se deja atravesar por el clic
                     wrap.innerHTML = `
-                        <div class="visor-doc-wrapper">
-                            <img src="${urlActual}" class="lb-media-item" onerror="this.src='Img/Logo_pestaña.webp'" onclick="event.stopPropagation(); this.classList.toggle('zoomed');">
+                        <div class="visor-doc-wrapper" style="width:100%; height:100%;">
+                            <img id="zoomableImage" src="${urlActual}" class="lb-media-item" onerror="this.src='Img/Logo_pestaña.webp'" onclick="event.stopPropagation();">
                         </div>`;
+                    
+                    // Inicializar el motor de gestos y zoom inteligente
+                    setTimeout(() => {
+                        const img = document.getElementById('zoomableImage');
+                        if (img) initInteractiveZoom(img);
+                    }, 50);
                 } else if (esPDF) {
                     const visorGoogle = `https://docs.google.com/gview?url=${encodeURIComponent(urlActual)}&embedded=true`;
                     wrap.innerHTML = `
@@ -2368,6 +2373,166 @@ async function cargarNotificacionesEstudiante(cedula) {
         contenedor.innerHTML = '<p style="color:red;">Error al cargar datos.</p>';
     }
 }
+
+// ==========================================================================
+    // MOTOR DE ZOOM Y ARRASTRE PROFESIONAL (COMPUTADORA Y CELULAR) V2.1
+    // ==========================================================================
+    function initInteractiveZoom(img) {
+        let scale = 1;
+        let translateX = 0;
+        let translateY = 0;
+        
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+        let baseTranslateX = 0;
+        let baseTranslateY = 0;
+
+        let initialPinchDistance = null;
+        let baseScale = 1;
+        let lastTapTime = 0;
+
+        const wrapper = img.parentElement;
+
+        // Aplica transformación y ajusta límites dinámicos
+        function applyTransform() {
+            if (scale > 1) {
+                const limitX = (img.clientWidth * scale) / 1.5;
+                const limitY = (img.clientHeight * scale) / 1.5;
+                
+                translateX = Math.max(-limitX, Math.min(limitX, translateX));
+                translateY = Math.max(-limitY, Math.min(limitY, translateY));
+                img.style.cursor = isDragging ? 'grabbing' : 'grab';
+            } else {
+                scale = 1;
+                translateX = 0;
+                translateY = 0;
+                img.style.cursor = 'zoom-in';
+            }
+            img.style.transform = `translate3d(${translateX}px, ${translateY}px, 0) scale(${scale})`;
+        }
+
+        // Toggle de Zoom en doble clic / toque
+        function handleDoubleTap(clientX, clientY) {
+            if (scale === 1) {
+                scale = 2.5;
+                const rect = img.getBoundingClientRect();
+                const offsetX = clientX - (rect.left + rect.width / 2);
+                const offsetY = clientY - (rect.top + rect.height / 2);
+                translateX = -offsetX * 1.5;
+                translateY = -offsetY * 1.5;
+            } else {
+                scale = 1;
+            }
+            img.style.transition = 'transform 0.25s ease-out';
+            applyTransform();
+            setTimeout(() => { img.style.transition = ''; }, 250);
+        }
+
+        // --- PC: Eventos Rueda y Arrastre (Mouse) ---
+        wrapper.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            scale += e.deltaY < 0 ? 0.15 : -0.15;
+            applyTransform();
+        }, { passive: false });
+
+        wrapper.addEventListener('pointerdown', (e) => {
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            baseTranslateX = translateX;
+            baseTranslateY = translateY;
+            img.setPointerCapture(e.pointerId);
+        });
+
+        wrapper.addEventListener('pointermove', (e) => {
+            if (!isDragging || e.pointerType === 'touch') return;
+            if (scale > 1) {
+                e.preventDefault();
+                translateX = baseTranslateX + (e.clientX - startX);
+                translateY = baseTranslateY + (e.clientY - startY);
+                applyTransform();
+            }
+        });
+
+        wrapper.addEventListener('pointerup', () => { isDragging = false; applyTransform(); });
+        wrapper.addEventListener('pointercancel', () => { isDragging = false; applyTransform(); });
+
+        // --- CLICK EN PC ---
+        img.addEventListener('click', (e) => {
+            if (window.innerWidth > 768 && e.pointerType === 'mouse') {
+                const currentTime = new Date().getTime();
+                if (currentTime - lastTapTime > 300) {
+                    handleDoubleTap(e.clientX, e.clientY);
+                }
+                lastTapTime = currentTime;
+            }
+        });
+
+        // --- MÓVIL: EVENTOS TÁCTILES PUROS (CORRECCIÓN DE CONFLICTOS) ---
+        wrapper.addEventListener('touchstart', (e) => {
+            // Bloqueo explícito de propagación si ya estamos ampliados
+            if (scale > 1) {
+                e.stopPropagation();
+            }
+
+            if (e.touches.length === 2) {
+                // Inicia gesto pinza
+                initialPinchDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                baseScale = scale;
+            } else if (e.touches.length === 1) {
+                // Doble toque o arrastre
+                const currentTime = new Date().getTime();
+                if (currentTime - lastTapTime < 300 && currentTime - lastTapTime > 0) {
+                    handleDoubleTap(e.touches[0].clientX, e.touches[0].clientY);
+                    e.preventDefault();
+                }
+                lastTapTime = currentTime;
+
+                isDragging = true;
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                baseTranslateX = translateX;
+                baseTranslateY = translateY;
+            }
+        }, { passive: false });
+
+        wrapper.addEventListener('touchmove', (e) => {
+            // DETIENE EL SWIPE EXTERNO DEL LIGHTBOX SIEMPRE QUE ESTEMOS EN ZOOM
+            if (scale > 1) {
+                e.stopPropagation();
+                e.preventDefault(); // Previene scroll de navegador
+            }
+
+            if (e.touches.length === 2 && initialPinchDistance !== null) {
+                // Ampliando/reduciendo con pinza
+                const currentDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                scale = baseScale * (currentDistance / initialPinchDistance);
+                applyTransform();
+            } else if (e.touches.length === 1 && scale > 1) {
+                // Arrastrando la foto ampliada con 1 dedo
+                translateX = baseTranslateX + (e.touches[0].clientX - startX);
+                translateY = baseTranslateY + (e.touches[0].clientY - startY);
+                applyTransform();
+            }
+        }, { passive: false });
+
+        wrapper.addEventListener('touchend', (e) => {
+            if (scale > 1) {
+                e.stopPropagation(); // Bloquea un último intento de swipe al soltar
+            }
+            if (e.touches.length < 2) initialPinchDistance = null;
+            if (e.touches.length === 0) isDragging = false;
+            applyTransform(); 
+        });
+    }
     </script>
 </body>
 </html>
