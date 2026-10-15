@@ -487,84 +487,93 @@
             background: var(--error); color: white; border: none;
         }
 
-        /* Barra flotante para selección múltiple - MEJORADA */
+        /* ==========================================================================
+           BARRA FLOTANTE PARA SELECCIÓN MÚLTIPLE (DISEÑO SCROLL HORIZONTAL)
+           ========================================================================== */
         .floating-bar {
-    position: fixed;
-    bottom: 30px;
-    left: 50%;
-    transform: translate(-50%, 150%);
-    background: #222;
-    color: white;
-    padding: 12px 20px;
-    border-radius: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;      /* Permite que los botones bajen si no caben */
-    gap: 12px;            /* Espaciado más ajustado */
-    box-shadow: 0 15px 50px rgba(0,0,0,0.6);
-    z-index: 9999 !important;
-    width: 90%;
-    max-width: 650px;
-    transition: transform 0.4s var(--transition-bounce);
-    overflow: hidden;     /* Evita que contenido interno se salga */
-}
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translate(-50%, 150%);
+            background: #1a1a1a;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.6);
+            z-index: 9999 !important;
+            width: 90%;
+            max-width: 650px;
+            transition: transform 0.4s var(--transition-bounce);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
 
-.floating-bar.active {
-    transform: translate(-50%, 0);
-}
+        .floating-bar.active { transform: translate(-50%, 0); }
 
-/* Evita que los botones se encojan demasiado */
-.floating-bar .btn-float {
-    flex-shrink: 0;
-}
+        .fb-info {
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            padding-right: 15px;
+            border-right: 1px solid rgba(255,255,255,0.15);
+        }
+        
+        .fb-label { color:#aaa; font-size:0.75rem; letter-spacing:1px; line-height: 1; margin-bottom: 4px; }
+        .fb-count { font-size:1.15rem; line-height: 1; }
+        .fb-count span { color: var(--secondary); }
 
-/* Versión Móvil (sigue igual, pero más limpia) */
-@media (max-width: 768px) {
-    .floating-bar {
-        flex-direction: column;   /* Apila verticalmente */
-        width: 100%;
-        border-radius: 20px 20px 0 0;
-        padding: 20px;
-        gap: 12px;
-        bottom: 0;
-        left: 0;
-        transform: translateY(100%);
-        max-width: 100%;
-    }
-    .floating-bar.active {
-        transform: translateY(0);
-    }
-    .floating-bar div {
-        text-align: center;
-        width: 100%;
-        margin-bottom: 5px;
-    }
-    .btn-float {
-        width: 100%;
-        justify-content: center;
-    }
-    .btn-float-cancel {
-        margin-left: 0;  /* Quita margen extra en móvil */
-    }
-}
+        .fb-actions-scroll {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            flex-grow: 1;
+            padding-bottom: 2px;
+            
+            /* NUEVO: Efecto visual de que hay más contenido a la derecha */
+            -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+            mask-image: linear-gradient(to right, black 85%, transparent 100%);
+        }
+        .fb-actions-scroll::-webkit-scrollbar { display: none; }
 
         .btn-float {
             background: var(--primary); color: white; border: none;
-            padding: 10px 24px; border-radius: 25px; font-weight: bold; cursor: pointer;
-            display: flex; align-items: center; gap: 10px; font-size: 0.95rem; transition: 0.3s;
+            padding: 10px 20px; border-radius: 25px; font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; gap: 8px; font-size: 0.9rem; transition: 0.3s;
+            flex-shrink: 0; white-space: nowrap;
         }
-        .btn-float:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .btn-float:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow: 0 4px 10px rgba(106, 13, 173, 0.4); }
         .btn-float.danger { background: var(--error); }
+        .btn-float.danger:hover { box-shadow: 0 4px 10px rgba(211, 47, 47, 0.4); }
         
         .btn-float-cancel {
-            background: transparent; color: white; border: 2px solid white;
-            width: 40px; height: 40px; border-radius: 50%; font-size: 1.5rem;
+            background: transparent; color: #ccc; border: 2px solid #555;
+            width: 36px; height: 36px; border-radius: 50%; font-size: 1.2rem;
             cursor: pointer; display: flex; align-items: center; justify-content: center;
-            transition: 0.3s; margin-left: 10px;
+            transition: 0.3s; flex-shrink: 0; margin-left: 5px;
         }
-        .btn-float-cancel:hover {
-            background: white; color: #222; transform: rotate(90deg);
+        .btn-float-cancel:hover { background: white; color: #1a1a1a; border-color: white; transform: rotate(90deg); }
+
+        /* Versión Móvil: Pegada abajo, pero MANTENIENDO EL SCROLL HORIZONTAL */
+        @media (max-width: 768px) {
+            .floating-bar {
+                width: 100%;
+                max-width: 100%;
+                bottom: 0;
+                left: 0;
+                transform: translateY(100%);
+                border-radius: 20px 20px 0 0; /* Solo bordes arriba */
+                padding: 15px 15px;
+                border: none;
+                border-top: 1px solid rgba(255,255,255,0.1);
+            }
+            .floating-bar.active { transform: translateY(0); }
         }
 
         /* Botón de retroceso */
@@ -730,7 +739,7 @@
             cursor: zoom-out;
             cursor: grab;
         }
-
+        footer { padding: 30px 15px; text-align: center; }
         /* ==========================================================================
            6. RESPONSIVE (CORREGIDO Y UNIFICADO)
            ========================================================================== */
@@ -745,6 +754,10 @@
             
             /* Mostrar menú hamburguesa */
             .menu-toggle { display: flex; align-items: center; justify-content: center; }
+
+            /* --- LIGHTBOX --- */
+            .lb-nav-btn { display: none !important; } /* Oculta flechas en móvil, fuerza Swipe */
+            .lb-close-fixed { top: 15px; right: 15px; background: rgba(0,0,0,0.6); padding: 8px 15px; font-size: 0.9rem; }
 
             /* --- SIDEBAR --- */
             .sidebar-container { 
@@ -1772,15 +1785,18 @@ body.dark-mode .swal2-textarea {
 
     </main>
 
-    <!-- BARRA FLOTANTE PARA SELECCIÓN MÚLTIPLE - MEJORADA -->
+    <!-- BARRA FLOTANTE PARA SELECCIÓN MÚLTIPLE - COMPACTA MÓVIL -->
     <div id="floatingBar" class="floating-bar">
-        <div style="flex:1;">
-            <span style="color:#aaa; font-size:0.8rem; letter-spacing:1px;">SELECCIONADOS</span><br>
-            <strong style="font-size:1.2rem;"><span id="countSelection" style="color:var(--secondary);">0</span> archivos</strong>
+        <div class="fb-info">
+            <span class="fb-label">SELECCIONADOS</span>
+            <strong class="fb-count"><span id="countSelection">0</span> archivos</strong>
         </div>
-        <button class="btn-float" style="background:var(--info);" onclick="abrirModalReasignar()"><i class="fas fa-exchange-alt"></i> Clasificar</button>
-        <button class="btn-float" onclick="descargarSeleccionadas()"><i class="fas fa-download"></i> Descargar</button>
-        <button class="btn-float danger" onclick="eliminarSeleccionadas()"><i class="fas fa-trash"></i> Eliminar</button>
+        
+        <div class="fb-actions-scroll">
+            <button class="btn-float" onclick="descargarSeleccionadas()"><i class="fas fa-download"></i> Descargar</button>
+            <button class="btn-float danger" onclick="eliminarSeleccionadas()"><i class="fas fa-trash"></i> Eliminar</button>
+        </div>
+
         <button class="btn-float-cancel" onclick="cancelarSeleccion()" title="Cancelar">&times;</button>
     </div>
 
@@ -4725,11 +4741,11 @@ async function fijarFotoPerfil(cedula, urlFoto) {
         
         const confirmacion = await Swal.fire({
             title: `¿Eliminar ${evidenciasSeleccionadas.length} archivos?`,
-            text: "Esta acción borrará los archivos de la Nube y la Base de Datos permanentemente.",
+            text: "Se eliminarán del perfil de este estudiante. El sistema los borrará de la nube de forma definitiva solo si ningún otro estudiante los está utilizando.",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d32f2f',
-            confirmButtonText: 'Sí, borrar todo',
+            confirmButtonText: 'Sí, eliminar',
             cancelButtonText: 'Cancelar'
         });
         
