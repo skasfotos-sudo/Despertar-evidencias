@@ -1269,7 +1269,7 @@ footer {
         <div class="hair"></div>
 
         <div class="hero-dates" data-i18n="hero-dates">
-            <i class="far fa-calendar-alt"></i> 27 y 28 de enero de 2027
+            <i class="far fa-calendar-alt"></i> 28 y 29 de enero de 2027
         </div>
         <div class="hero-place" data-i18n="hero-place">
             <i class="fas fa-map-marker-alt"></i> Campus Despertar · Quito, Ecuador
@@ -1288,7 +1288,7 @@ footer {
             <div class="u"><b id="cd-m">—</b><span data-i18n="cd-mins">Min</span></div>
             <div class="u"><b id="cd-s">—</b><span data-i18n="cd-secs">Seg</span></div>
         </div>
-        <div class="cd-lbl" data-i18n="cd-lbl">Para el inicio del modelo · 27 de enero de 2027</div>
+        <div class="cd-lbl" data-i18n="cd-lbl">Para el inicio del modelo · 28 de enero de 2027</div>
 
         <!-- CTA -->
         <div class="cta-row">
@@ -1431,11 +1431,11 @@ footer {
 
         <div class="itin">
             <div class="irow hl">
-                <div class="iday" data-i18n="cam-d1">Miércoles 27 Ene</div>
+                <div class="iday" data-i18n="cam-d1">Jueves 28 Ene</div>
                 <div class="itxt" data-i18n="cam-t1x">SKASNU Día 1 — Registro · Ceremonia de inauguración · Apertura de comités y primera sesión de debate</div>
             </div>
             <div class="irow hl">
-                <div class="iday" data-i18n="cam-d2">Jueves 28 Ene</div>
+                <div class="iday" data-i18n="cam-d2">Viernes 29 Ene</div>
                 <div class="itxt" data-i18n="cam-t2x">SKASNU Día 2 — Sesiones de comité · Clausura, premiaciones y cóctel de despedida</div>
             </div>
         </div>
@@ -1473,7 +1473,8 @@ footer {
         <div id="form-inst" class="form-wrapper active">
             <form onsubmit="handleSkasnuForm(event, 'inst')" class="registration-form" style="margin-top:0;">
                 <input type="hidden" name="_subject" value="NUEVA SOLICITUD DE COLEGIO - SKASNU 2027">
-                <input type="hidden" name="_cc" value="tippabloeducacion@gmail.com">
+                <!-- BORRA O COMENTA ESTA LÍNEA -->
+                <!-- <input type="hidden" name="_cc" value="tippabloeducacion@gmail.com"> -->
                 <input type="hidden" name="Tipo_Registro" value="Institución Educativa">
 
                 <div class="form-row">
@@ -1532,7 +1533,8 @@ footer {
         <div id="form-del" class="form-wrapper">
             <form onsubmit="handleSkasnuForm(event, 'del')" class="registration-form" style="margin-top:0;">
                 <input type="hidden" name="_subject" value="NUEVO REGISTRO: Delegado Individual - SKASNU 2027">
-                <input type="hidden" name="_cc" value="tippabloeducacion@gmail.com">
+                <!-- BORRA O COMENTA ESTA LÍNEA -->
+                <!-- <input type="hidden" name="_cc" value="tippabloeducacion@gmail.com"> -->
                 <input type="hidden" name="Tipo_Registro" value="Delegado Individual">
                 
                 <div class="form-row">
@@ -1593,7 +1595,8 @@ footer {
             </div>
             <form onsubmit="handleSkasnuForm(event, 'pres')" class="registration-form" style="margin-top:0;">
                 <input type="hidden" name="_subject" value="POSTULACIÓN PRESIDENCIA - SKASNU 2027">
-                <input type="hidden" name="_cc" value="tippabloeducacion@gmail.com">
+                <!-- BORRA O COMENTA ESTA LÍNEA -->
+                <!-- <input type="hidden" name="_cc" value="tippabloeducacion@gmail.com"> -->
                 <input type="hidden" name="Tipo_Registro" value="Postulación Presidencia">
                 
                 <div class="form-row">
@@ -1789,7 +1792,7 @@ document.getElementById('modalSoporte').addEventListener('click', function(e) {
 // COUNTDOWN Y FILTROS
 // =============================================================
 function initCountdown() {
-    var TARGET = Date.UTC(2027, 0, 27, 13, 0, 0);
+    var TARGET = Date.UTC(2027, 0, 28, 13, 0, 0); // Actualizado al 28 de enero
     function tick() {
         var diff = TARGET - Date.now();
         if (diff < 0) diff = 0;
@@ -1862,12 +1865,12 @@ const translations = {
 
         // Hero
         "hero-pill": '<i class="fas fa-school"></i> Exclusivo para Instituciones Educativas',
-        "hero-dates": '<i class="far fa-calendar-alt"></i> 27 y 28 de enero de 2027',
+        "hero-dates": '<i class="far fa-calendar-alt"></i> 28 y 29 de enero de 2027',
         "hero-place": '<i class="fas fa-map-marker-alt"></i> Campus Despertar · Quito, Ecuador',
         "hero-tagline": 'Modelo de Naciones Unidas · Unidad Educativa Despertar',
         "hero-quote": '“Establecer la paz duradera es el trabajo de la educación; todo lo que la política puede hacer es mantenernos fuera de la guerra.” <small>— MARIA MONTESSORI</small>',
         "cd-days": 'Días', "cd-hours": 'Horas', "cd-mins": 'Min', "cd-secs": 'Seg',
-        "cd-lbl": 'Para el inicio del modelo · 27 de enero de 2027',
+        "cd-lbl": 'Para el inicio del modelo · 28 de enero de 2027',
         "btn-enroll": '<i class="fas fa-pen-fancy"></i> Inscribir mi delegación',
         "btn-committees": '<i class="fas fa-list-ul"></i> Ver comités',
         "stat-1-t": '4', "stat-1-s": 'Comités de simulación',
@@ -1929,9 +1932,9 @@ const translations = {
         "cam-t3": 'Acompañamiento institucional',
         "cam-p3": 'Personal docente y administrativo a cargo de cada comité, con protocolos de seguridad durante toda la jornada.',
         "cam-sch-title": '<i class="fas fa-calendar-week" style="color:var(--primary);"></i> Cronograma oficial',
-        "cam-d1": 'Miércoles 27 Ene',
+        "cam-d1": 'Jueves 28 Ene',
         "cam-t1x": 'SKASNU Día 1 — Registro · Ceremonia de inauguración · Apertura de comités y primera sesión de debate',
-        "cam-d2": 'Jueves 28 Ene',
+        "cam-d2": 'Viernes 29 Ene',
         "cam-t2x": 'SKASNU Día 2 — Sesiones de comité · Clausura, premiaciones y cóctel de despedida',
 
         // Inscription Section
@@ -1988,12 +1991,12 @@ const translations = {
 
         // Hero
         "hero-pill": '<i class="fas fa-school"></i> Exclusive for Educational Institutions',
-        "hero-dates": '<i class="far fa-calendar-alt"></i> January 27 and 28, 2027',
+        "hero-dates": '<i class="far fa-calendar-alt"></i> January 28 and 29, 2027',
         "hero-place": '<i class="fas fa-map-marker-alt"></i> Campus Despertar · Quito, Ecuador',
         "hero-tagline": 'Model United Nations · Unidad Educativa Despertar',
         "hero-quote": '“Establishing lasting peace is the work of education; all politics can do is keep us out of war.” <small>— MARIA MONTESSORI</small>',
         "cd-days": 'Days', "cd-hours": 'Hours', "cd-mins": 'Min', "cd-secs": 'Sec',
-        "cd-lbl": 'Until the model begins · January 27, 2027',
+        "cd-lbl": 'Until the model begins · January 28, 2027',
         "btn-enroll": '<i class="fas fa-pen-fancy"></i> Register my delegation',
         "btn-committees": '<i class="fas fa-list-ul"></i> View committees',
         "stat-1-t": '4', "stat-1-s": 'Simulation Committees',
@@ -2055,9 +2058,9 @@ const translations = {
         "cam-t3": 'Institutional support',
         "cam-p3": 'Teaching and administrative staff in charge of each committee, with security protocols throughout the day.',
         "cam-sch-title": '<i class="fas fa-calendar-week" style="color:var(--primary);"></i> Official Schedule',
-        "cam-d1": 'Wednesday Jan 27',
+        "cam-d1": 'Thursday Jan 28',
         "cam-t1x": 'SKASNU Day 1 — Registration · Opening ceremony · Committee openings and first debate session',
-        "cam-d2": 'Thursday Jan 28',
+        "cam-d2": 'Friday Jan 29',
         "cam-t2x": 'SKASNU Day 2 — Committee sessions · Closing, awards and farewell cocktail',
 
         // Inscription Section
@@ -2163,7 +2166,7 @@ async function handleSkasnuForm(event, type) {
     const data = Object.fromEntries(formData.entries());
 
     try {
-        const response = await fetch('https://formsubmit.co/ajax/skasfotos@gmail.com', {
+        const response = await fetch('https://formsubmit.co/ajax/despertaronu@gmail.com', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
