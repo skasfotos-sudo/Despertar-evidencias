@@ -4759,15 +4759,12 @@ async function fijarFotoPerfil(cedula, urlFoto) {
                 btn.style.background = 'var(--text-sec)';
             }
             if(btnGlobo) btnGlobo.classList.add('hidden'); 
-            
-            // SOLUCIÓN AL CONGELAMIENTO: 
-            // Enciende las casillas sin borrar y repintar la galería.
-            document.querySelectorAll('.evidence-card').forEach(card => {
-                card.classList.add('selection-mode-active');
-            });
         } else {
             cancelarSeleccion(); 
+            return;
         }
+        // Vuelve a pintar la galería con las clases de selección activadas
+        renderizarEvidenciasEstudiante();
     }
 
     function toggleSeleccionEvidencia(id, elemento) {
@@ -4789,6 +4786,7 @@ async function fijarFotoPerfil(cedula, urlFoto) {
     }
 
         function cancelarSeleccion() {
+        // Limpiamos las variables de memoria
         modoSeleccion = false;
         evidenciasSeleccionadas = [];
         
@@ -4803,15 +4801,11 @@ async function fijarFotoPerfil(cedula, urlFoto) {
         }
         if(btnGlobo) btnGlobo.classList.remove('hidden'); 
         
-        // SOLUCIÓN AL CONGELAMIENTO: 
-        // Apaga las casillas de selección visualmente.
-        document.querySelectorAll('.evidence-card').forEach(card => {
-            card.classList.remove('selection-mode-active');
-            card.classList.remove('selected');
-        });
-        
         const counter = document.getElementById('countSelection');
         if(counter) counter.textContent = '0';
+        
+        // LA CLAVE: Vuelve a pintar la galería para que elimine todos los 'checks' visualmente
+        renderizarEvidenciasEstudiante();
         
         window.dispatchEvent(new Event('scroll'));
     }
