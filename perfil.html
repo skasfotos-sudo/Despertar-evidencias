@@ -2190,29 +2190,29 @@ async function cargarNotificacionesEstudiante(cedula) {
         }
 
         function cancelarSeleccion() {
+            // 1. Limpiamos las variables del estado global correctas
             appState.modoSeleccion = false;
-            appState.seleccionados = []; // <--- Limpia los elementos seleccionados internamente
+            appState.seleccionados = [];
             
+            // 2. Ocultamos la barra flotante y restauramos los botones
             const barra = document.getElementById('floatingBar');
             const btn = document.getElementById('btnSelectMode');
             const btnGlobo = document.getElementById('floatingSelectBtn');
             
-            if(barra) barra.classList.remove('active');
-            if(btn) {
+            if (barra) barra.classList.remove('active');
+            if (btn) {
                 btn.innerHTML = '<i class="fas fa-check-square"></i> Seleccionar';
                 btn.style.background = ''; 
             }
-            if(btnGlobo) btnGlobo.classList.remove('hidden');
+            if (btnGlobo) btnGlobo.classList.remove('hidden');
             
             const counter = document.getElementById('countSelection');
-            if(counter) counter.textContent = '0';
+            if (counter) counter.textContent = '0';
             
-            // Remueve las marcas moradas de todas las tarjetas de la galería
-            document.querySelectorAll('.evidence-card').forEach(card => {
-                card.classList.remove('selection-mode-active');
-                card.classList.remove('selected');
-            });
+            // 3. LA CLAVE: Volver a renderizar la galería para borrar los vistos
+            renderGrid();
             
+            // Refrescar el scroll por si acaso
             window.dispatchEvent(new Event('scroll'));
         }
 
